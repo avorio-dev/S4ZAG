@@ -1,0 +1,55 @@
+ANALISI CRESCITA DB - Versione Lite
+
+NB Il risultato sarà un excel
+
+------------------------------------------------------------------------------------------------------------
+
+1 - Eseguire la transazione DB02
+	1.1 Eseguire la funzione Space -> Space Overview 
+    1.2 Verificare lo spazio disponibile
+	
+------------------------------------------------------------------------------------------------------------
+
+2 - Eseguire la transazione DB02 in una nuova sessione
+	2.1 Eseguire la funzione Space -> Segments -> Detailed Analysis
+    2.2 Ordinare il risultato in ordine discendente per spazio
+	2.3 Stabilire la soglia minima di analisi ( Ad esempio, considerare solo le tabelle maggiori di 100 Gb )
+	2.4 Effettuare una sommatoria per avere lo spazio totale dalle tabelle che saranno analizzate
+	2.5 Salvare nel primo sheet del excel 'Riepilogo Tabelle'
+		| Tabella | Tipo | Dimensione ( MB) | Oggetto di Arch. | Note
+
+
+------------------------------------------------------------------------------------------------------------
+
+3 - Eseguire la transazione DB15 in una nuova sessione
+	3.1 Per ogni tabella oggetto di analisi del punto precedente, identificare con la funzione del primo RB ( "Oggetti di Archiv. ) 
+		l'oggetto di archiviazione relativo e salvarlo sul excel nello sheet 'Riepilogo Tabelle -> Oggetto di Arch.'
+	3.2 Preidsporre un nuovo sheet 'Riepilogo per Ogg. Arch.' con seguente testata
+		Oggetto di Archiviazione | Descrizione | Spazio Occupato tabelle ( MB ) | Spazio Occupato indici ( MB ) | Spazio Occupato  Totale( MB ) | Totale Doc. Testata | Fattore Moltiplicativo
+	3.3 Per ogni oggetto di archiviazione, sempre da transazione DB15, con l'ausilio del secondo RB ( 'Tabelle con dati da archiviare' )
+		identificare le tabelle che lo compongono.
+	3.4 Per ogni oggetto, verificare lo spazio usato della DB02 verificando la somma delle tabelle che lo compongono e annotarlo nel foglio appena creato
+
+------------------------------------------------------------------------------------------------------------
+
+4 - Eseguire la transazione TAANA 
+	4.1	Con ausilio funzionale, per ogni oggetto di archiviazione, determinare qual'è la tabella di testata dei documenti 
+		( Es. se si vogliono analizzare le fatture ISU, si necessiterà della tabella ERDK contenente le testate delle fatture )
+	4.2 Riportare il totale dei documenti di testata per ogni oggetto per l'intero periodo di analisi del DB es. dal 2000 al 2022
+	4.3	Calcolo del 'fattore moltiplicativo' per ogni oggeto dividendo lo spazio totale occupato per il numero dei doc. di testata del relativo oggetto
+		Questo rappresenterà la media stimata di spazio utilizzato per ogni documento di testata. 
+	
+------------------------------------------------------------------------------------------------------------
+
+5 - Creare il nuovo foglio 'Riepilogo Oggetti per Esercizio'
+	5.1 Nel nuovo foglio excel, strutturare una matrice dove porre nelle colonne i vari oggetti di archiviazione e nelle righe lo spezzato dei periodi di analisi
+	5.2 Ogni spezzato andrà suddiviso a sua volta in 2 righe: Numero di record e Spazio utilizzato
+	5.3 Valorizzare a questo punto la matrice individuando i documenti di testata per ogni anno e oggetto, moltiplicandone il numero per il fattore individuato nella sezione precedente
+	
+------------------------------------------------------------------------------------------------------------
+
+6 - Creare il nuovo foglio 'Ipotesi RT'
+	6.1 Creare una tabella riepilogativa con Esercizio, Spazio utilizzato per Esercizio e Crescita di spazio occupato
+	6.2 Valorizzare la tabella con i dati complessivi del foglio 'Riepilogo Oggetti per Esercizio'
+	6.3 Nella colonna Crescita Spazio Occupato, inserire le somme progressive dei record inseriti per ogni periodo
+	6.4 Creare un istogramma per rendere la tabella riepilogativa più leggibile
