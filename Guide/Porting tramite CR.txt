@@ -1,0 +1,191 @@
+PORTING TRAMITE CR (NON È UNA SCIENZA ESATTA)
+
+1- Se incluso il porting di intero pacchetto o di un pacchetto non presente sul sistema di destinazione
+	
+	1.1 - Da se80 aprire il pacchetto e con tasto destro cliccare su "Scrivere inserimento trasporto"
+	1.2 - Cliccare prima su trasporto pacchetto e salvare il contenuto in una CR (chiamata da ora CR_PACCHETTO)
+	1.2 - (Facoltativo se si vogliono gli oggetti di tutto il pacchetto) 
+		   Ripetere l'operazione 1.1 e cliccare sulla funzione di scrittura di tutti gli oggetti da salvare in un'altra CR (chiamata da ora CR_OGGETTI)
+
+------------------------------------------------------------------------------------------------------------
+
+2- Da transazione SE09 entrare nelle CR create e BLOCCARE gli oggetti nella propria CR e salvare. 
+	In tal modo verranno evidenziati anche eventuali oggetti modificabili in altre CR.
+
+------------------------------------------------------------------------------------------------------------
+
+3- Una volta bloccati tutti gli oggetti, avviare il report RSOBJTR1  per la CR_OGGETTI. In questo modo verranno rilevati nella CR gli inserimenti della TVDIR e TDDAT
+
+------------------------------------------------------------------------------------------------------------
+
+4- Prima per CR_PACCHETTO e poi CR_OGGETTI, rilasciare task e CR.
+	4.1 - In caso di errori sulla distinta base per oggetti di tipo SHI3, SHI6 e via discorrendo sarà sufficiente lanciare il report standard RS_STREE_OBJECTS_TO_REQ_GET in cui ssarà indicata la CR_OGGETTI
+			che verrà completata con le info necessarie.
+			
+	4.2 - Dopo il rilascio di task e CR, gli oggetti saranno visibili nella TADIR
+	4.3 - In caso di errori, o se alcuni oggetti devono essere eliminati dalla CR, sarà sufficiente riportarla in stato modificabile con il report RDDIT076
+	
+
+------------------------------------------------------------------------------------------------------------
+
+5- Prima per CR_PACCHETTO e poi CR_OGGETTI, avviare la transazione AL11. Qui, bisognerà scaricare tramite transazione CG3Y/CG3Z i file prodotti dal rilascio
+   I File sono sempre 2 per ogni CR di cui il primo ha SEMPRE nomenclatura Knnnnnn dove n è il numero CR mentre il secondo avrà nomenclatura Rnnnnnn dove n è sempre il numero della CR.
+   I 2 File si troveranno rispettivamente nelle cartelle */cofiles/Knnnnnn e */data/Rnnnnnn
+   La parte precedente delle directory può variare da sistema a sistema ma generalmente è /usr/sap/trans/[cofiles - data] o simili come usr/sap/transISU/
+
+------------------------------------------------------------------------------------------------------------
+	
+6- Salvati i file delle CR, sarà possibile ora recarsi sul sistema di destinazione
+
+------------------------------------------------------------------------------------------------------------
+
+7- La prima operazione da fare sarà quella di caricare nelle rispettive cartelle di AL11 tramite CG3Y/CG3Z i file scaricati dal sistema di origine. Ovvviamente verrà mantenuta la stessa disposizione 
+	di cui Knnnnnn in */cofiles/ e Rnnnnnn in */data
+
+------------------------------------------------------------------------------------------------------------
+
+8- Entrare nella transazione SE09 e creare una CR
+
+------------------------------------------------------------------------------------------------------------
+
+9- Entrare in STMS (NB i passaggi seguenti saranno effettuati prima per CR_PACCHETTO e poi per CR_OGGETTI). 
+	Se CR_PACCHETTO	da problemi la cosa più saggia è creare il pacchetto manualmente nel sistema di destinazione ponendo attenzione al layer di trasporto, nonchè la quasi sicura causa dell'errore
+	
+	9.1 - Cliccare sul icona del camioncino con il riepilogo degli import
+	9.2 - Entrare nel sistema di sviluppo
+	9.3 - Dal menu in alto opzioni->altre richieste->aggiungere-> inserire il numero della vostra CR, in particolare la nomenclatura sarà sssKnnnnnn dove sss sarà l'ID del sistema sorgente, K indica il cofiles
+		  e nnnnnn il numero della CR.
+	9.4 - La richiesta dovrebbe essere ora visibile nella coda di import del sistema.
+
+------------------------------------------------------------------------------------------------------------
+
+10- A questo punto sarà possibile effettuare il trasporto della CR esterna nel sistema di sviluppo
+
+------------------------------------------------------------------------------------------------------------
+
+11- Se il trasporto è andato a buon fine il prossimo step sarà quello di rilevare i nuovi oggetti nella CR creata precedentemente al punto 8
+	
+	11.1 - In SE03 cliccare su modificare inserimento catalogo oggetti in richiesta nella sezione catalogo oggetti
+	11.2 - Inserite la vostra richiesta ed eseguite
+	11.3 - Con il cursore posizionato sul pacchetto, marcatelo con il pulsante apposito accanto al tasto esplodi nella toolbar
+	11.4 - Con gli oggetti del pacchetto marcati digitare nella barra delle transazioni "mass" e premete enter, si dovrebbe aprire una pop-up
+	11.5 - Flaggate la checkbox "sistema di destinazione" e nella edit text inserite il nome del nuovo sistema di sviluppo. Eseguite. 
+	11.6 - Se tutto è andato bene nell'albero con gli oggetti il sistema orig. dovrebbe essere cambiato nel nuovo sistema sviluppo
+
+------------------------------------------------------------------------------------------------------------
+	
+12- Tornando nella transazione SE09, ora potrà essere fatta la migrazione degli oggetti dalla CR importata a quella nuova tramite apposita funzione	
+	raggiungibile dalla toolbar utilities->riogranizzare->raggruppare richiesta
+
+
+------------------------------------------------------------------------------------------------------------
+
+13- Gli oggetti nella CR vengono memorizzati in tabella E071
+
+------------------------------------------------------------------------------------------------------------
+
+14- Verifica attivazione collettiva tramite PGM RADMASG0 
+
+------------------------------------------------------------------------------------------------------------
+KABOOM.
+------------------------------------------------------------------------------------------------------------
+
+
+Utils:
+
+Pgm per verifica oggetti già esistenti
+report zag_check_cr.
+
+tables e071.
+
+select-options s_obj_n for e071-obj_name.
+
+check s_obj_n[] is not initial.
+
+select *
+  from e071
+  into table @data(lt_oggetti)
+  where ( trkorr  ne 'MLDK909455'
+    and trkorr   ne 'AH1K922083' )
+    and lockflag ne 'X'
+    and obj_name in @s_obj_n.
+
+sort lt_oggetti by object obj_name.
+delete adjacent duplicates from lt_oggetti comparing object obj_name.
+
+if sy-batch eq 'X'.
+
+
+loop at lt_oggetti assigning field-symbol(<oggetti>).
+  write:/ <oggetti>-object, ' - ', <oggetti>-obj_name.
+
+endloop.
+
+else.
+
+  data: lt_fcat type lvc_t_fcat.
+
+  call function 'LVC_FIELDCATALOG_MERGE'
+      exporting
+        i_structure_name       = 'E071'
+      changing
+        ct_fieldcat            = lt_fcat.
+    if sy-subrc <> 0.
+      exit.
+    endif.
+
+    call function 'REUSE_ALV_GRID_DISPLAY_LVC'
+     exporting
+       it_fieldcat_lvc                   = lt_fcat
+      tables
+        t_outtab                          = lt_oggetti.
+
+endif.
+
+
+Tipo Oggetto	Descrizione
+
+AUTH	Campi del controllo autorizzazioni
+CLAS	Classe (oggetti ABAP)
+CMOD	Progetti di ampliamento presso clienti
+CUS0	Attività IMG customizing
+CUS1	Transazioni customizing
+DEVC	Pacchetto
+DOCV	Documentazione (indipendente)
+DOMA	Dominio
+DSYS	Capitolo di una struttura libro
+DTEL	Elemento dati
+ENHC	Composite Enhancement Implementation
+ENHO	Enhancement Implementation
+ENHS	Enhancement Spot
+ENQU	Oggetto di blocco
+ENSC	Composite Enhancement Spot
+FUGR	Gruppo funzioni
+FUGX	Gruppo funzioni con include clienti: parte cliente
+IDOC	Tipo base
+INTF	Interfaccia (oggetti ABAP)
+MSAG	Classe messaggi
+NROB	Oggetti range di numerazione
+PARA	Parametri SPA/GPA
+PROG	Programma
+RELE	Osservazione: rilascio avvenuto
+SHI3	Archivio struttura generale: definizione struttura
+SHI6	Archivio strutt. generale: attrib. ID ampliamento p. strutt.
+SHI7	Attributi nodo nell'archivio gerarchia generale
+SHLP	Help di ricerca
+SOTR	Tutti i concetti (OTR) di un pacchetto - testi brevi
+SPRX	Proxy Object
+SUSO	Oggetto di autorizzazione
+SXCI	Business Add-Ins - implementazione
+SXSD	Business Add-Ins - definitioni
+TABL	Tabella
+TABU	Contenuto tabella
+TOBJ	Definizione di un oggetto di aggiornamento e di trasporto
+TRAN	Transazione
+TTYP	Tipo tabella
+TYPE	Gruppo tipi
+VCLS	View cluster
+VIEW	View
+W3MI	Web Reporting/ tipi MIME server transazione internet (bin.)
+WEBI	Punto di fine virtuale
+XSLT	Trasformazione
