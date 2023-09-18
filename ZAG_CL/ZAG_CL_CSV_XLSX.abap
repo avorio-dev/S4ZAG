@@ -274,7 +274,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
         FIND '-' IN y_xlsx_value.
         IF sy-subrc EQ 0.
           REPLACE '-' IN y_xlsx_value WITH ''.
-          y_xlsx_value = |'-'{ y_xlsx_value }|.
+          y_xlsx_value = |-{ y_xlsx_value }|.
         ENDIF.
 
         CONDENSE y_xlsx_value NO-GAPS.
