@@ -771,7 +771,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     lo_ole->ole_init_excel( ).
     lo_ole->ole_add_sheet( ).
 
-    lo_ole->ole_clipboard_export( xt_str_data = xt_str_data ).
+    lo_ole->ole_clipboard_export( xt_str_data = lt_str_data ).
     lo_ole->ole_clipboard_paste( ).
 
 
