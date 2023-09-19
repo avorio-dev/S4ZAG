@@ -40,7 +40,7 @@
       WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
   ENDIF.
 
-  DATA(lv_filename) = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/test.csv|.
+  DATA(lv_filename) = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/test.xlsx|.
   zag_cl_csv_xlsx=>download(
     EXPORTING
       x_filename              = lv_filename
