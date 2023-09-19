@@ -1,7 +1,7 @@
 **********************************************************************
 "ZAG_CL_CSV_XLSX - EXAMPLE
 **********************************************************************
-SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
+  SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
 
   zag_cl_csv_xlsx=>download(
     EXPORTING
