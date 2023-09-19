@@ -1,4 +1,47 @@
 **********************************************************************
+"ZAG_CL_CSV_XLSX - EXAMPLE
+**********************************************************************
+SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
+
+  zag_cl_csv_xlsx=>download(
+    EXPORTING
+      x_filename              = '/tmp/test.csv'
+      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
+      xt_sap_data             = lt_mara
+      x_source                = 'S'   " 'SERV' / 'LOCL'
+    EXCEPTIONS
+      not_supported_file      = 1
+      unable_open_path        = 2
+      unable_define_structure = 3
+      OTHERS                  = 4
+  ).
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+
+  REFRESH lt_mara.
+  zag_cl_csv_xlsx=>upload(
+    EXPORTING
+      x_filename              = '/tmp/test.csv'
+      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
+      x_source                = 'S'   " 'LOCL'/'SERV'
+    IMPORTING
+      yt_sap_data             = lt_mara
+    EXCEPTIONS
+      not_supported_file      = 1
+      unable_open_path        = 2
+      unable_define_structure = 3
+      OTHERS                  = 4
+  ).
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+
+**********************************************************************
 "ZAG_CL_SALV - EXAMPLE
 **********************************************************************
   TYPES: BEGIN OF ty_alv,
