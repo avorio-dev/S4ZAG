@@ -25,9 +25,14 @@ public section.
         value   TYPE string,
       END OF ty_stdtxt_subs .
   types:
+    BEGIN OF ty_recipients,
+      smtp_addr TYPE adr6-smtp_addr,
+      copy      TYPE flag,
+    END OF ty_recipients .
+  types:
     tt_hrrange    TYPE TABLE OF hrrange .
   types:
-    tt_smtp_addr  TYPE TABLE OF adr6-smtp_addr .
+    tt_recipients  TYPE TABLE OF ty_recipients .
   types:
     tt_coltxt  TYPE TABLE OF ty_coltxt .
   types:
@@ -51,11 +56,19 @@ public section.
   class-methods SEND_MAIL_BCS
     importing
       !X_SENDER type SYST_UNAME default SY-UNAME
-      !XT_RECIPIENT type TT_SMTP_ADDR
+      !XT_RECIPIENTS type TT_RECIPIENTS
       !X_MAIL_OBJ type SO_OBJ_DES
       !X_MAIL_BODY_STR type STRING optional
       !X_MAIL_BODY_SO10 type TY_STDTXT optional
-      !XT_ATTCH type TT_BCS_ATTCH optional .
+      !XT_ATTCH type TT_BCS_ATTCH optional
+    exporting
+      !Y_ERROR_MSG type STRING
+    exceptions
+      REQUEST_ERROR
+      SENDER_ERROR
+      RECIPIENT_ERROR
+      BODY_ERROR
+      ATTACHMENT_ERROR .
 protected section.
 private section.
 
@@ -65,32 +78,49 @@ private section.
       !XT_STDTXT_SUBS type TT_STDTXT_SUBS optional
     exporting
       !YT_LINES type BCSY_TEXT
+      !Y_ERROR_MSG type STRING
     exceptions
       SO10_READING_FAULT .
   class-methods BCS_FILL_ATTACHMENT
     importing
       !XT_ATTCH type TT_BCS_ATTCH optional
+    exporting
+      !Y_ERROR_MSG type STRING
     changing
       !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS .
+      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
+    exceptions
+      ATTACHMENT_ERROR .
   class-methods BCS_FILL_BODY
     importing
       !X_MAIL_OBJ type SO_OBJ_DES
       !X_MAIL_BODY_STR type STRING optional
       !X_MAIL_BODY_SO10 type TY_STDTXT optional
+    exporting
+      !Y_ERROR_MSG type STRING
     changing
       !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS .
+      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
+    exceptions
+      BODY_ERROR .
   class-methods BCS_SET_RECIPIENT
     importing
-      !XT_RECIPIENT type TT_SMTP_ADDR
+      !XT_RECIPIENTS type TT_RECIPIENTS
+    exporting
+      !Y_ERROR_MSG type STRING
     changing
-      !YO_SEND_REQUEST type ref to CL_BCS .
+      !YO_SEND_REQUEST type ref to CL_BCS
+    exceptions
+      RECIPIENT_ERROR .
   class-methods BCS_SET_SENDER
     importing
       !X_SENDER type SY-UNAME
+    exporting
+      !Y_ERROR_MSG type STRING
     changing
-      !YO_SEND_REQUEST type ref to CL_BCS .
+      !YO_SEND_REQUEST type ref to CL_BCS
+    exceptions
+      SENDER_ERROR .
 ENDCLASS.
 
 
@@ -102,8 +132,10 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_FILL_ATTACHMENT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] XT_ATTCH                       TYPE        TT_BCS_ATTCH(optional)
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
 * | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
 * | [<-->] YO_DOCUMENT                    TYPE REF TO CL_DOCUMENT_BCS
+* | [EXC!] ATTACHMENT_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD bcs_fill_attachment.
 
@@ -111,6 +143,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
           lt_solix_tab     TYPE solix_tab,
           lv_attch_subject TYPE sood-objdes,
           lv_csv_string    TYPE string.
+
+    DATA: lx_document_bcs  TYPE REF TO cx_document_bcs.
 
     "-------------------------------------------------
 
@@ -143,8 +177,9 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
                 i_attachment_subject = lv_attch_subject
                 i_att_content_text   = lt_soli_tab[].
 
-          CATCH cx_document_bcs INTO DATA(lx_document_bcs).
-            DATA(lv_except_msg) = lx_document_bcs->get_text( ).
+          CATCH cx_document_bcs INTO lx_document_bcs.
+            y_error_msg = lx_document_bcs->get_text( ).
+            RAISE attachment_error.
         ENDTRY.
       ENDIF.
 
@@ -167,7 +202,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
                 i_att_content_hex    = lt_solix_tab[].
 
           CATCH cx_document_bcs INTO lx_document_bcs.
-            lv_except_msg = lx_document_bcs->get_text( ).
+            y_error_msg = lx_document_bcs->get_text( ).
+            RAISE attachment_error.
         ENDTRY.
 
       ENDIF.
@@ -190,7 +226,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
                 i_att_content_hex    = lt_solix_tab[].
 
           CATCH cx_document_bcs INTO lx_document_bcs.
-            lv_except_msg = lx_document_bcs->get_text( ).
+            y_error_msg = lx_document_bcs->get_text( ).
+            RAISE attachment_error.
         ENDTRY.
 
       ENDIF.
@@ -206,8 +243,10 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * | [--->] X_MAIL_OBJ                     TYPE        SO_OBJ_DES
 * | [--->] X_MAIL_BODY_STR                TYPE        STRING(optional)
 * | [--->] X_MAIL_BODY_SO10               TYPE        TY_STDTXT(optional)
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
 * | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
 * | [<-->] YO_DOCUMENT                    TYPE REF TO CL_DOCUMENT_BCS
+* | [EXC!] BODY_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD bcs_fill_body.
 
@@ -241,10 +280,14 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
           xt_stdtxt_subs     = x_mail_body_so10-substitutions
         IMPORTING
           yt_lines           = lt_lines[]
+          y_error_msg        = y_error_msg
         EXCEPTIONS
           so10_reading_fault = 1
           OTHERS             = 2
       ).
+      IF sy-subrc <> 0.
+        RAISE body_error.
+      ENDIF.
 
     ENDIF.
 
@@ -256,14 +299,13 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
       <line>-line = x_mail_obj.
     ENDIF.
 
-
-
     TRY.
         yo_document = cl_document_bcs=>create_document( i_type    = c_mail_type_htm
                                                         i_text    = lt_lines[]
                                                         i_subject = x_mail_obj ).
       CATCH cx_document_bcs INTO DATA(lx_document_bcs).
-        DATA(lv_except_msg) = lx_document_bcs->get_text( ).
+        y_error_msg = lx_document_bcs->get_text( ).
+        RAISE body_error.
     ENDTRY.
 
   ENDMETHOD.
@@ -272,21 +314,25 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * <SIGNATURE>---------------------------------------------------------------------------------------+
 * | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_SET_RECIPIENT
 * +-------------------------------------------------------------------------------------------------+
-* | [--->] XT_RECIPIENT                   TYPE        TT_SMTP_ADDR
+* | [--->] XT_RECIPIENTS                  TYPE        TT_RECIPIENTS
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
 * | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
+* | [EXC!] RECIPIENT_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD bcs_set_recipient.
 
-    LOOP AT xt_recipient ASSIGNING FIELD-SYMBOL(<recipient>).
+    LOOP AT xt_recipients ASSIGNING FIELD-SYMBOL(<recipient>).
 
-      DATA(lo_recipient) = cl_cam_address_bcs=>create_internet_address( <recipient> ).
+      DATA(lo_recipient) = cl_cam_address_bcs=>create_internet_address( <recipient>-smtp_addr ).
 
       TRY.
           yo_send_request->add_recipient( i_recipient = lo_recipient
-                                          i_express   = 'X' ).
+                                          i_express   = 'X'
+                                          i_copy      = <recipient>-copy ).
 
         CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
-          DATA(lv_except_msg) = lx_send_req_bcs->get_text( ).
+          y_error_msg = lx_send_req_bcs->get_text( ).
+          RAISE recipient_error.
       ENDTRY.
 
     ENDLOOP.
@@ -298,7 +344,9 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_SET_SENDER
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_SENDER                       TYPE        SY-UNAME
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
 * | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
+* | [EXC!] SENDER_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD bcs_set_sender.
 
@@ -308,7 +356,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
         yo_send_request->set_sender( i_sender = lo_sender ).
 
       CATCH cx_address_bcs INTO DATA(lx_address_bcs).
-        DATA(lv_except_msg) = lx_address_bcs->get_text( ).
+        y_error_msg = lx_address_bcs->get_text( ).
+        RAISE sender_error.
     ENDTRY.
 
   ENDMETHOD.
@@ -320,6 +369,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * | [--->] X_STDTXT_NAME                  TYPE        THEAD-TDNAME
 * | [--->] XT_STDTXT_SUBS                 TYPE        TT_STDTXT_SUBS(optional)
 * | [<---] YT_LINES                       TYPE        BCSY_TEXT
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
 * | [EXC!] SO10_READING_FAULT
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD fill_from_so10.
@@ -351,7 +401,6 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 
     IF sy-subrc <> 0.
 
-      DATA: lv_except_msg TYPE string.
       CALL FUNCTION 'FORMAT_MESSAGE'
         EXPORTING
           id        = sy-msgid
@@ -362,7 +411,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
           v3        = sy-msgv3
           v4        = sy-msgv4
         IMPORTING
-          msg       = lv_except_msg
+          msg       = y_error_msg
         EXCEPTIONS
           not_found = 1
           OTHERS    = 2.
@@ -387,20 +436,27 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 * | Static Public Method ZAG_CL_SEND_MAIL_BCS=>SEND_MAIL_BCS
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_SENDER                       TYPE        SYST_UNAME (default =SY-UNAME)
-* | [--->] XT_RECIPIENT                   TYPE        TT_SMTP_ADDR
+* | [--->] XT_RECIPIENTS                  TYPE        TT_RECIPIENTS
 * | [--->] X_MAIL_OBJ                     TYPE        SO_OBJ_DES
 * | [--->] X_MAIL_BODY_STR                TYPE        STRING(optional)
 * | [--->] X_MAIL_BODY_SO10               TYPE        TY_STDTXT(optional)
 * | [--->] XT_ATTCH                       TYPE        TT_BCS_ATTCH(optional)
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
+* | [EXC!] REQUEST_ERROR
+* | [EXC!] SENDER_ERROR
+* | [EXC!] RECIPIENT_ERROR
+* | [EXC!] BODY_ERROR
+* | [EXC!] ATTACHMENT_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD send_mail_bcs.
 
-    DATA: lv_except_msg   TYPE string,
-          lo_send_request TYPE REF TO cl_bcs,
+    DATA: lo_send_request TYPE REF TO cl_bcs,
           lo_document     TYPE REF TO cl_document_bcs,
           lv_sent_to_all  TYPE os_boolean.
 
     "-------------------------------------------------
+
+    y_error_msg = ''.
 
     TRY.
 
@@ -409,7 +465,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
         TRY.
             lo_send_request = cl_bcs=>create_persistent( ).
           CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
-            lv_except_msg = lx_send_req_bcs->get_text( ).
+            y_error_msg = lx_send_req_bcs->get_text( ).
+            RAISE request_error.
         ENDTRY.
 
 
@@ -418,19 +475,35 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
         bcs_set_sender(
           EXPORTING
             x_sender        = x_sender
+          IMPORTING
+            y_error_msg     = y_error_msg
           CHANGING
             yo_send_request = lo_send_request
+          EXCEPTIONS
+            sender_error    = 1
+            OTHERS          = 2
         ).
+        IF sy-subrc <> 0.
+          RAISE sender_error.
+        ENDIF.
 
 
         "Set list of recipients
         "-------------------------------------------------
         bcs_set_recipient(
           EXPORTING
-            xt_recipient    = xt_recipient[]
+            xt_recipients   = xt_recipients[]
+          IMPORTING
+            y_error_msg     = y_error_msg
           CHANGING
             yo_send_request = lo_send_request
+          EXCEPTIONS
+            recipient_error = 1
+            OTHERS          = 2
         ).
+        IF sy-subrc <> 0.
+          RAISE recipient_error.
+        ENDIF.
 
 
         "Set body with an input string or an SO10 standard text
@@ -440,21 +513,37 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
             x_mail_obj       = x_mail_obj
             x_mail_body_str  = x_mail_body_str
             x_mail_body_so10 = x_mail_body_so10
+          IMPORTING
+            y_error_msg      = y_error_msg
           CHANGING
             yo_send_request  = lo_send_request
             yo_document      = lo_document
+          EXCEPTIONS
+            body_error         = 1
+            OTHERS             = 3
         ).
+        IF sy-subrc <> 0.
+          RAISE body_error.
+        ENDIF.
 
 
         "Set attachments CSV or PDF
         "-------------------------------------------------
         bcs_fill_attachment(
           EXPORTING
-            xt_attch        = xt_attch[]
+            xt_attch        = xt_attch
+          IMPORTING
+            y_error_msg     = y_error_msg
           CHANGING
             yo_send_request = lo_send_request
             yo_document     = lo_document
+          EXCEPTIONS
+            attachment_error  = 1
+            OTHERS            = 2
         ).
+        IF sy-subrc <> 0.
+          RAISE attachment_error.
+        ENDIF.
 
 
         "Add document to send request
@@ -462,7 +551,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
         TRY.
             lo_send_request->set_document( lo_document ).
           CATCH cx_send_req_bcs INTO lx_send_req_bcs.
-            lv_except_msg = lx_send_req_bcs->get_text( ).
+            y_error_msg = lx_send_req_bcs->get_text( ).
+            RAISE request_error.
         ENDTRY.
 
 
@@ -477,7 +567,8 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 
         "Exception handling
       CATCH cx_bcs INTO DATA(lx_bcs).
-        lv_except_msg = lx_bcs->get_text( ).
+        y_error_msg = lx_bcs->get_text( ).
+        RAISE request_error.
     ENDTRY.
 
   ENDMETHOD.
