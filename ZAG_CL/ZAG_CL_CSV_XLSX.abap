@@ -89,7 +89,8 @@ public section.
     exceptions
       NOT_SUPPORTED_FILE
       UNABLE_OPEN_PATH
-      UNABLE_DEFINE_STRUCTURE .
+      UNABLE_DEFINE_STRUCTURE
+      EMPTY_FILE .
 protected section.
 private section.
 
@@ -180,7 +181,8 @@ private section.
     exporting
       !YT_SAP_DATA type TABLE
     exceptions
-      UNABLE_OPEN_PATH .
+      UNABLE_OPEN_PATH
+      EMPTY_FILE .
   methods OLE_ADD_SHEET .
   methods OLE_CLIPBOARD_COPY .
   methods OLE_CLIPBOARD_EXPORT
@@ -646,6 +648,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           yt_fcat = DATA(lt_fcat)
       ).
 
+      "Download string table in local in XLSX format with OLE
+      "-------------------------------------------------
       download_excel_local(
         EXPORTING
           x_filename       = x_filename
@@ -1466,6 +1470,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [EXC!] NOT_SUPPORTED_FILE
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
+* | [EXC!] EMPTY_FILE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD upload.
 
@@ -1487,19 +1492,34 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     ENDIF.
 
 
-    "-------------------------------------------------
 
+    "File upload
+    "-------------------------------------------------
     IF x_source EQ c_source_local "XLSX only from local
       AND ( x_filename CP '*.xls' OR x_filename CP '*.xlsx' ).
 
+      "Upload from XLSX with in-built conversion in SAP Format
+      "-------------------------------------------------
       upload_excel_local(
         EXPORTING
-          x_header          = x_header
-          x_filename        = x_filename
-          xo_structdescr    = lo_structdescr
+          x_header         = x_header
+          x_filename       = x_filename
+          xo_structdescr   = lo_structdescr
         IMPORTING
-          yt_sap_data       = yt_sap_data[]
+          yt_sap_data      = yt_sap_data[]
+        EXCEPTIONS
+          unable_open_path = 1
+          empty_file       = 2
+          OTHERS           = 3
       ).
+      CASE sy-subrc.
+        WHEN 0.
+          "OK
+        WHEN 1.
+          RAISE unable_open_path.
+        WHEN 2.
+          RAISE empty_file.
+      ENDCASE.
 
     ELSEIF x_filename CP '*.csv'.
 
@@ -1535,11 +1555,15 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ENDCASE.
 
 
-      "Conversion in SAP Format
+      "Conversion in SAP Format for CSV
       "-------------------------------------------------
       CHECK lt_str_data IS NOT INITIAL.
       IF x_header EQ 'X'.
         DELETE lt_str_data INDEX 1.
+      ENDIF.
+
+      IF lt_str_data IS INITIAL.
+        RAISE empty_file.
       ENDIF.
 
       LOOP AT lt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
@@ -1633,6 +1657,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
 * | [<---] YT_SAP_DATA                    TYPE        TABLE
 * | [EXC!] UNABLE_OPEN_PATH
+* | [EXC!] EMPTY_FILE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD upload_excel_local.
 
@@ -1708,6 +1733,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
       IF x_header EQ 'X'.
         DELETE <t_excel_data> INDEX 1.
+      ENDIF.
+
+      IF <t_excel_data> IS INITIAL.
+        RAISE empty_file.
       ENDIF.
 
       "Convert excel format into string table with columns separated by ; like in CSV
