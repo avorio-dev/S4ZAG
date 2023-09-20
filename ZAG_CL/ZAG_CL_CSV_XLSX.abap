@@ -174,10 +174,11 @@ private section.
       UNABLE_OPEN_PATH .
   class-methods UPLOAD_EXCEL_LOCAL
     importing
+      !X_HEADER type XFELD optional
       !X_FILENAME type STRING
       !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
     exporting
-      !YT_STR_DATA type STRING_TABLE
+      !YT_SAP_DATA type TABLE
     exceptions
       UNABLE_OPEN_PATH .
   methods OLE_ADD_SHEET .
@@ -288,6 +289,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     LOOP AT lo_structdescr->components ASSIGNING FIELD-SYMBOL(<component>).
 
+      CHECK <component>-name NE 'MANDT'.
+
       ASSIGN COMPONENT <component>-name OF STRUCTURE x_sap_data TO FIELD-SYMBOL(<value>).
 
       CASE <component>-type_kind.
@@ -295,6 +298,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_decfloat
           OR cl_abap_typedescr=>typekind_decfloat16
           OR cl_abap_typedescr=>typekind_decfloat34
+          OR cl_abap_typedescr=>typekind_int
+          OR cl_abap_typedescr=>typekind_int1
+          OR cl_abap_typedescr=>typekind_int2
+          OR cl_abap_typedescr=>typekind_int8
+          OR cl_abap_typedescr=>typekind_intf
+          OR cl_abap_typedescr=>typekind_num
+          OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed
           OR cl_abap_typedescr=>typekind_date
           OR cl_abap_typedescr=>typekind_time
@@ -316,6 +326,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_decfloat
           OR cl_abap_typedescr=>typekind_decfloat16
           OR cl_abap_typedescr=>typekind_decfloat34
+          OR cl_abap_typedescr=>typekind_int
+          OR cl_abap_typedescr=>typekind_int1
+          OR cl_abap_typedescr=>typekind_int2
+          OR cl_abap_typedescr=>typekind_int8
+          OR cl_abap_typedescr=>typekind_intf
+          OR cl_abap_typedescr=>typekind_num
+          OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed.
 
           REPLACE '.' IN lv_tmp_data WITH ','.
@@ -411,6 +428,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     DATA(lv_tmp_string) = x_str_data.
     LOOP AT lo_structdescr->components ASSIGNING FIELD-SYMBOL(<component>).
 
+      CHECK <component>-name NE 'MANDT'.
+
       ASSIGN COMPONENT <component>-name OF STRUCTURE <sap_data> TO FIELD-SYMBOL(<value>).
 
       CASE <component>-type_kind.
@@ -418,6 +437,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_decfloat
           OR cl_abap_typedescr=>typekind_decfloat16
           OR cl_abap_typedescr=>typekind_decfloat34
+          OR cl_abap_typedescr=>typekind_int
+          OR cl_abap_typedescr=>typekind_int1
+          OR cl_abap_typedescr=>typekind_int2
+          OR cl_abap_typedescr=>typekind_int8
+          OR cl_abap_typedescr=>typekind_intf
+          OR cl_abap_typedescr=>typekind_num
+          OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed
           OR cl_abap_typedescr=>typekind_date
           OR cl_abap_typedescr=>typekind_time
@@ -446,6 +472,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_decfloat
           OR cl_abap_typedescr=>typekind_decfloat16
           OR cl_abap_typedescr=>typekind_decfloat34
+          OR cl_abap_typedescr=>typekind_int
+          OR cl_abap_typedescr=>typekind_int1
+          OR cl_abap_typedescr=>typekind_int2
+          OR cl_abap_typedescr=>typekind_int8
+          OR cl_abap_typedescr=>typekind_intf
+          OR cl_abap_typedescr=>typekind_num
+          OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed.
 
           REPLACE ALL OCCURRENCES OF '.' IN lv_sx WITH ''.
@@ -1113,9 +1146,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "Insert a new sheet with input name
 
+    DATA(lv_sheet_name) = |{ sy-repid(10) }|.
+
     GET PROPERTY OF go_application 'Sheets' = go_sheet.
     CALL METHOD OF go_sheet 'Add' = go_worksheet.
-    SET PROPERTY OF go_worksheet 'Name' = sy-repid.
+    SET PROPERTY OF go_worksheet 'Name' = lv_sheet_name.
     GET PROPERTY OF go_application 'ACTIVESHEET' = go_worksheet.
 
   ENDMETHOD.
@@ -1175,7 +1210,14 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "Paste clipboard from cell A1
     CALL METHOD OF go_cell 'select'.
+    IF sy-subrc <> 0.
+
+    ENDIF.
+
     CALL METHOD OF go_worksheet 'paste'.
+    IF sy-subrc <> 0.
+
+    ENDIF.
 
   ENDMETHOD.
 
@@ -1425,7 +1467,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD UPLOAD.
+  METHOD upload.
 
     DATA: lt_str_data TYPE string_table.
 
@@ -1452,10 +1494,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
       upload_excel_local(
         EXPORTING
+          x_header          = x_header
           x_filename        = x_filename
           xo_structdescr    = lo_structdescr
         IMPORTING
-          yt_str_data       = lt_str_data[]
+          yt_sap_data       = yt_sap_data[]
       ).
 
     ELSEIF x_filename CP '*.csv'.
@@ -1491,29 +1534,32 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
       ENDCASE.
 
+
+      "Conversion in SAP Format
+      "-------------------------------------------------
+      CHECK lt_str_data IS NOT INITIAL.
+      IF x_header EQ 'X'.
+        DELETE lt_str_data INDEX 1.
+      ENDIF.
+
+      LOOP AT lt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
+
+        APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<data_sap>).
+        conv_string_to_sap(
+          EXPORTING
+            x_str_data        = <data_str>
+            xo_structdescr    = lo_structdescr
+          IMPORTING
+            y_sap_data        = <data_sap>
+          ).
+
+      ENDLOOP.
+
     ELSE.
       RAISE not_supported_file.
     ENDIF.
 
-    "Conversion in SAP Format
-    "-------------------------------------------------
-    CHECK lt_str_data IS NOT INITIAL.
-    IF x_header EQ 'X'.
-      DELETE lt_str_data INDEX 1.
-    ENDIF.
 
-    LOOP AT lt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
-
-      APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<data_sap>).
-      conv_string_to_sap(
-        EXPORTING
-          x_str_data        = <data_str>
-          xo_structdescr    = lo_structdescr
-        IMPORTING
-          y_sap_data        = <data_sap>
-        ).
-
-    ENDLOOP.
 
   ENDMETHOD.
 
@@ -1582,12 +1628,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * <SIGNATURE>---------------------------------------------------------------------------------------+
 * | Static Private Method ZAG_CL_CSV_XLSX=>UPLOAD_EXCEL_LOCAL
 * +-------------------------------------------------------------------------------------------------+
+* | [--->] X_HEADER                       TYPE        XFELD(optional)
 * | [--->] X_FILENAME                     TYPE        STRING
 * | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
-* | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
+* | [<---] YT_SAP_DATA                    TYPE        TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD UPLOAD_EXCEL_LOCAL.
+  METHOD upload_excel_local.
 
     DATA: lv_except_msg    TYPE string,
           lv_tmp_data      TYPE string,
@@ -1600,7 +1647,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "-------------------------------------------------
 
-    REFRESH: yt_str_data[].
+    REFRESH: yt_sap_data[].
 
     "Read in binary the excel
     "-------------------------------------------------
@@ -1659,18 +1706,42 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       DATA(lcl_data_ref) = lcl_excel_ref->if_fdt_doc_spreadsheet~get_itab_from_worksheet( <woksheetname> ).
       ASSIGN lcl_data_ref->* TO <t_excel_data>.
 
+      IF x_header EQ 'X'.
+        DELETE <t_excel_data> INDEX 1.
+      ENDIF.
 
       "Convert excel format into string table with columns separated by ; like in CSV
       "-------------------------------------------------
       LOOP AT <t_excel_data> ASSIGNING FIELD-SYMBOL(<excel>).
-        APPEND INITIAL LINE TO yt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
 
-        conv_sap_to_string(
+        get_compdescr_from_data(
           EXPORTING
-            xo_structdescr = xo_structdescr
-            x_sap_data     = <excel>
+            xs_sap_line             = <excel>
           IMPORTING
-            y_str_data     = <str_data>
+            yo_structdescr          = DATA(lo_tmp_structdescr)
+          EXCEPTIONS
+            unable_define_structure = 1
+            others                  = 2
+        ).
+
+        lv_tmp_data = ''.
+        LOOP AT lo_tmp_structdescr->components ASSIGNING FIELD-SYMBOL(<comp>).
+          ASSIGN COMPONENT <comp>-name OF STRUCTURE <excel> TO FIELD-SYMBOL(<excel_col>).
+          IF lv_tmp_data IS INITIAL.
+            lv_tmp_data = <excel_col>.
+          ELSE.
+            lv_tmp_data = |{ lv_tmp_data };{ <excel_col> }|.
+          ENDIF.
+        ENDLOOP.
+
+        APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<sap_data>).
+
+        conv_string_to_sap(
+          EXPORTING
+            x_str_data     = lv_tmp_data
+            xo_structdescr = xo_structdescr
+          IMPORTING
+            y_sap_data     = <sap_data>
         ).
 
       ENDLOOP.
