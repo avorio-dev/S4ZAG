@@ -1,4 +1,72 @@
 **********************************************************************
+"ZAG_CL_SEND_MAIL_BCS - EXAMPLE
+**********************************************************************
+  DATA: lt_recipients TYPE zag_cl_send_mail_bcs=>tt_recipients,
+        lt_attch      TYPE zag_cl_send_mail_bcs=>tt_bcs_attch.
+
+  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
+
+  zag_cl_csv_xlsx=>get_compdescr_from_data(
+    EXPORTING
+      xt_sap_table            = lt_sflight
+    IMPORTING
+      yo_structdescr          = DATA(lo_structdescr)
+    EXCEPTIONS
+      unable_define_structure = 1
+      OTHERS                  = 2
+  ).
+
+  APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
+  APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
+
+  zag_cl_csv_xlsx=>get_header_from_data(
+    EXPORTING
+      xt_sap_table  = lt_sflight
+    CHANGING
+      y_str_header  = <csv_line>
+  ).
+
+  LOOP AT lt_sflight ASSIGNING FIELD-SYMBOL(<sflight>).
+
+    APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING <csv_line>.
+
+    zag_cl_csv_xlsx=>conv_sap_to_string(
+      EXPORTING
+        xo_structdescr = lo_structdescr
+        x_sap_data     = <sflight>
+      IMPORTING
+        y_str_data     = <csv_line>
+    ).
+
+  ENDLOOP.
+
+  APPEND INITIAL LINE TO lt_recipients ASSIGNING FIELD-SYMBOL(<recipient>).
+  <recipient>-smtp_addr = 'antonio.garofalo@finconsgroup.com'.
+
+  zag_cl_send_mail_bcs=>send_mail_bcs(
+    EXPORTING
+      x_sender         = sy-uname
+      xt_recipients    = lt_recipients
+      x_mail_obj       = 'ZAG Mail'
+      x_mail_body_str  = 'This is a mail generated with ZAG Library'
+*      x_mail_body_so10 =
+      xt_attch         = lt_attch
+    IMPORTING
+      y_error_msg      = DATA(lv_error_msg)
+    EXCEPTIONS
+      request_error    = 1
+      sender_error     = 2
+      recipient_error  = 3
+      body_error       = 4
+      attachment_error = 5
+      OTHERS           = 6
+  ).
+  IF sy-subrc <> 0.
+    WRITE lv_error_msg.
+  ENDIF.
+
+
+**********************************************************************
 "ZAG_CL_CSV_XLSX - EXAMPLE
 **********************************************************************
   SELECT * FROM SFLIGHT UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
