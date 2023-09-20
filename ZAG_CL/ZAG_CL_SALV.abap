@@ -1,80 +1,80 @@
-class ZAG_CL_SALV definition
-  public
-  final
-  create public .
+CLASS zag_cl_salv DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ty_col_settings,
+    TYPES:
+      BEGIN OF ty_col_settings,
         fieldname TYPE lvc_s_fcat-fieldname,
         label     TYPE string,
         hotspot   TYPE flag,
       END OF ty_col_settings .
-  types:
-    tt_col_settings TYPE TABLE OF ty_col_settings .
+    TYPES:
+      tt_col_settings TYPE TABLE OF ty_col_settings .
 
-  constants C_ICON_GREEN type ICON_D value '@5B@' ##NO_TEXT.
-  constants C_ICON_RED type ICON_D value '@5C@' ##NO_TEXT.
-  constants C_ICON_YELL type ICON_D value '@5D@' ##NO_TEXT.
-  constants C_ICON_INFO type ICON_D value '@0S@' ##NO_TEXT.
-  constants C_ICON_MISS type ICON_D value '@D7@' ##NO_TEXT.
-  constants C_ICON_EXEC type ICON_D value '@15@' ##NO_TEXT.
-  constants C_ICON_REFR type ICON_D value '@42@' ##NO_TEXT.
-  constants C_ICON_SAVE type ICON_D value '@2L@' ##NO_TEXT.
-  constants C_CELL_COL_GREEN type LVC_COL value '5' ##NO_TEXT.
-  constants C_CELL_COL_YELL type LVC_COL value '3' ##NO_TEXT.
-  constants C_CELL_COL_RED type LVC_COL value '6' ##NO_TEXT.
-  constants C_CELL_COL_ORAN type LVC_COL value '7' ##NO_TEXT.
-  constants C_CELL_COL_NULL type LVC_COL value '2' ##NO_TEXT.
-  constants C_COL_FIELDNAME type LVC_FNAME value 'T_COL' ##NO_TEXT.
+    CONSTANTS c_icon_green TYPE icon_d VALUE '@5B@' ##NO_TEXT.
+    CONSTANTS c_icon_red TYPE icon_d VALUE '@5C@' ##NO_TEXT.
+    CONSTANTS c_icon_yell TYPE icon_d VALUE '@5D@' ##NO_TEXT.
+    CONSTANTS c_icon_info TYPE icon_d VALUE '@0S@' ##NO_TEXT.
+    CONSTANTS c_icon_miss TYPE icon_d VALUE '@D7@' ##NO_TEXT.
+    CONSTANTS c_icon_exec TYPE icon_d VALUE '@15@' ##NO_TEXT.
+    CONSTANTS c_icon_refr TYPE icon_d VALUE '@42@' ##NO_TEXT.
+    CONSTANTS c_icon_save TYPE icon_d VALUE '@2L@' ##NO_TEXT.
+    CONSTANTS c_cell_col_green TYPE lvc_col VALUE '5' ##NO_TEXT.
+    CONSTANTS c_cell_col_yell TYPE lvc_col VALUE '3' ##NO_TEXT.
+    CONSTANTS c_cell_col_red TYPE lvc_col VALUE '6' ##NO_TEXT.
+    CONSTANTS c_cell_col_oran TYPE lvc_col VALUE '7' ##NO_TEXT.
+    CONSTANTS c_cell_col_null TYPE lvc_col VALUE '2' ##NO_TEXT.
+    CONSTANTS c_col_fieldname TYPE lvc_fname VALUE 'T_COL' ##NO_TEXT.
 
-  methods CONSTRUCTOR
-    importing
-      !XT_TABLE type ANY TABLE .
-  methods DISPLAY_GENERIC_ALV
-    importing
-      !X_POPUP type BOOLEAN default ABAP_FALSE
-      !XT_COL_SETTINGS type TT_COL_SETTINGS optional
-      !XT_OUTPUT type STANDARD TABLE .
-  methods DISPLAY_TRANSPOSED_ROW
-    importing
-      !X_POPUP type FLAG default ABAP_TRUE
-      !X_ROW type ANY
-    exporting
-      !YT_TRANSPOSED type STANDARD TABLE .
-  methods SET_COLOR_CELL
-    importing
-      !X_COLOR type LVC_COL
-      !X_FIELDNAME type FIELDNAME
-    changing
-      !Y_ROW type ANY
-    exceptions
-      COL_TAB_NOT_FOUND
-      FIELDNAME_NOT_FOUND .
-  methods SET_COLOR_ROW
-    importing
-      !X_COLOR type LVC_COL
-    changing
-      !Y_ROW type ANY
-    exceptions
-      COL_TAB_NOT_FOUND .
-  methods GET_FIELDCAT
-    exporting
-      !YT_FCAT type LVC_T_FCAT .
-private section.
+    METHODS constructor
+      IMPORTING
+        !xt_table TYPE ANY TABLE .
+    METHODS display_generic_alv
+      IMPORTING
+        !x_popup         TYPE boolean DEFAULT abap_false
+        !xt_col_settings TYPE tt_col_settings OPTIONAL
+        !xt_output       TYPE STANDARD TABLE .
+    METHODS display_transposed_row
+      IMPORTING
+        !x_popup       TYPE flag DEFAULT abap_true
+        !x_row         TYPE any
+      EXPORTING
+        !yt_transposed TYPE STANDARD TABLE .
+    METHODS set_color_cell
+      IMPORTING
+        !x_color     TYPE lvc_col
+        !x_fieldname TYPE fieldname
+      CHANGING
+        !y_row       TYPE any
+      EXCEPTIONS
+        col_tab_not_found
+        fieldname_not_found .
+    METHODS set_color_row
+      IMPORTING
+        !x_color TYPE lvc_col
+      CHANGING
+        !y_row   TYPE any
+      EXCEPTIONS
+        col_tab_not_found .
+    METHODS get_fieldcat
+      EXPORTING
+        !yt_fcat TYPE lvc_t_fcat .
+  PRIVATE SECTION.
 
-  data GT_FCAT type LVC_T_FCAT .
+    DATA gt_fcat TYPE lvc_t_fcat .
 
-  methods SET_FIELDCAT
-    importing
-      !XT_TABLE type STANDARD TABLE .
-  methods SET_SALV_TEXT_COLUMN
-    importing
-      !X_FIELDNAME type FIELDNAME
-      !X_LABEL type STRING
-    changing
-      !YO_COLUMN type ref to CL_SALV_COLUMN_TABLE .
+    METHODS set_fieldcat
+      IMPORTING
+        !xt_table TYPE STANDARD TABLE .
+    METHODS set_salv_text_column
+      IMPORTING
+        !x_fieldname TYPE fieldname
+        !x_label     TYPE string
+      CHANGING
+        !yo_column   TYPE REF TO cl_salv_column_table .
 ENDCLASS.
 
 
