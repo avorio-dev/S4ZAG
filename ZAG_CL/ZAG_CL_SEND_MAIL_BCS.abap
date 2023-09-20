@@ -1,126 +1,126 @@
-class ZAG_CL_SEND_MAIL_BCS definition
-  public
-  final
-  create public .
+CLASS zag_cl_send_mail_bcs DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ty_bcs_attch,
+    TYPES:
+      BEGIN OF ty_bcs_attch,
         subject   TYPE string,
         data_csv  TYPE string_table,
         data_xlsx TYPE xstring,
         data_pdf  TYPE xstring,
       END OF ty_bcs_attch .
-  types:
-    tt_bcs_attch TYPE TABLE OF ty_bcs_attch .
-  types:
-    BEGIN OF ty_coltxt,
+    TYPES:
+      tt_bcs_attch TYPE TABLE OF ty_bcs_attch .
+    TYPES:
+      BEGIN OF ty_coltxt,
         fieldname TYPE lvc_s_fcat-fieldname,
         coltext   TYPE string,
       END OF ty_coltxt .
-  types:
-    BEGIN OF ty_stdtxt_subs,
+    TYPES:
+      BEGIN OF ty_stdtxt_subs,
         varname TYPE string,
         value   TYPE string,
       END OF ty_stdtxt_subs .
-  types:
-    BEGIN OF ty_recipients,
-      smtp_addr TYPE adr6-smtp_addr,
-      copy      TYPE flag,
-    END OF ty_recipients .
-  types:
-    tt_hrrange    TYPE TABLE OF hrrange .
-  types:
-    tt_recipients  TYPE TABLE OF ty_recipients .
-  types:
-    tt_coltxt  TYPE TABLE OF ty_coltxt .
-  types:
-    tt_stdtxt_subs TYPE STANDARD TABLE OF ty_stdtxt_subs WITH NON-UNIQUE KEY varname .
-  types:
-    tt_string TYPE TABLE OF string .
-  types:
-    BEGIN OF ty_stdtxt,
-             name          TYPE thead-tdname,
-             substitutions TYPE tt_stdtxt_subs,
-           END OF ty_stdtxt .
+    TYPES:
+      BEGIN OF ty_recipients,
+        smtp_addr TYPE adr6-smtp_addr,
+        copy      TYPE flag,
+      END OF ty_recipients .
+    TYPES:
+      tt_hrrange    TYPE TABLE OF hrrange .
+    TYPES:
+      tt_recipients  TYPE TABLE OF ty_recipients .
+    TYPES:
+      tt_coltxt  TYPE TABLE OF ty_coltxt .
+    TYPES:
+      tt_stdtxt_subs TYPE STANDARD TABLE OF ty_stdtxt_subs WITH NON-UNIQUE KEY varname .
+    TYPES:
+      tt_string TYPE TABLE OF string .
+    TYPES:
+      BEGIN OF ty_stdtxt,
+        name          TYPE thead-tdname,
+        substitutions TYPE tt_stdtxt_subs,
+      END OF ty_stdtxt .
 
-  constants C_LOCAL type CHAR4 value 'LOCL' ##NO_TEXT.
-  constants C_SERVER type CHAR4 value 'SERV' ##NO_TEXT.
-  constants C_ATTCH_CSV type SOODK-OBJTP value 'CSV' ##NO_TEXT.
-  constants C_ATTCH_RAW type SOODK-OBJTP value 'RAW' ##NO_TEXT.
-  constants C_ATTCH_PDF type SOODK-OBJTP value 'PDF' ##NO_TEXT.
-  constants C_ATTCH_BIN type SOODK-OBJTP value 'BIN' ##NO_TEXT.
-  constants C_ATTCH_XLSX type SOODK-OBJTP value 'XLSX' ##NO_TEXT.
+    CONSTANTS c_local TYPE char4 VALUE 'LOCL' ##NO_TEXT.
+    CONSTANTS c_server TYPE char4 VALUE 'SERV' ##NO_TEXT.
+    CONSTANTS c_attch_csv TYPE soodk-objtp VALUE 'CSV' ##NO_TEXT.
+    CONSTANTS c_attch_raw TYPE soodk-objtp VALUE 'RAW' ##NO_TEXT.
+    CONSTANTS c_attch_pdf TYPE soodk-objtp VALUE 'PDF' ##NO_TEXT.
+    CONSTANTS c_attch_bin TYPE soodk-objtp VALUE 'BIN' ##NO_TEXT.
+    CONSTANTS c_attch_xlsx TYPE soodk-objtp VALUE 'XLSX' ##NO_TEXT.
 
-  class-methods SEND_MAIL_BCS
-    importing
-      !X_SENDER type SYST_UNAME default SY-UNAME
-      !XT_RECIPIENTS type TT_RECIPIENTS
-      !X_MAIL_OBJ type SO_OBJ_DES
-      !X_MAIL_BODY_STR type STRING optional
-      !X_MAIL_BODY_SO10 type TY_STDTXT optional
-      !XT_ATTCH type TT_BCS_ATTCH optional
-    exporting
-      !Y_ERROR_MSG type STRING
-    exceptions
-      REQUEST_ERROR
-      SENDER_ERROR
-      RECIPIENT_ERROR
-      BODY_ERROR
-      ATTACHMENT_ERROR .
-protected section.
-private section.
+    CLASS-METHODS send_mail_bcs
+      IMPORTING
+        !x_sender         TYPE syst_uname DEFAULT sy-uname
+        !xt_recipients    TYPE tt_recipients
+        !x_mail_obj       TYPE so_obj_des
+        !x_mail_body_str  TYPE string OPTIONAL
+        !x_mail_body_so10 TYPE ty_stdtxt OPTIONAL
+        !xt_attch         TYPE tt_bcs_attch OPTIONAL
+      EXPORTING
+        !y_error_msg      TYPE string
+      EXCEPTIONS
+        request_error
+        sender_error
+        recipient_error
+        body_error
+        attachment_error .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-  class-methods FILL_FROM_SO10
-    importing
-      !X_STDTXT_NAME type THEAD-TDNAME
-      !XT_STDTXT_SUBS type TT_STDTXT_SUBS optional
-    exporting
-      !YT_LINES type BCSY_TEXT
-      !Y_ERROR_MSG type STRING
-    exceptions
-      SO10_READING_FAULT .
-  class-methods BCS_FILL_ATTACHMENT
-    importing
-      !XT_ATTCH type TT_BCS_ATTCH optional
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
-    exceptions
-      ATTACHMENT_ERROR .
-  class-methods BCS_FILL_BODY
-    importing
-      !X_MAIL_OBJ type SO_OBJ_DES
-      !X_MAIL_BODY_STR type STRING optional
-      !X_MAIL_BODY_SO10 type TY_STDTXT optional
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
-    exceptions
-      BODY_ERROR .
-  class-methods BCS_SET_RECIPIENT
-    importing
-      !XT_RECIPIENTS type TT_RECIPIENTS
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-    exceptions
-      RECIPIENT_ERROR .
-  class-methods BCS_SET_SENDER
-    importing
-      !X_SENDER type SY-UNAME
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-    exceptions
-      SENDER_ERROR .
+    CLASS-METHODS fill_from_so10
+      IMPORTING
+        !x_stdtxt_name  TYPE thead-tdname
+        !xt_stdtxt_subs TYPE tt_stdtxt_subs OPTIONAL
+      EXPORTING
+        !yt_lines       TYPE bcsy_text
+        !y_error_msg    TYPE string
+      EXCEPTIONS
+        so10_reading_fault .
+    CLASS-METHODS bcs_fill_attachment
+      IMPORTING
+        !xt_attch        TYPE tt_bcs_attch OPTIONAL
+      EXPORTING
+        !y_error_msg     TYPE string
+      CHANGING
+        !yo_send_request TYPE REF TO cl_bcs
+        !yo_document     TYPE REF TO cl_document_bcs
+      EXCEPTIONS
+        attachment_error .
+    CLASS-METHODS bcs_fill_body
+      IMPORTING
+        !x_mail_obj       TYPE so_obj_des
+        !x_mail_body_str  TYPE string OPTIONAL
+        !x_mail_body_so10 TYPE ty_stdtxt OPTIONAL
+      EXPORTING
+        !y_error_msg      TYPE string
+      CHANGING
+        !yo_send_request  TYPE REF TO cl_bcs
+        !yo_document      TYPE REF TO cl_document_bcs
+      EXCEPTIONS
+        body_error .
+    CLASS-METHODS bcs_set_recipient
+      IMPORTING
+        !xt_recipients   TYPE tt_recipients
+      EXPORTING
+        !y_error_msg     TYPE string
+      CHANGING
+        !yo_send_request TYPE REF TO cl_bcs
+      EXCEPTIONS
+        recipient_error .
+    CLASS-METHODS bcs_set_sender
+      IMPORTING
+        !x_sender        TYPE sy-uname
+      EXPORTING
+        !y_error_msg     TYPE string
+      CHANGING
+        !yo_send_request TYPE REF TO cl_bcs
+      EXCEPTIONS
+        sender_error .
 ENDCLASS.
 
 
