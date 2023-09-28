@@ -1,229 +1,229 @@
-CLASS zag_cl_csv_xlsx DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC .
+class ZAG_CL_CSV_XLSX definition
+  public
+  final
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    TYPES:
-      BEGIN OF ty_char_data,
+  types:
+    BEGIN OF ty_char_data,
         text(1500),
       END OF ty_char_data .
-    TYPES:
-      tt_char_table TYPE TABLE OF ty_char_data-text .
+  types:
+    tt_char_table TYPE TABLE OF ty_char_data-text .
 
-    CONSTANTS c_cr_lf TYPE abap_cr_lf VALUE %_cr_lf ##NO_TEXT.
-    CONSTANTS c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT.
-    CONSTANTS c_max_data TYPE datum VALUE '99991231' ##NO_TEXT.
-    CONSTANTS c_separator_horizontal_tab TYPE abap_char1 VALUE %_horizontal_tab ##NO_TEXT.
-    CONSTANTS c_separator_semicolon TYPE char1 VALUE ';' ##NO_TEXT.
-    CONSTANTS c_source_local TYPE char1 VALUE 'L' ##NO_TEXT.
-    CONSTANTS c_source_server TYPE char1 VALUE 'S' ##NO_TEXT.
-    CONSTANTS c_xls_black TYPE i VALUE 0 ##NO_TEXT.
-    CONSTANTS c_xls_blue TYPE i VALUE 15773440 ##NO_TEXT.
-    CONSTANTS c_xls_green TYPE i VALUE 13496520 ##NO_TEXT.
-    CONSTANTS c_xls_navy TYPE i VALUE 6562560 ##NO_TEXT.
-    CONSTANTS c_xls_red TYPE i VALUE 13486335 ##NO_TEXT.
-    CONSTANTS c_xls_white TYPE i VALUE 16777215 ##NO_TEXT.
-    CONSTANTS c_xls_yell TYPE i VALUE 2992895 ##NO_TEXT.
+  constants C_CR_LF type ABAP_CR_LF value %_CR_LF ##NO_TEXT.
+  constants C_INITIAL_DATA type DATUM value '00000000' ##NO_TEXT.
+  constants C_MAX_DATA type DATUM value '99991231' ##NO_TEXT.
+  constants C_SEPARATOR_HORIZONTAL_TAB type ABAP_CHAR1 value %_HORIZONTAL_TAB ##NO_TEXT.
+  constants C_SEPARATOR_SEMICOLON type CHAR1 value ';' ##NO_TEXT.
+  constants C_SOURCE_LOCAL type CHAR1 value 'L' ##NO_TEXT.
+  constants C_SOURCE_SERVER type CHAR1 value 'S' ##NO_TEXT.
+  constants C_XLS_BLACK type I value 0 ##NO_TEXT.
+  constants C_XLS_BLUE type I value 15773440 ##NO_TEXT.
+  constants C_XLS_GREEN type I value 13496520 ##NO_TEXT.
+  constants C_XLS_NAVY type I value 6562560 ##NO_TEXT.
+  constants C_XLS_RED type I value 13486335 ##NO_TEXT.
+  constants C_XLS_WHITE type I value 16777215 ##NO_TEXT.
+  constants C_XLS_YELL type I value 2992895 ##NO_TEXT.
 
-    CLASS-METHODS conv_sap_to_string
-      IMPORTING
-        !xo_structdescr TYPE REF TO cl_abap_structdescr OPTIONAL
-        !x_sap_data     TYPE any
-        !x_separator    TYPE char1 DEFAULT c_separator_semicolon
-      EXPORTING
-        !y_str_data     TYPE string .
-    CLASS-METHODS conv_string_to_sap
-      IMPORTING
-        !x_str_data     TYPE string
-        !xo_structdescr TYPE REF TO cl_abap_structdescr OPTIONAL
-      EXPORTING
-        !y_sap_data     TYPE any .
-    CLASS-METHODS download
-      IMPORTING
-        !x_filename  TYPE string
-        !x_header    TYPE xfeld DEFAULT 'X'
-        !xt_sap_data TYPE table
-        !x_source    TYPE char1 DEFAULT 'L'
-      EXCEPTIONS
-        not_supported_file
-        unable_open_path
-        unable_define_structure .
-    CLASS-METHODS f4_help_dir_input
-      IMPORTING
-        !x_source     TYPE char4 DEFAULT 'LOCL'
-      EXPORTING
-        !y_path_input TYPE string .
-    CLASS-METHODS f4_help_dir_output
-      IMPORTING
-        !x_source      TYPE char4 DEFAULT 'LOCL'
-      EXPORTING
-        !y_path_output TYPE string .
-    CLASS-METHODS get_compdescr_from_data
-      IMPORTING
-        !xs_sap_line    TYPE any OPTIONAL
-        !xt_sap_table   TYPE table OPTIONAL
-      EXPORTING
-        !yo_structdescr TYPE REF TO cl_abap_structdescr
-      EXCEPTIONS
-        unable_define_structure .
-    CLASS-METHODS get_desktop_directory
-      RETURNING
-        VALUE(y_desktop_dir) TYPE string .
-    CLASS-METHODS get_fieldcat_from_itab
-      IMPORTING
-        !xt_itab TYPE STANDARD TABLE
-      EXPORTING
-        !yt_fcat TYPE lvc_t_fcat .
-    CLASS-METHODS get_header_from_data
-      IMPORTING
-        !xs_sap_line  TYPE any OPTIONAL
-        !xt_sap_table TYPE table OPTIONAL
-      CHANGING
-        !y_str_header TYPE string
-      EXCEPTIONS
-        unable_define_structure .
-    CLASS-METHODS remove_special_char
-      CHANGING
-        !y_text TYPE string .
-    CLASS-METHODS upload
-      IMPORTING
-        !x_filename  TYPE string
-        !x_header    TYPE xfeld DEFAULT 'X'
-        !x_source    TYPE char1 DEFAULT 'L'
-      EXPORTING
-        !yt_sap_data TYPE table
-      EXCEPTIONS
-        not_supported_file
-        unable_open_path
-        unable_define_structure
-        empty_file .
-  PROTECTED SECTION.
-  PRIVATE SECTION.
+  class-methods CONV_SAP_TO_STRING
+    importing
+      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR optional
+      !X_SAP_DATA type ANY
+      !X_SEPARATOR type CHAR1 default C_SEPARATOR_SEMICOLON
+    exporting
+      !Y_STR_DATA type STRING .
+  class-methods CONV_STRING_TO_SAP
+    importing
+      !X_STR_DATA type STRING
+      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR optional
+    exporting
+      !Y_SAP_DATA type ANY .
+  class-methods DOWNLOAD
+    importing
+      !X_FILENAME type STRING
+      !X_HEADER type XFELD default 'X'
+      !XT_SAP_DATA type TABLE
+      !X_SOURCE type CHAR1 default 'L'
+    exceptions
+      NOT_SUPPORTED_FILE
+      UNABLE_OPEN_PATH
+      UNABLE_DEFINE_STRUCTURE .
+  class-methods F4_HELP_DIR_INPUT
+    importing
+      !X_SOURCE type CHAR4 default 'LOCL'
+    exporting
+      !Y_PATH_INPUT type STRING .
+  class-methods F4_HELP_DIR_OUTPUT
+    importing
+      !X_SOURCE type CHAR4 default 'LOCL'
+    exporting
+      !Y_PATH_OUTPUT type STRING .
+  class-methods GET_COMPDESCR_FROM_DATA
+    importing
+      !XS_SAP_LINE type ANY optional
+      !XT_SAP_TABLE type TABLE optional
+    exporting
+      !YO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
+    exceptions
+      UNABLE_DEFINE_STRUCTURE .
+  class-methods GET_DESKTOP_DIRECTORY
+    returning
+      value(Y_DESKTOP_DIR) type STRING .
+  class-methods GET_FIELDCAT_FROM_ITAB
+    importing
+      !XT_ITAB type STANDARD TABLE
+    exporting
+      !YT_FCAT type LVC_T_FCAT .
+  class-methods GET_HEADER_FROM_DATA
+    importing
+      !XS_SAP_LINE type ANY optional
+      !XT_SAP_TABLE type TABLE optional
+    changing
+      !Y_STR_HEADER type STRING
+    exceptions
+      UNABLE_DEFINE_STRUCTURE .
+  class-methods REMOVE_SPECIAL_CHAR
+    changing
+      !Y_TEXT type STRING .
+  class-methods UPLOAD
+    importing
+      !X_FILENAME type STRING
+      !X_HEADER type XFELD default 'X'
+      !X_SOURCE type CHAR1 default 'L'
+    exporting
+      !YT_SAP_DATA type TABLE
+    exceptions
+      NOT_SUPPORTED_FILE
+      UNABLE_OPEN_PATH
+      UNABLE_DEFINE_STRUCTURE
+      EMPTY_FILE .
+protected section.
+private section.
 
-    DATA go_application TYPE ole2_object .
-    DATA go_borders TYPE ole2_object .
-    DATA go_cell TYPE ole2_object .
-    DATA go_cellend TYPE ole2_object .
-    DATA go_cellstart TYPE ole2_object .
-    DATA go_column TYPE ole2_object .
-    DATA go_font TYPE ole2_object .
-    DATA go_interior TYPE ole2_object .
-    DATA go_range TYPE ole2_object .
-    DATA go_sheet TYPE ole2_object .
-    DATA go_workbook TYPE ole2_object .
-    DATA go_workbooks TYPE ole2_object .
-    DATA go_worksheet TYPE ole2_object .
-    DATA go_worksheets TYPE ole2_object .
+  data GO_APPLICATION type OLE2_OBJECT .
+  data GO_BORDERS type OLE2_OBJECT .
+  data GO_CELL type OLE2_OBJECT .
+  data GO_CELLEND type OLE2_OBJECT .
+  data GO_CELLSTART type OLE2_OBJECT .
+  data GO_COLUMN type OLE2_OBJECT .
+  data GO_FONT type OLE2_OBJECT .
+  data GO_INTERIOR type OLE2_OBJECT .
+  data GO_RANGE type OLE2_OBJECT .
+  data GO_SHEET type OLE2_OBJECT .
+  data GO_WORKBOOK type OLE2_OBJECT .
+  data GO_WORKBOOKS type OLE2_OBJECT .
+  data GO_WORKSHEET type OLE2_OBJECT .
+  data GO_WORKSHEETS type OLE2_OBJECT .
 
-    CLASS-METHODS conv_data_to_ext
-      IMPORTING
-        !x_data_int  TYPE dats
-        !x_separator TYPE c DEFAULT '/'
-      EXPORTING
-        !y_data_ext  TYPE string .
-    CLASS-METHODS conv_data_to_int
-      IMPORTING
-        !x_data_ext TYPE string
-      EXPORTING
-        !y_data_int TYPE dats .
-    CLASS-METHODS conv_time_to_ext
-      IMPORTING
-        !x_time TYPE uzeit
-      EXPORTING
-        !y_time TYPE string .
-    CLASS-METHODS conv_time_to_int
-      IMPORTING
-        !x_time TYPE string
-      EXPORTING
-        !y_time TYPE uzeit .
-    CLASS-METHODS download_csv_local
-      IMPORTING
-        !x_filename  TYPE string
-      CHANGING
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    CLASS-METHODS download_csv_server
-      IMPORTING
-        !x_filename  TYPE string
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    CLASS-METHODS download_excel_local
-      IMPORTING
-        !x_filename  TYPE string
-        !xt_fcat     TYPE lvc_t_fcat
-      CHANGING
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    CLASS-METHODS upload_csv_local
-      IMPORTING
-        !x_filename  TYPE string
-      EXPORTING
-        !yt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    CLASS-METHODS upload_csv_server
-      IMPORTING
-        !x_filename  TYPE string
-      EXPORTING
-        !yt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    CLASS-METHODS upload_excel_local
-      IMPORTING
-        !x_header       TYPE xfeld OPTIONAL
-        !x_filename     TYPE string
-        !xo_structdescr TYPE REF TO cl_abap_structdescr
-      EXPORTING
-        !yt_sap_data    TYPE table
-      EXCEPTIONS
-        unable_open_path
-        empty_file .
-    METHODS ole_add_sheet .
-    METHODS ole_clipboard_copy .
-    METHODS ole_clipboard_export
-      IMPORTING
-        !xt_str_data TYPE string_table .
-    METHODS ole_clipboard_paste
-      IMPORTING
-        !x_start_row TYPE i DEFAULT 1
-        !x_start_col TYPE i DEFAULT 1 .
-    METHODS ole_clipboard_paste_special .
-    METHODS ole_init_excel .
-    METHODS ole_save_excel
-      IMPORTING
-        !x_filename TYPE string
-      EXCEPTIONS
-        unable_open_path .
-    METHODS ole_set_active_sheet
-      IMPORTING
-        !x_sheet_number TYPE i DEFAULT 1 .
-    METHODS ole_set_currency_format .
-    METHODS ole_set_current_range
-      IMPORTING
-        !x_start_row TYPE i DEFAULT 1
-        !x_start_col TYPE i DEFAULT 1
-        !x_end_row   TYPE i DEFAULT 1
-        !x_end_col   TYPE i DEFAULT 1 .
-    METHODS ole_set_range_properties
-      IMPORTING
-        !x_background  TYPE i DEFAULT c_xls_white
-        !x_font_name   TYPE string DEFAULT 'Arial'
-        !x_size        TYPE i DEFAULT 12
-        !x_bold        TYPE i DEFAULT 0
-        !x_italic      TYPE i DEFAULT 0
-        !x_color       TYPE i DEFAULT c_xls_black
-        !x_underline   TYPE i DEFAULT 0
-        !x_set_borders TYPE i DEFAULT 0 .
+  class-methods CONV_DATA_TO_EXT
+    importing
+      !X_DATA_INT type DATS
+      !X_SEPARATOR type C default '/'
+    exporting
+      !Y_DATA_EXT type STRING .
+  class-methods CONV_DATA_TO_INT
+    importing
+      !X_DATA_EXT type STRING
+    exporting
+      !Y_DATA_INT type DATS .
+  class-methods CONV_TIME_TO_EXT
+    importing
+      !X_TIME type UZEIT
+    exporting
+      !Y_TIME type STRING .
+  class-methods CONV_TIME_TO_INT
+    importing
+      !X_TIME type STRING
+    exporting
+      !Y_TIME type UZEIT .
+  class-methods DOWNLOAD_CSV_LOCAL
+    importing
+      !X_FILENAME type STRING
+    changing
+      !XT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods DOWNLOAD_CSV_SERVER
+    importing
+      !X_FILENAME type STRING
+      !XT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods DOWNLOAD_EXCEL_LOCAL
+    importing
+      !X_FILENAME type STRING
+      !XT_FCAT type LVC_T_FCAT
+    changing
+      !XT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods UPLOAD_CSV_LOCAL
+    importing
+      !X_FILENAME type STRING
+    exporting
+      !YT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods UPLOAD_CSV_SERVER
+    importing
+      !X_FILENAME type STRING
+    exporting
+      !YT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods UPLOAD_EXCEL_LOCAL
+    importing
+      !X_HEADER type XFELD optional
+      !X_FILENAME type STRING
+      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
+    exporting
+      !YT_SAP_DATA type TABLE
+    exceptions
+      UNABLE_OPEN_PATH
+      EMPTY_FILE .
+  methods OLE_ADD_SHEET .
+  methods OLE_CLIPBOARD_COPY .
+  methods OLE_CLIPBOARD_EXPORT
+    importing
+      !XT_STR_DATA type STRING_TABLE .
+  methods OLE_CLIPBOARD_PASTE
+    importing
+      !X_START_ROW type I default 1
+      !X_START_COL type I default 1 .
+  methods OLE_CLIPBOARD_PASTE_SPECIAL .
+  methods OLE_INIT_EXCEL .
+  methods OLE_SAVE_EXCEL
+    importing
+      !X_FILENAME type STRING
+    exceptions
+      UNABLE_OPEN_PATH .
+  methods OLE_SET_ACTIVE_SHEET
+    importing
+      !X_SHEET_NUMBER type I default 1 .
+  methods OLE_SET_CURRENCY_FORMAT .
+  methods OLE_SET_CURRENT_RANGE
+    importing
+      !X_START_ROW type I default 1
+      !X_START_COL type I default 1
+      !X_END_ROW type I default 1
+      !X_END_COL type I default 1 .
+  methods OLE_SET_RANGE_PROPERTIES
+    importing
+      !X_BACKGROUND type I default C_XLS_WHITE
+      !X_FONT_NAME type STRING default 'Arial'
+      !X_SIZE type I default 12
+      !X_BOLD type I default 0
+      !X_ITALIC type I default 0
+      !X_COLOR type I default C_XLS_BLACK
+      !X_UNDERLINE type I default 0
+      !X_SET_BORDERS type I default 0 .
 ENDCLASS.
 
 
 
-CLASS zag_cl_csv_xlsx IMPLEMENTATION.
+CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
@@ -233,7 +233,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_SEPARATOR                    TYPE        C (default ='/')
 * | [<---] Y_DATA_EXT                     TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_data_to_ext.
+  METHOD CONV_DATA_TO_EXT.
 
     y_data_ext = |{ x_data_int+6(2) }{ x_separator }{ x_data_int+4(2) }{ x_separator }{ x_data_int(4) }|.
     CONDENSE y_data_ext NO-GAPS.
@@ -247,7 +247,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_DATA_EXT                     TYPE        STRING
 * | [<---] Y_DATA_INT                     TYPE        DATS
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_data_to_int.
+  METHOD CONV_DATA_TO_INT.
 
     y_data_int = c_initial_data.
 
@@ -265,7 +265,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_SEPARATOR                    TYPE        CHAR1 (default =C_SEPARATOR_SEMICOLON)
 * | [<---] Y_STR_DATA                     TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_sap_to_string.
+  METHOD CONV_SAP_TO_STRING.
 
     DATA: lo_structdescr TYPE REF TO cl_abap_structdescr,
           lv_sap_ref     TYPE REF TO data,
@@ -397,7 +397,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR(optional)
 * | [<---] Y_SAP_DATA                     TYPE        ANY
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_string_to_sap.
+  METHOD CONV_STRING_TO_SAP.
 
     DATA: lo_structdescr TYPE REF TO cl_abap_structdescr,
           lv_sap_ref     TYPE REF TO data.
@@ -543,7 +543,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_TIME                         TYPE        UZEIT
 * | [<---] Y_TIME                         TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_time_to_ext.
+  METHOD CONV_TIME_TO_EXT.
 
     y_time = |{ x_time(2) }:{ x_time+2(2) }:{ x_time+4(2) }|.
     CONDENSE y_time NO-GAPS.
@@ -557,7 +557,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_TIME                         TYPE        STRING
 * | [<---] Y_TIME                         TYPE        UZEIT
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD conv_time_to_int.
+  METHOD CONV_TIME_TO_INT.
 
     CHECK strlen( x_time ) EQ 8.
     y_time = |{ x_time(2) }{ x_time+3(2) }{ x_time+5(2) }|.
@@ -576,7 +576,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD download.
+  METHOD DOWNLOAD.
 
     DATA: lt_str_data TYPE string_table.
 
@@ -716,7 +716,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<-->] XT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD download_csv_local.
+  METHOD DOWNLOAD_CSV_LOCAL.
 
     CALL METHOD cl_gui_frontend_services=>gui_download
       EXPORTING
@@ -762,7 +762,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD download_csv_server.
+  METHOD DOWNLOAD_CSV_SERVER.
 
     OPEN DATASET x_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
     IF sy-subrc <> 0.
@@ -787,7 +787,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<-->] XT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD download_excel_local.
+  METHOD DOWNLOAD_EXCEL_LOCAL.
 
     DATA lv_tabix TYPE sy-tabix.
     DATA(lv_lines_fcat) = lines( xt_fcat ).
@@ -875,7 +875,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_SOURCE                       TYPE        CHAR4 (default ='LOCL')
 * | [<---] Y_PATH_INPUT                   TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD f4_help_dir_input.
+  METHOD F4_HELP_DIR_INPUT.
 
     DATA: lv_path TYPE string VALUE IS INITIAL.
 
@@ -945,7 +945,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_SOURCE                       TYPE        CHAR4 (default ='LOCL')
 * | [<---] Y_PATH_OUTPUT                  TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD f4_help_dir_output.
+  METHOD F4_HELP_DIR_OUTPUT.
 
     DATA: lv_path TYPE string VALUE IS INITIAL.
 
@@ -998,7 +998,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<---] YO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD get_compdescr_from_data.
+  METHOD GET_COMPDESCR_FROM_DATA.
 
     DATA: lref_sap_data TYPE REF TO data.
 
@@ -1031,7 +1031,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [<-()] Y_DESKTOP_DIR                  TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD get_desktop_directory.
+  METHOD GET_DESKTOP_DIRECTORY.
 
     y_desktop_dir = ''.
     CALL METHOD cl_gui_frontend_services=>get_desktop_directory
@@ -1055,7 +1055,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] XT_ITAB                        TYPE        STANDARD TABLE
 * | [<---] YT_FCAT                        TYPE        LVC_T_FCAT
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD get_fieldcat_from_itab.
+  METHOD GET_FIELDCAT_FROM_ITAB.
 
     DATA: lref_table TYPE REF TO data.
 
@@ -1090,7 +1090,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<-->] Y_STR_HEADER                   TYPE        STRING
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD get_header_from_data.
+  METHOD GET_HEADER_FROM_DATA.
 
     DATA: lref_sap_data TYPE REF TO data,
           lt_fcat       TYPE lvc_t_fcat.
@@ -1146,7 +1146,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX->OLE_ADD_SHEET
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_add_sheet.
+  METHOD OLE_ADD_SHEET.
 
     "Insert a new sheet with input name
 
@@ -1164,7 +1164,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX->OLE_CLIPBOARD_COPY
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_clipboard_copy.
+  METHOD OLE_CLIPBOARD_COPY.
 
     CALL METHOD OF go_range 'Copy'.
 
@@ -1176,7 +1176,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_clipboard_export.
+  METHOD OLE_CLIPBOARD_EXPORT.
 
     DATA(lv_rc) = 0.
 
@@ -1204,7 +1204,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_START_ROW                    TYPE        I (default =1)
 * | [--->] X_START_COL                    TYPE        I (default =1)
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_clipboard_paste.
+  METHOD OLE_CLIPBOARD_PASTE.
 
     "Select the cell a1
     CALL METHOD OF go_worksheet 'cells' = go_cell
@@ -1230,7 +1230,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX->OLE_CLIPBOARD_PASTE_SPECIAL
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_clipboard_paste_special.
+  METHOD OLE_CLIPBOARD_PASTE_SPECIAL.
 
     CALL METHOD OF go_range 'PasteSpecial'.
     GET PROPERTY OF go_range 'EntireColumn' = go_column.
@@ -1243,7 +1243,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX->OLE_INIT_EXCEL
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_init_excel.
+  METHOD OLE_INIT_EXCEL.
 
     CREATE OBJECT go_application 'Excel.Application'.
     SET PROPERTY OF go_application 'Visible' = 1.
@@ -1261,7 +1261,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_FILENAME                     TYPE        STRING
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_save_excel.
+  METHOD OLE_SAVE_EXCEL.
 
     DATA(lv_path) = CONV rlgrap-filename( x_filename ).
     DATA(lv_error) = abap_false.
@@ -1308,7 +1308,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_SHEET_NUMBER                 TYPE        I (default =1)
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_set_active_sheet.
+  METHOD OLE_SET_ACTIVE_SHEET.
 
     CALL METHOD OF go_application 'Worksheets' = go_worksheet
       EXPORTING #1 = x_sheet_number.
@@ -1321,7 +1321,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX->OLE_SET_CURRENCY_FORMAT
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_set_currency_format.
+  METHOD OLE_SET_CURRENCY_FORMAT.
 
     SET PROPERTY OF go_range 'NumberFormat' = '#,##0.00 $'.
 
@@ -1336,7 +1336,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_END_ROW                      TYPE        I (default =1)
 * | [--->] X_END_COL                      TYPE        I (default =1)
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_set_current_range.
+  METHOD OLE_SET_CURRENT_RANGE.
 
     " 1. SELECT starting cell
     CALL METHOD OF go_worksheet 'cells' = go_cellstart
@@ -1373,7 +1373,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [--->] X_UNDERLINE                    TYPE        I (default =0)
 * | [--->] X_SET_BORDERS                  TYPE        I (default =0)
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD ole_set_range_properties.
+  METHOD OLE_SET_RANGE_PROPERTIES.
 
     "OLE_METHOD - Specify the property of selected range cell
     "             x_background = Integer with excel color
@@ -1423,7 +1423,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [<-->] Y_TEXT                         TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD remove_special_char.
+  METHOD REMOVE_SPECIAL_CHAR.
 
     CONSTANTS: c_regex_lect_upper TYPE c LENGTH 255 VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
                c_regex_lect_lower TYPE c LENGTH 255 VALUE 'abcdefghijklmnopqrstuvwxyz',
@@ -1496,7 +1496,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     "File upload
     "-------------------------------------------------
     IF x_source EQ c_source_local "XLSX only from local
-      AND ( x_filename CP '*.xls' OR x_filename CP '*.xlsx' ).
+      AND x_filename CP '*.xlsx'.
 
       "Upload from XLSX with in-built conversion in SAP Format
       "-------------------------------------------------
@@ -1557,12 +1557,12 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
       "Conversion in SAP Format for CSV
       "-------------------------------------------------
-      CHECK lt_str_data IS NOT INITIAL.
+      CHECK lines( lt_str_data ) GT 0.
       IF x_header EQ 'X'.
         DELETE lt_str_data INDEX 1.
       ENDIF.
 
-      IF lt_str_data IS INITIAL.
+      IF lines( lt_str_data ) EQ 0.
         RAISE empty_file.
       ENDIF.
 
@@ -1595,7 +1595,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD upload_csv_local.
+  METHOD UPLOAD_CSV_LOCAL.
 
     REFRESH yt_str_data[].
     CALL METHOD cl_gui_frontend_services=>gui_upload
@@ -1620,7 +1620,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 * | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD upload_csv_server.
+  METHOD UPLOAD_CSV_SERVER.
 
     DATA: ls_str_data TYPE string.
 
@@ -1750,7 +1750,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             yo_structdescr          = DATA(lo_tmp_structdescr)
           EXCEPTIONS
             unable_define_structure = 1
-            OTHERS                  = 2
+            others                  = 2
         ).
 
         lv_tmp_data = ''.
