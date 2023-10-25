@@ -158,7 +158,7 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
     "Set Display settings
     "-------------------------------------------------
     DATA(lv_lines)   = lines( <t_output>[] ).
-    DATA(lv_title)   = CONV lvc_title( |{ sy-title } ( { lv_lines } Record )| ).
+    DATA(lv_title)   = CONV lvc_title( |{ sy-title } ( { lv_lines } Record )| ). ##NO_TEXT.
     DATA(lr_display) = lcl_alv->get_display_settings( ).
     lr_display->set_list_header( lv_title ).
     lr_display->set_striped_pattern( cl_salv_display_settings=>true ).
