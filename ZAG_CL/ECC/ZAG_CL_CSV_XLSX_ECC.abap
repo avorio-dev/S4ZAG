@@ -350,7 +350,8 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           CONDENSE lv_tmp_data NO-GAPS.
 
         WHEN cl_abap_typedescr=>typekind_date.     "Date "-------------------------------------------------
-
+          
+          lv_data_int = lv_tmp_data.
           conv_data_to_ext(
             EXPORTING
               x_data_int  = lv_data_int
