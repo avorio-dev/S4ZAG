@@ -10,36 +10,91 @@ public section.
         text(1500),
       END OF ty_char_data .
   types:
+    BEGIN OF ty_conversions_errors,
+        row_num TYPE i,
+        field   TYPE fieldname,
+        error   TYPE string,
+      END OF ty_conversions_errors .
+  types:
     tt_char_table TYPE TABLE OF ty_char_data-text .
+  types:
+    tt_conversions_errors TYPE TABLE OF ty_conversions_errors .
 
-  constants C_CR_LF type ABAP_CR_LF value %_CR_LF. "#EC NOTEXT
-  constants C_INITIAL_DATA type DATUM value '00000000'. "#EC NOTEXT
-  constants C_MAX_DATA type DATUM value '99991231'. "#EC NOTEXT
-  constants C_SEPARATOR_HORIZONTAL_TAB type ABAP_CHAR1 value %_HORIZONTAL_TAB. "#EC NOTEXT
-  constants C_SEPARATOR_SEMICOLON type CHAR1 value ';'. "#EC NOTEXT
-  constants C_SOURCE_LOCAL type CHAR1 value 'L'. "#EC NOTEXT
-  constants C_SOURCE_SERVER type CHAR1 value 'S'. "#EC NOTEXT
-  constants C_XLS_BLACK type I value 0. "#EC NOTEXT
-  constants C_XLS_BLUE type I value 15773440. "#EC NOTEXT
-  constants C_XLS_GREEN type I value 13496520. "#EC NOTEXT
-  constants C_XLS_NAVY type I value 6562560. "#EC NOTEXT
-  constants C_XLS_RED type I value 13486335. "#EC NOTEXT
-  constants C_XLS_WHITE type I value 16777215. "#EC NOTEXT
-  constants C_XLS_YELL type I value 2992895. "#EC NOTEXT
+  constants C_CR_LF type ABAP_CR_LF value %_CR_LF ##NO_TEXT.
+  constants C_INITIAL_DATA type DATUM value '00000000' ##NO_TEXT.
+  constants C_INITIAL_TIME type TIME value 000000 ##NO_TEXT.
+  constants C_MAX_DATA type DATUM value '99991231' ##NO_TEXT.
+  constants C_SEPARATOR_HORIZONTAL_TAB type ABAP_CHAR1 value %_HORIZONTAL_TAB ##NO_TEXT.
+  constants C_SEPARATOR_SEMICOLON type CHAR1 value ';' ##NO_TEXT.
+  constants C_SOURCE_LOCAL type CHAR1 value 'L' ##NO_TEXT.
+  constants C_SOURCE_SERVER type CHAR1 value 'S' ##NO_TEXT.
+  constants C_XLS_BLACK type I value 0 ##NO_TEXT.
+  constants C_XLS_BLUE type I value 15773440 ##NO_TEXT.
+  constants C_XLS_GREEN type I value 13496520 ##NO_TEXT.
+  constants C_XLS_NAVY type I value 6562560 ##NO_TEXT.
+  constants C_XLS_RED type I value 13486335 ##NO_TEXT.
+  constants C_XLS_WHITE type I value 16777215 ##NO_TEXT.
+  constants C_XLS_YELL type I value 2992895 ##NO_TEXT.
 
+  class-methods CONV_DATA_TO_EXT
+    importing
+      !X_DATA_INT type DATS
+      !X_SEPARATOR type C default '/'
+    exporting
+      !Y_DATA_EXT type STRING .
+  class-methods CONV_DATA_TO_INT
+    importing
+      !X_DATA_EXT type STRING
+    exporting
+      !Y_DATA_INT type DATS
+    exceptions
+      FORMAT_ERROR
+      PLAUSIBILITY_ERROR .
+  class-methods CONV_NUMB_TO_EXT
+    importing
+      !X_NUMB_INT type STRING
+    exporting
+      !Y_NUMB_EXT type STRING .
+  class-methods CONV_NUMB_TO_INT
+    importing
+      !X_NUMB_EXT type STRING
+    exporting
+      !Y_NUMB_INT type DECFLOAT
+    exceptions
+      FORMAT_ERROR
+      PLAUSIBILITY_ERROR .
   class-methods CONV_SAP_TO_STRING
     importing
       !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR optional
       !X_SAP_DATA type ANY
       !X_SEPARATOR type CHAR1 default C_SEPARATOR_SEMICOLON
     exporting
-      !Y_STR_DATA type STRING .
+      !Y_STR_DATA type STRING
+      !Y_ERROR_MSG type STRING
+    exceptions
+      CONVERSION_ERROR .
   class-methods CONV_STRING_TO_SAP
     importing
       !X_STR_DATA type STRING
       !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR optional
     exporting
-      !Y_SAP_DATA type ANY .
+      !Y_SAP_DATA type ANY
+      !Y_CONVERSIONS_ERRORS type TY_CONVERSIONS_ERRORS
+    exceptions
+      CONVERSION_ERROR .
+  class-methods CONV_TIME_TO_EXT
+    importing
+      !X_TIME type UZEIT
+    exporting
+      !Y_TIME type STRING .
+  class-methods CONV_TIME_TO_INT
+    importing
+      !X_TIME type STRING
+    exporting
+      !Y_TIME type UZEIT
+    exceptions
+      FORMAT_ERROR
+      PLAUSIBILITY_ERROR .
   class-methods DOWNLOAD
     importing
       !X_FILENAME type STRING
@@ -94,11 +149,13 @@ public section.
       !X_SOURCE type CHAR1 default 'L'
     exporting
       !YT_SAP_DATA type TABLE
+      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
     exceptions
       NOT_SUPPORTED_FILE
       UNABLE_OPEN_PATH
       UNABLE_DEFINE_STRUCTURE
-      EMPTY_FILE .
+      EMPTY_FILE
+      CONVERSION_ERROR .
 protected section.
 private section.
 
@@ -117,27 +174,6 @@ private section.
   data GO_WORKSHEET type OLE2_OBJECT .
   data GO_WORKSHEETS type OLE2_OBJECT .
 
-  class-methods CONV_DATA_TO_EXT
-    importing
-      !X_DATA_INT type DATS
-      !X_SEPARATOR type C default '/'
-    exporting
-      !Y_DATA_EXT type STRING .
-  class-methods CONV_DATA_TO_INT
-    importing
-      !X_DATA_EXT type STRING
-    exporting
-      !Y_DATA_INT type DATS .
-  class-methods CONV_TIME_TO_EXT
-    importing
-      !X_TIME type UZEIT
-    exporting
-      !Y_TIME type STRING .
-  class-methods CONV_TIME_TO_INT
-    importing
-      !X_TIME type STRING
-    exporting
-      !Y_TIME type UZEIT .
   class-methods DOWNLOAD_CSV_LOCAL
     importing
       !X_FILENAME type STRING
@@ -227,7 +263,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_CSV_XLSX_ECC=>CONV_DATA_TO_EXT
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_DATA_TO_EXT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_DATA_INT                     TYPE        DATS
 * | [--->] X_SEPARATOR                    TYPE        C (default ='/')
@@ -242,17 +278,166 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_CSV_XLSX_ECC=>CONV_DATA_TO_INT
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_DATA_TO_INT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_DATA_EXT                     TYPE        STRING
 * | [<---] Y_DATA_INT                     TYPE        DATS
+* | [EXC!] FORMAT_ERROR
+* | [EXC!] PLAUSIBILITY_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD CONV_DATA_TO_INT.
+  METHOD conv_data_to_int.
 
     y_data_int = c_initial_data.
 
-    CHECK strlen( x_data_ext ) EQ 10.
+    IF strlen( x_data_ext ) NE 10.
+      RAISE format_error.
+    ENDIF.
+
     y_data_int = |{ x_data_ext+6(4) }{ x_data_ext+3(2) }{ x_data_ext(2) }|.
+
+    CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+      EXPORTING
+        date                      = y_data_int
+      EXCEPTIONS
+        plausibility_check_failed = 1
+        OTHERS                    = 2.
+    IF sy-subrc <> 0.
+      RAISE plausibility_error.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_NUMB_TO_EXT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_NUMB_INT                     TYPE        STRING
+* | [<---] Y_NUMB_EXT                     TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD conv_numb_to_ext.
+
+    DATA: lv_numb TYPE string.
+
+    y_numb_ext  = 0.
+
+    lv_numb     = x_numb_int.
+
+    REPLACE '.' IN lv_numb WITH ','.
+    FIND '-' IN lv_numb.
+    IF sy-subrc EQ 0.
+      REPLACE '-' IN lv_numb WITH ''.
+      lv_numb = |-{ lv_numb }|.
+    ENDIF.
+
+    CONDENSE lv_numb NO-GAPS.
+
+    y_numb_ext = lv_numb.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_NUMB_TO_INT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_NUMB_EXT                     TYPE        STRING
+* | [<---] Y_NUMB_INT                     TYPE        DECFLOAT
+* | [EXC!] FORMAT_ERROR
+* | [EXC!] PLAUSIBILITY_ERROR
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD conv_numb_to_int.
+
+    DATA: lv_numb          TYPE string,
+          lv_count         TYPE i,
+          lv_counter_comma TYPE i,
+          lv_counter_dot   TYPE i,
+          lv_offset_comma  TYPE i,
+          lv_offset_dot    TYPE i.
+
+
+    y_numb_int = 0.
+
+    lv_numb    = x_numb_ext.
+
+    "-------------------------------------------------
+
+    IF lv_numb CN '01234567890.,-'.
+      RAISE format_error.
+    ENDIF.
+
+    FIND '-' IN lv_numb.
+    IF sy-subrc EQ 0.
+      REPLACE ALL OCCURRENCES OF '-' IN lv_numb WITH ''.
+      lv_numb = |{ lv_numb }-|.
+    ENDIF.
+
+    "-------------------------------------------------
+
+    lv_counter_comma = 0.
+    FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_counter_comma.
+
+    lv_counter_dot = 0.
+    FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_counter_dot.
+
+    IF lv_counter_comma EQ lv_counter_dot.
+      "ex. 1,000.25 / 1.000,25
+
+      lv_offset_comma = 0.
+      FIND FIRST OCCURRENCE OF ',' IN lv_numb MATCH OFFSET lv_offset_comma.
+
+      lv_offset_dot = 0.
+      FIND FIRST OCCURRENCE OF '.' IN lv_numb MATCH OFFSET lv_offset_dot.
+
+      IF lv_offset_comma LT lv_offset_dot.
+        "1,000.25
+
+        REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH ''.
+
+        FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_count.
+        IF lv_count GT 1.
+          RAISE format_error.
+        ENDIF.
+
+      ELSEIF lv_offset_dot LT lv_offset_comma.
+        "1.000,25
+
+        REPLACE ALL OCCURRENCES OF '.' IN lv_numb WITH ''.
+        REPLACE ',' IN lv_numb WITH '.'.
+
+        FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_count.
+        IF lv_count GT 1.
+          RAISE format_error.
+        ENDIF.
+
+      ENDIF.
+
+    ELSEIF lv_counter_comma GT lv_counter_dot.
+      "ex. 1,000,000.25
+
+      REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH ''.
+
+      FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_count.
+      IF lv_count GT 1.
+        RAISE format_error.
+      ENDIF.
+
+    ELSEIF lv_counter_dot GT lv_counter_comma.
+      "ex. 1.000.000,25
+
+      REPLACE ALL OCCURRENCES OF '.' IN lv_numb WITH ''.
+      REPLACE ',' IN lv_numb WITH '.'.
+
+      FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_count.
+      IF lv_count GT 1.
+        RAISE format_error.
+      ENDIF.
+
+    ENDIF.
+
+    "-------------------------------------------------
+
+    CONDENSE lv_numb NO-GAPS.
+
+    y_numb_int = lv_numb.
 
   ENDMETHOD.
 
@@ -264,14 +449,16 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] X_SAP_DATA                     TYPE        ANY
 * | [--->] X_SEPARATOR                    TYPE        CHAR1 (default =C_SEPARATOR_SEMICOLON)
 * | [<---] Y_STR_DATA                     TYPE        STRING
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
+* | [EXC!] CONVERSION_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD CONV_SAP_TO_STRING.
+  METHOD conv_sap_to_string.
 
     DATA: lo_structdescr TYPE REF TO cl_abap_structdescr,
           lv_sap_ref     TYPE REF TO data,
           lv_tmp_data    TYPE string,
-          lv_data_int    TYPE sy-datum,
-          lv_time        TYPE sy-uzeit.
+          lv_tmp_datum   TYPE sy-datum,
+          lv_tmp_uzeit   TYPE sy-uzeit.
 
     FIELD-SYMBOLS: <component> LIKE LINE OF lo_structdescr->components,
                    <value>     TYPE any.
@@ -340,21 +527,19 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed.
 
-          REPLACE '.' IN lv_tmp_data WITH ','.
-          FIND '-' IN lv_tmp_data.
-          IF sy-subrc EQ 0.
-            REPLACE '-' IN lv_tmp_data WITH ''.
-            lv_tmp_data = |-{ lv_tmp_data }|.
-          ENDIF.
-
-          CONDENSE lv_tmp_data NO-GAPS.
+          conv_numb_to_ext(
+            EXPORTING
+              x_numb_int = lv_tmp_data
+            IMPORTING
+              y_numb_ext = lv_tmp_data
+          ).
 
         WHEN cl_abap_typedescr=>typekind_date.     "Date "-------------------------------------------------
-          
-          lv_data_int = lv_tmp_data.
+
+          lv_tmp_datum = lv_tmp_data.
           conv_data_to_ext(
             EXPORTING
-              x_data_int  = lv_data_int
+              x_data_int  = lv_tmp_datum
               x_separator = '/'
             IMPORTING
               y_data_ext  = lv_tmp_data
@@ -364,9 +549,10 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
         WHEN cl_abap_typedescr=>typekind_time.    "Time "-------------------------------------------------
 
+          lv_tmp_uzeit = lv_tmp_data.
           conv_time_to_ext(
             EXPORTING
-              x_time = lv_time
+              x_time = lv_tmp_uzeit
             IMPORTING
               y_time = lv_tmp_data
           ).
@@ -400,24 +586,27 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] X_STR_DATA                     TYPE        STRING
 * | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR(optional)
 * | [<---] Y_SAP_DATA                     TYPE        ANY
+* | [<---] Y_CONVERSIONS_ERRORS           TYPE        TY_CONVERSIONS_ERRORS
+* | [EXC!] CONVERSION_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD CONV_STRING_TO_SAP.
+  METHOD conv_string_to_sap.
 
     DATA: lo_structdescr TYPE REF TO cl_abap_structdescr,
           lv_sap_ref     TYPE REF TO data,
           lv_tmp_string  TYPE string,
           lv_sx          TYPE string,
           lv_dx          TYPE string,
-          lv_data_int    TYPE sy-datum,
-          lv_time        TYPE sy-uzeit.
+          lv_tmp_num     TYPE decfloat34,
+          lv_tmp_dats    TYPE sy-datum,
+          lv_tmp_time    TYPE sy-uzeit.
 
     FIELD-SYMBOLS: <sap_data>  TYPE any,
-                   <component> like LINE OF lo_structdescr->components,
+                   <component> LIKE LINE OF lo_structdescr->components,
                    <value>     TYPE any.
 
     "-------------------------------------------------
 
-    CLEAR y_sap_data.
+    CLEAR: y_sap_data, y_conversions_errors.
 
     CREATE DATA lv_sap_ref LIKE y_sap_data.
     ASSIGN lv_sap_ref->* TO <sap_data>.
@@ -435,10 +624,10 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
     ENDIF.
 
-
     "-------------------------------------------------
 
     lv_tmp_string = x_str_data.
+
     LOOP AT lo_structdescr->components ASSIGNING <component>.
 
       CHECK <component>-name NE 'MANDT'.
@@ -468,13 +657,10 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
             INTO lv_sx
                  lv_dx.
 
-          remove_special_char(
-            CHANGING
-              y_text = lv_sx
-          ).
-
         WHEN OTHERS.
-          CONTINUE.
+          y_conversions_errors-field = <component>-name.
+          y_conversions_errors-error = 'Unmanaged data type'.
+          RAISE conversion_error.
       ENDCASE.
 
       "-------------------------------------------------
@@ -492,28 +678,61 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_numeric
           OR cl_abap_typedescr=>typekind_packed.
 
-          REPLACE ALL OCCURRENCES OF '.' IN lv_sx WITH ''.
-          REPLACE ',' IN lv_sx WITH '.'.
+          conv_numb_to_int(
+            EXPORTING
+              x_numb_ext         = lv_sx
+            IMPORTING
+              y_numb_int         = lv_tmp_num
+            EXCEPTIONS
+              format_error       = 1
+              plausibility_error = 2
+              OTHERS             = 3
+          ).
+          CASE sy-subrc.
+            WHEN 0.
+              lv_sx = lv_tmp_num.
+              CONDENSE lv_sx NO-GAPS.
 
-          FIND '-' IN lv_sx.
-          IF sy-subrc EQ 0.
-            REPLACE '-' IN lv_sx WITH ''.
-            lv_sx = |{ lv_sx }-|.
-          ENDIF.
+            WHEN 1.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Number format muste be: 1.900,25 / 1,900.25 / 1900.25 / 1900,25 / '.
+              RAISE conversion_error.
 
-          CONDENSE lv_sx NO-GAPS.
+            WHEN 2.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Implausible number, chars detected'.
+              RAISE conversion_error.
+
+          ENDCASE.
 
         WHEN cl_abap_typedescr=>typekind_date. "Date "-------------------------------------------------
 
           conv_data_to_int(
-           EXPORTING
-             x_data_ext = lv_sx
-           IMPORTING
-             y_data_int = lv_data_int
-         ).
+            EXPORTING
+              x_data_ext         = lv_sx
+            IMPORTING
+              y_data_int         = lv_tmp_dats
+            EXCEPTIONS
+              format_error       = 1
+              plausibility_error = 2
+              OTHERS             = 3
+          ).
+          CASE sy-subrc.
+            WHEN 0.
+              lv_sx = lv_tmp_dats.
+              CONDENSE lv_sx NO-GAPS.
 
-          lv_sx = lv_data_int.
-          CONDENSE lv_sx NO-GAPS.
+            WHEN 1.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Data format must be DD/MM/YYYY'.
+              RAISE conversion_error.
+
+            WHEN 2.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Implausible date'.
+              RAISE conversion_error.
+
+          ENDCASE.
 
         WHEN cl_abap_typedescr=>typekind_time. "Time "-------------------------------------------------
 
@@ -521,11 +740,24 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
             EXPORTING
               x_time = lv_sx
             IMPORTING
-              y_time = lv_time
+              y_time = lv_tmp_time
           ).
+          CASE sy-subrc.
+            WHEN 0.
+              lv_sx = lv_tmp_time.
+              CONDENSE lv_sx NO-GAPS.
 
-          lv_sx = lv_time.
-          CONDENSE lv_sx NO-GAPS.
+            WHEN 1.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Time format must be HH:MM:SS'.
+              RAISE conversion_error.
+
+            WHEN 2.
+              y_conversions_errors-field = <component>-name.
+              y_conversions_errors-error = 'Implausible time'.
+              RAISE conversion_error.
+
+          ENDCASE.
 
         WHEN cl_abap_typedescr=>typekind_char
           OR cl_abap_typedescr=>typekind_clike
@@ -533,6 +765,11 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_string.
 
           "Normal Data -> Nothing To Do
+
+          remove_special_char(
+            CHANGING
+              y_text = lv_sx
+          ).
 
       ENDCASE.
 
@@ -547,7 +784,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_CSV_XLSX_ECC=>CONV_TIME_TO_EXT
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_TIME_TO_EXT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_TIME                         TYPE        UZEIT
 * | [<---] Y_TIME                         TYPE        STRING
@@ -561,15 +798,32 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_CSV_XLSX_ECC=>CONV_TIME_TO_INT
+* | Static Public Method ZAG_CL_CSV_XLSX_ECC=>CONV_TIME_TO_INT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_TIME                         TYPE        STRING
 * | [<---] Y_TIME                         TYPE        UZEIT
+* | [EXC!] FORMAT_ERROR
+* | [EXC!] PLAUSIBILITY_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD CONV_TIME_TO_INT.
+  METHOD conv_time_to_int.
 
-    CHECK strlen( x_time ) EQ 8.
+    y_time = c_initial_time.
+
+    IF strlen( x_time ) NE 8.
+      RAISE format_error.
+    ENDIF.
+
     y_time = |{ x_time(2) }{ x_time+3(2) }{ x_time+5(2) }|.
+
+    CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+      EXPORTING
+        date                      = y_time
+      EXCEPTIONS
+        plausibility_check_failed = 1
+        OTHERS                    = 2.
+    IF sy-subrc <> 0.
+      RAISE plausibility_error.
+    ENDIF.
 
   ENDMETHOD.
 
@@ -585,13 +839,13 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD DOWNLOAD.
+  METHOD download.
 
     DATA: lt_str_data    TYPE string_table,
           lo_structdescr TYPE REF TO cl_abap_structdescr,
           lt_fcat        TYPE lvc_t_fcat.
 
-    FIELD-SYMBOLS: <str_data> LIKE LINE OF lt_str_data,
+    FIELD-SYMBOLS: <str_data> TYPE string,
                    <sap_data> TYPE any.
 
     "Get component from structure
@@ -777,7 +1031,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD DOWNLOAD_CSV_SERVER.
 
-    FIELD-SYMBOLS: <str_data> TYPE string.
+    FIELD-SYMBOLS: <str_data> LIKE LINE OF xt_str_data.
 
     OPEN DATASET x_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
     IF sy-subrc <> 0.
@@ -802,29 +1056,28 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [<-->] XT_STR_DATA                    TYPE        STRING_TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD DOWNLOAD_EXCEL_LOCAL.
+  METHOD download_excel_local.
 
-    DATA: lt_str_data   TYPE string_table,
-          lv_tabix      TYPE sy-tabix,
+    DATA: lv_tabix      TYPE sy-tabix,
           lv_lines_fcat TYPE i,
           lv_lines_tab  TYPE i,
-          lo_ole        TYPE REF TO zag_cl_csv_xlsx_ecc.
+          lo_ole        TYPE REF TO zag_cl_csv_xlsx_ecc,
+          lt_str_data   TYPE string_table.
 
-    FIELD-SYMBOLS: <str_data> LIKE LINE OF lt_str_data,
+    FIELD-SYMBOLS: <str_data> LIKE LINE OF xt_str_data,
                    <fcat>     LIKE LINE OF xt_fcat.
+
 
     lv_lines_fcat = lines( xt_fcat ).
     lv_lines_tab  = lines( xt_str_data ).
 
-    "Separator conversione from ';' TO horizontal_tab
+    "Separator conversion from ';' TO horizontal_tab
     "-------------------------------------------------
     lt_str_data = xt_str_data[].
     LOOP AT lt_str_data ASSIGNING <str_data>.
       REPLACE ALL OCCURRENCES OF c_separator_semicolon IN <str_data>
         WITH c_separator_horizontal_tab.
     ENDLOOP.
-
-
 
     CREATE OBJECT lo_ole.
 
@@ -898,7 +1151,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] X_SOURCE                       TYPE        CHAR4 (default ='LOCL')
 * | [<---] Y_PATH_INPUT                   TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD F4_HELP_DIR_INPUT.
+  METHOD f4_help_dir_input.
 
     DATA: lv_path TYPE string VALUE IS INITIAL.
 
@@ -1080,14 +1333,14 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] XT_ITAB                        TYPE        STANDARD TABLE
 * | [<---] YT_FCAT                        TYPE        LVC_T_FCAT
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD GET_FIELDCAT_FROM_ITAB.
+  METHOD get_fieldcat_from_itab.
 
     DATA: lref_table         TYPE REF TO data,
           lt_salv_table      TYPE REF TO cl_salv_table,
           lx_ai_system_fault TYPE REF TO cx_ai_system_fault,
-          lv_except_msg      TYPE string..
+          lv_except_msg      TYPE string.
 
-    FIELD-SYMBOLS: <table> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS: <table> TYPE ANY TABLE.
 
     "-------------------------------------------------
 
@@ -1177,16 +1430,17 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | Instance Private Method ZAG_CL_CSV_XLSX_ECC->OLE_ADD_SHEET
 * +-------------------------------------------------------------------------------------------------+
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD OLE_ADD_SHEET.
+  METHOD ole_add_sheet.
 
-    DATA: lv_sheet_name TYPE string.
+    DATA: lv_sheet_name TYPE c LENGTH 10.
 
     "Insert a new sheet with input name
-
     lv_sheet_name = |{ sy-repid(10) }|.
 
     GET PROPERTY OF go_application 'Sheets' = go_sheet.
-    CALL METHOD OF go_sheet 'Add' = go_worksheet.
+    CALL METHOD OF
+        go_sheet
+        'Add'    = go_worksheet.
     SET PROPERTY OF go_worksheet 'Name' = lv_sheet_name.
     GET PROPERTY OF go_application 'ACTIVESHEET' = go_worksheet.
 
@@ -1209,14 +1463,14 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD OLE_CLIPBOARD_EXPORT.
+  METHOD ole_clipboard_export.
 
     DATA: lt_char_data TYPE tt_char_table,
           lv_rc        TYPE i.
 
+    lv_rc = 0.
     lt_char_data[] = xt_str_data[].
 
-    lv_rc = 0.
     CALL METHOD cl_gui_frontend_services=>clipboard_export
       IMPORTING
         data                 = lt_char_data[]
@@ -1294,25 +1548,26 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] X_FILENAME                     TYPE        STRING
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD OLE_SAVE_EXCEL.
-    DATA: lv_path TYPE rlgrap-filename,
+  METHOD ole_save_excel.
+
+    DATA: lv_path  TYPE rlgrap-filename,
           lv_error.
 
-    lv_path  = x_filename.
+    lv_path  = x_filename .
     lv_error = abap_false.
+
     CALL METHOD OF go_workbook 'SaveAs'
       EXPORTING
-        #1 = lv_path.
+        #1          = lv_path.
     IF sy-subrc <> 0.
       lv_error = abap_true.
     ENDIF.
 
     CALL METHOD OF go_workbook 'CLOSE'
       EXPORTING
-        #1 = 'YES'.
+        #1          = 'YES'.
 
     CALL METHOD OF go_application 'Quit'.
-
     IF lv_error EQ abap_true.
       RAISE unable_open_path.
     ENDIF.
@@ -1466,14 +1721,14 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
                c_regex_symb       TYPE c LENGTH 255 VALUE '!"%/=?;,.:-_@&+*()[]{}<>',
                c_regex_lect_acc   TYPE c LENGTH 255 VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'.
 
-    DATA: lv_text    TYPE string,
-          lv_new_str TYPE string VALUE IS INITIAL,
-          lv_length  TYPE i,
-          lv_index   TYPE sy-index,
+    DATA: lv_length     TYPE i,
+          lv_text       TYPE string,
+          lv_new_str    TYPE string VALUE IS INITIAL,
+          lv_index      TYPE sy-index,
           lv_curr_char.
 
     lv_length = strlen( y_text ).
-    lv_text = y_text.
+    lv_text   = y_text.
 
     DO lv_length TIMES.
       lv_index     = sy-index - 1.
@@ -1505,18 +1760,24 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [--->] X_HEADER                       TYPE        XFELD (default ='X')
 * | [--->] X_SOURCE                       TYPE        CHAR1 (default ='L')
 * | [<---] YT_SAP_DATA                    TYPE        TABLE
+* | [<---] YT_CONVERSIONS_ERRORS          TYPE        TT_CONVERSIONS_ERRORS
 * | [EXC!] NOT_SUPPORTED_FILE
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * | [EXC!] EMPTY_FILE
+* | [EXC!] CONVERSION_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD UPLOAD.
+  METHOD upload.
 
     DATA: lt_str_data    TYPE string_table,
-          lo_structdescr TYPE REF TO cl_abap_structdescr.
+          lo_structdescr TYPE REF TO cl_abap_structdescr,
+          ls_conv_error  TYPE ty_conversions_errors,
+          lv_tabix       TYPE sy-tabix.
 
-    FIELD-SYMBOLS: <data_str> LIKE LINE OF lt_str_data,
+    FIELD-SYMBOLS: <data_str> TYPE string,
                    <data_sap> TYPE any.
+
+    REFRESH: yt_sap_data, yt_conversions_errors.
 
     "Get component from structure
     "-------------------------------------------------
@@ -1608,19 +1869,31 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
         RAISE empty_file.
       ENDIF.
 
-
       LOOP AT lt_str_data ASSIGNING <data_str>.
+        lv_tabix = sy-tabix.
 
         APPEND INITIAL LINE TO yt_sap_data ASSIGNING <data_sap>.
         conv_string_to_sap(
           EXPORTING
-            x_str_data        = <data_str>
-            xo_structdescr    = lo_structdescr
+            x_str_data           = <data_str>
+            xo_structdescr       = lo_structdescr
           IMPORTING
-            y_sap_data        = <data_sap>
-          ).
+            y_sap_data           = <data_sap>
+            y_conversions_errors = ls_conv_error
+          EXCEPTIONS
+            conversion_error     = 1
+            OTHERS               = 2
+        ).
+        IF sy-subrc <> 0.
+          ls_conv_error-row_num = lv_tabix.
+          APPEND ls_conv_error TO yt_conversions_errors.
+        ENDIF.
 
       ENDLOOP.
+
+      IF yt_conversions_errors IS NOT INITIAL.
+        RAISE conversion_error.
+      ENDIF.
 
     ELSE.
       RAISE not_supported_file.
@@ -1702,7 +1975,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] EMPTY_FILE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD UPLOAD_EXCEL_LOCAL.
+  METHOD upload_excel_local.
 
     DATA: lv_except_msg       TYPE string,
           lv_tmp_data         TYPE string,
@@ -1710,13 +1983,12 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           lcl_excel_ref       TYPE REF TO cl_fdt_xl_spreadsheet,
           lcl_table_descr     TYPE REF TO cl_abap_tabledescr,
           lcl_struct_descr    TYPE REF TO cl_abap_structdescr,
-
           lv_filelen          TYPE i,
           lv_headerx          TYPE xstring,
           lx_excel_core       TYPE REF TO cx_fdt_excel_core,
           lt_worksheets       TYPE if_fdt_doc_spreadsheet=>t_worksheet_names,
-          lcl_data_ref        TYPE REF TO data,
-          lo_tmp_structdescr  TYPE REF TO cl_abap_structdescr.
+          lo_tmp_structdescr  TYPE REF TO cl_abap_structdescr,
+          lcl_data_ref        TYPE REF TO data.
 
     FIELD-SYMBOLS: <t_excel_data> TYPE STANDARD TABLE,
                    <woksheetname> LIKE LINE OF lt_worksheets,
@@ -1773,6 +2045,7 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           EXPORTING
             document_name = x_filename
             xdocument     = lv_headerx.
+
       CATCH cx_fdt_excel_core INTO lx_excel_core.
         lv_except_msg = lx_excel_core->get_text( ).
     ENDTRY .
@@ -1785,8 +2058,6 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
 
       "Takes the first worksheet as default
       READ TABLE lt_worksheets ASSIGNING <woksheetname> INDEX 1.
-
-
       lcl_data_ref = lcl_excel_ref->if_fdt_doc_spreadsheet~get_itab_from_worksheet( <woksheetname> ).
       ASSIGN lcl_data_ref->* TO <t_excel_data>.
 
