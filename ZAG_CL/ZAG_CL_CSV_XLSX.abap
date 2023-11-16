@@ -59,7 +59,7 @@ public section.
     importing
       !X_NUMB_EXT type STRING
     exporting
-      !Y_NUMB_INT type P
+      !Y_NUMB_INT type DECFLOAT
     exceptions
       FORMAT_ERROR
       PLAUSIBILITY_ERROR .
@@ -340,7 +340,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | Static Public Method ZAG_CL_CSV_XLSX=>CONV_NUMB_TO_INT
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_NUMB_EXT                     TYPE        STRING
-* | [<---] Y_NUMB_INT                     TYPE        P
+* | [<---] Y_NUMB_INT                     TYPE        DECFLOAT
 * | [EXC!] FORMAT_ERROR
 * | [EXC!] PLAUSIBILITY_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
