@@ -355,6 +355,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "-------------------------------------------------
 
+    IF lv_numb CN '01234567890.,-'.
+      RAISE format_error.
+    ENDIF.
+
     FIND '-' IN lv_numb.
     IF sy-subrc EQ 0.
       REPLACE ALL OCCURRENCES OF '-' IN lv_numb WITH ''.
@@ -427,9 +431,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     "-------------------------------------------------
 
     CONDENSE lv_numb NO-GAPS.
-    IF lv_numb CN '01234567890.-'.
-      RAISE format_error.
-    ENDIF.
 
     y_numb_int = lv_numb.
 
