@@ -190,9 +190,15 @@ private section.
   class-methods DOWNLOAD_EXCEL_LOCAL
     importing
       !X_FILENAME type STRING
-      !XT_FCAT type LVC_T_FCAT
-    changing
+      !XT_SAP_DATA type STANDARD TABLE
       !XT_STR_DATA type STRING_TABLE
+      !X_USE_CUSTOM_OLE type FLAG default SPACE
+    exceptions
+      UNABLE_OPEN_PATH .
+  class-methods DOWNLOAD_EXCEL_SERVER
+    importing
+      !X_FILENAME type STRING
+      !XT_SAP_DATA type STANDARD TABLE
     exceptions
       UNABLE_OPEN_PATH .
   class-methods UPLOAD_CSV_LOCAL
@@ -823,10 +829,9 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD DOWNLOAD.
+  METHOD download.
 
     DATA: lt_str_data TYPE string_table.
-
 
     "Get component from structure
     "-------------------------------------------------
@@ -883,41 +888,53 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     ENDLOOP.
 
 
-    "Start Download
     "-------------------------------------------------
-    IF x_source EQ c_source_local "XLSX only from local
-      AND ( x_filename CP '*.xls' OR x_filename CP '*.xlsx' ).
-
-      get_fieldcat_from_itab(
-        EXPORTING
-          xt_itab = xt_sap_data
-        IMPORTING
-          yt_fcat = DATA(lt_fcat)
-      ).
-
-      "Download string table in local in XLSX format with OLE
-      "-------------------------------------------------
-      download_excel_local(
-        EXPORTING
-          x_filename       = x_filename
-          xt_fcat          = lt_fcat
-        CHANGING
-          xt_str_data      = lt_str_data
-        EXCEPTIONS
-          unable_open_path = 1
-          OTHERS           = 2
-      ).
-      IF sy-subrc <> 0.
-        RAISE unable_open_path.
-      ENDIF.
-
-    ELSEIF x_filename CP '*.csv'.
+    "Start Download on Local / Serveer
+    "-------------------------------------------------
 
 
-      "Download string table in local or on server
-      "-------------------------------------------------
+    IF x_filename CP '*.xlsx'. "**********************************************************************
+
       CASE x_source.
-        WHEN c_source_local. "LOCAL Saving "-------------------------------------------------
+        WHEN c_source_local.
+          "-------------------------------------------------
+
+          download_excel_local(
+            EXPORTING
+              x_filename       = x_filename
+              xt_sap_data      = xt_sap_data
+              xt_str_data      = lt_str_data
+            EXCEPTIONS
+              unable_open_path = 1
+              OTHERS           = 2
+          ).
+          IF sy-subrc <> 0.
+            RAISE unable_open_path.
+          ENDIF.
+
+        WHEN c_source_server.
+          "-------------------------------------------------
+
+          download_excel_server(
+            EXPORTING
+              x_filename       = x_filename
+              xt_sap_data      = xt_sap_data
+            EXCEPTIONS
+              unable_open_path = 1
+              others           = 2
+          ).
+          IF sy-subrc <> 0.
+            RAISE unable_open_path.
+          ENDIF.
+
+      ENDCASE.
+
+
+    ELSEIF x_filename CP '*.csv'. "**********************************************************************
+
+      CASE x_source.
+        WHEN c_source_local.
+          "-------------------------------------------------
 
           download_csv_local(
             EXPORTING
@@ -932,7 +949,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
             RAISE unable_open_path.
           ENDIF.
 
-        WHEN c_source_server. "SERVER Saving "-------------------------------------------------
+        WHEN c_source_server.
+          "-------------------------------------------------
 
           download_csv_server(
             EXPORTING
@@ -1030,88 +1048,228 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | Static Private Method ZAG_CL_CSV_XLSX=>DOWNLOAD_EXCEL_LOCAL
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
-* | [<-->] XT_STR_DATA                    TYPE        STRING_TABLE
+* | [--->] XT_SAP_DATA                    TYPE        STANDARD TABLE
+* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
+* | [--->] X_USE_CUSTOM_OLE               TYPE        FLAG (default =SPACE)
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD DOWNLOAD_EXCEL_LOCAL.
+  METHOD download_excel_local.
 
-    DATA lv_tabix TYPE sy-tabix.
-    DATA(lv_lines_fcat) = lines( xt_fcat ).
-    DATA(lv_lines_tab)  = lines( xt_str_data ).
+    DATA: lt_data_ref TYPE REF TO data.
 
-    "Separator conversione from ';' TO horizontal_tab
+    FIELD-SYMBOLS: <t_sap_data> TYPE STANDARD TABLE.
+
     "-------------------------------------------------
-    DATA(lt_str_data) = xt_str_data[].
-    LOOP AT lt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
-      REPLACE ALL OCCURRENCES OF c_separator_semicolon IN <str_data>
-        WITH c_separator_horizontal_tab.
-    ENDLOOP.
 
 
+    IF x_use_custom_ole EQ space.
 
-    DATA(lo_ole) = NEW zag_cl_csv_xlsx( ).
+      "Standard Version ->
+      "Conversion of fields like data, numbers exc.
+      "will be performed by SAP Standard
+      "-------------------------------------------------
 
-    lo_ole->ole_init_excel( ).
-    lo_ole->ole_add_sheet( ).
+      CREATE DATA lt_data_ref LIKE xt_sap_data.
+      ASSIGN lt_data_ref->* TO <t_sap_data>.
+      <t_sap_data> = xt_sap_data.
 
-    lo_ole->ole_clipboard_export( xt_str_data = lt_str_data ).
-    lo_ole->ole_clipboard_paste( ).
-
-
-    "Set Header properties
-    "-------------------------------------------------
-    lo_ole->ole_set_current_range(
-      EXPORTING
-        x_start_row = 1
-        x_start_col = 1
-        x_end_row   = 1
-        x_end_col   = lv_lines_fcat
-    ).
-
-    lo_ole->ole_set_range_properties(
-      EXPORTING
-        x_background  = c_xls_navy
-        x_font_name   = 'Arial'
-        x_size        = 12
-        x_bold        = 1
-        x_italic      = 0
-        x_color       = c_xls_white
-        x_underline   = 0
-        x_set_borders = 0
-    ).
-
-
-    "Set currency format
-    "-------------------------------------------------
-    LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>)
-      WHERE datatype EQ 'CURR'.
-
-      lv_tabix = sy-tabix.
-      lo_ole->ole_set_current_range(
+      get_fieldcat_from_itab(
         EXPORTING
-          x_start_row = 2
-          x_start_col = lv_tabix
-          x_end_row   = lv_lines_tab
-          x_end_col   = lv_tabix
+          xt_itab = <t_sap_data>
+        IMPORTING
+          yt_fcat = DATA(lt_fcat)
       ).
 
-      lo_ole->ole_set_currency_format( ).
+      cl_salv_bs_lex=>export_from_result_data_table(
+        EXPORTING
+          is_format            = if_salv_bs_lex_format=>mc_format_xlsx
+          ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = lt_data_ref
+                                                                             t_fieldcatalog  = lt_fcat )
+        IMPORTING
+          er_result_file       = DATA(lv_xdata) ).
 
-    ENDLOOP.
+      DATA(lv_xlength) = xstrlen( lv_xdata ).
+      DATA(lt_bin_tab) = cl_bcs_convert=>xstring_to_solix( iv_xstring = lv_xdata ).
 
-
-
-    lo_ole->ole_save_excel(
+      cl_gui_frontend_services=>gui_download(
       EXPORTING
-        x_filename       = x_filename
+        bin_filesize              = lv_xlength           " File length for binary files
+        filename                  = x_filename           " Name of file
+        filetype                  = 'BIN'                " File type (ASCII, binary ...)
+      CHANGING
+        data_tab                  = lt_bin_tab           " Transfer table
       EXCEPTIONS
-        unable_open_path = 1
-        OTHERS           = 2
+        file_write_error          = 1                    " Cannot write to file
+        no_batch                  = 2                    " Cannot execute front-end function in background
+        gui_refuse_filetransfer   = 3                    " Incorrect Front End
+        invalid_type              = 4                    " Invalid value for parameter FILETYPE
+        no_authority              = 5                    " No Download Authorization
+        unknown_error             = 6                    " Unknown error
+        header_not_allowed        = 7                    " Invalid header
+        separator_not_allowed     = 8                    " Invalid separator
+        filesize_not_allowed      = 9                    " Invalid file size
+        header_too_long           = 10                   " Header information currently restricted to 1023 bytes
+        dp_error_create           = 11                   " Cannot create DataProvider
+        dp_error_send             = 12                   " Error Sending Data with DataProvider
+        dp_error_write            = 13                   " Error Writing Data with DataProvider
+        unknown_dp_error          = 14                   " Error when calling data provider
+        access_denied             = 15                   " Access to File Denied
+        dp_out_of_memory          = 16                   " Not enough memory in data provider
+        disk_full                 = 17                   " Storage medium is full.
+        dp_timeout                = 18                   " Data provider timeout
+        file_not_found            = 19                   " Could not find file
+        dataprovider_exception    = 20                   " General Exception Error in DataProvider
+        control_flush_error       = 21                   " Error in Control Framework
+        not_supported_by_gui      = 22                   " GUI does not support this
+        error_no_gui              = 23                   " GUI not available
+        OTHERS                    = 24
     ).
+      IF sy-subrc <> 0.
+        RAISE unable_open_path.
+      ENDIF.
+
+
+
+      "OLE Version -> If you can, let avoid it
+      "**********************************************************************
+    ELSEIF x_use_custom_ole EQ 'X'.
+
+      get_fieldcat_from_itab(
+        EXPORTING
+          xt_itab = xt_sap_data
+        IMPORTING
+          yt_fcat = lt_fcat
+      ).
+
+      DATA lv_tabix TYPE sy-tabix.
+      DATA(lv_lines_fcat) = lines( lt_fcat ).
+      DATA(lv_lines_tab)  = lines( xt_str_data ).
+
+      "Separator conversione from ';' TO horizontal_tab
+      "-------------------------------------------------
+      DATA(lt_str_data) = xt_str_data[].
+      LOOP AT lt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
+        REPLACE ALL OCCURRENCES OF c_separator_semicolon IN <str_data>
+          WITH c_separator_horizontal_tab.
+      ENDLOOP.
+
+
+
+      DATA(lo_ole) = NEW zag_cl_csv_xlsx( ).
+
+      lo_ole->ole_init_excel( ).
+      lo_ole->ole_add_sheet( ).
+
+      lo_ole->ole_clipboard_export( xt_str_data = lt_str_data ).
+      lo_ole->ole_clipboard_paste( ).
+
+
+      "Set Header properties
+      "-------------------------------------------------
+      lo_ole->ole_set_current_range(
+        EXPORTING
+          x_start_row = 1
+          x_start_col = 1
+          x_end_row   = 1
+          x_end_col   = lv_lines_fcat
+      ).
+
+      lo_ole->ole_set_range_properties(
+        EXPORTING
+          x_background  = c_xls_navy
+          x_font_name   = 'Arial'
+          x_size        = 12
+          x_bold        = 1
+          x_italic      = 0
+          x_color       = c_xls_white
+          x_underline   = 0
+          x_set_borders = 0
+      ).
+
+
+      "Set currency format
+      "-------------------------------------------------
+      LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>)
+        WHERE datatype EQ 'CURR'.
+
+        lv_tabix = sy-tabix.
+        lo_ole->ole_set_current_range(
+          EXPORTING
+            x_start_row = 2
+            x_start_col = lv_tabix
+            x_end_row   = lv_lines_tab
+            x_end_col   = lv_tabix
+        ).
+
+        lo_ole->ole_set_currency_format( ).
+
+      ENDLOOP.
+
+
+
+      lo_ole->ole_save_excel(
+        EXPORTING
+          x_filename       = x_filename
+        EXCEPTIONS
+          unable_open_path = 1
+          OTHERS           = 2
+      ).
+      IF sy-subrc <> 0.
+        RAISE unable_open_path.
+      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Private Method ZAG_CL_CSV_XLSX=>DOWNLOAD_EXCEL_SERVER
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_FILENAME                     TYPE        STRING
+* | [--->] XT_SAP_DATA                    TYPE        STANDARD TABLE
+* | [EXC!] UNABLE_OPEN_PATH
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD download_excel_server.
+
+    DATA: lt_data_ref TYPE REF TO data.
+
+    FIELD-SYMBOLS: <t_sap_data> TYPE STANDARD TABLE.
+
+    "-------------------------------------------------
+
+    CREATE DATA lt_data_ref LIKE xt_sap_data.
+    ASSIGN lt_data_ref->* TO <t_sap_data>.
+    <t_sap_data> = xt_sap_data.
+
+    get_fieldcat_from_itab(
+      EXPORTING
+        xt_itab = <t_sap_data>
+      IMPORTING
+        yt_fcat = DATA(lt_fcat)
+    ).
+
+    cl_salv_bs_lex=>export_from_result_data_table(
+      EXPORTING
+        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
+        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = lt_data_ref
+                                                                           t_fieldcatalog  = lt_fcat )
+      IMPORTING
+        er_result_file       = DATA(lv_xdata) ).
+
+    DATA(lv_xlength) = xstrlen( lv_xdata ).
+
+    "-------------------------------------------------
+
+    OPEN DATASET x_filename FOR OUTPUT IN BINARY MODE.
     IF sy-subrc <> 0.
+      CLOSE DATASET x_filename.
       RAISE unable_open_path.
     ENDIF.
+
+    TRANSFER lv_xdata TO x_filename.
+
+    CLOSE DATASET x_filename.
 
   ENDMETHOD.
 
