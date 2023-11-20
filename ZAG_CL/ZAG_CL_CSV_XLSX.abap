@@ -99,8 +99,9 @@ public section.
     importing
       !X_FILENAME type STRING
       !X_HEADER type XFELD default 'X'
-      !XT_SAP_DATA type TABLE
       !X_SOURCE type CHAR1 default 'L'
+    changing
+      !XT_SAP_DATA type TABLE
     exceptions
       NOT_SUPPORTED_FILE
       UNABLE_OPEN_PATH
@@ -190,9 +191,10 @@ private section.
   class-methods DOWNLOAD_EXCEL_LOCAL
     importing
       !X_FILENAME type STRING
-      !XT_SAP_DATA type STANDARD TABLE
       !XT_STR_DATA type STRING_TABLE
       !X_USE_CUSTOM_OLE type FLAG default SPACE
+    changing
+      !XT_SAP_DATA type STANDARD TABLE
     exceptions
       UNABLE_OPEN_PATH .
   class-methods DOWNLOAD_EXCEL_SERVER
@@ -823,8 +825,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_FILENAME                     TYPE        STRING
 * | [--->] X_HEADER                       TYPE        XFELD (default ='X')
-* | [--->] XT_SAP_DATA                    TYPE        TABLE
 * | [--->] X_SOURCE                       TYPE        CHAR1 (default ='L')
+* | [<-->] XT_SAP_DATA                    TYPE        TABLE
 * | [EXC!] NOT_SUPPORTED_FILE
 * | [EXC!] UNABLE_OPEN_PATH
 * | [EXC!] UNABLE_DEFINE_STRUCTURE
@@ -902,8 +904,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           download_excel_local(
             EXPORTING
               x_filename       = x_filename
-              xt_sap_data      = xt_sap_data
               xt_str_data      = lt_str_data
+              x_use_custom_ole = space
+            CHANGING
+              xt_sap_data      = xt_sap_data
             EXCEPTIONS
               unable_open_path = 1
               OTHERS           = 2
@@ -1048,19 +1052,12 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | Static Private Method ZAG_CL_CSV_XLSX=>DOWNLOAD_EXCEL_LOCAL
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] XT_SAP_DATA                    TYPE        STANDARD TABLE
 * | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
 * | [--->] X_USE_CUSTOM_OLE               TYPE        FLAG (default =SPACE)
+* | [<-->] XT_SAP_DATA                    TYPE        STANDARD TABLE
 * | [EXC!] UNABLE_OPEN_PATH
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_excel_local.
-
-    DATA: lt_data_ref TYPE REF TO data.
-
-    FIELD-SYMBOLS: <t_sap_data> TYPE STANDARD TABLE.
-
-    "-------------------------------------------------
-
 
     IF x_use_custom_ole EQ space.
 
@@ -1069,13 +1066,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       "will be performed by SAP Standard
       "-------------------------------------------------
 
-      CREATE DATA lt_data_ref LIKE xt_sap_data.
-      ASSIGN lt_data_ref->* TO <t_sap_data>.
-      <t_sap_data> = xt_sap_data.
+      DATA(lt_data_ref) = REF #( xt_sap_data ).
 
       get_fieldcat_from_itab(
         EXPORTING
-          xt_itab = <t_sap_data>
+          xt_itab = xt_sap_data
         IMPORTING
           yt_fcat = DATA(lt_fcat)
       ).
