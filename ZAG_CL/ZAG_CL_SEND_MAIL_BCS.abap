@@ -49,9 +49,9 @@ CLASS zag_cl_send_mail_bcs DEFINITION
     CONSTANTS c_server TYPE char4 VALUE 'SERV' ##NO_TEXT.
     CONSTANTS c_attch_csv TYPE soodk-objtp VALUE 'CSV' ##NO_TEXT.
     CONSTANTS c_attch_raw TYPE soodk-objtp VALUE 'RAW' ##NO_TEXT.
-    CONSTANTS c_attch_pdf TYPE soodk-objtp VALUE 'PDF' ##NO_TEXT.
+    CONSTANTS c_attch_pdf TYPE char3 VALUE 'PDF' ##NO_TEXT.
     CONSTANTS c_attch_bin TYPE soodk-objtp VALUE 'BIN' ##NO_TEXT.
-    CONSTANTS c_attch_xlsx TYPE soodk-objtp VALUE 'XLSX' ##NO_TEXT.
+    CONSTANTS c_attch_xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT.
 
     CLASS-METHODS send_mail_bcs
       IMPORTING
