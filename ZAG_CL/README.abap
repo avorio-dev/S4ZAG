@@ -17,6 +17,8 @@
   ).
 
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
+  <attch>-subject = 'your_file_name'.
+  
   APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
 
   zag_cl_csv_xlsx=>get_header_from_data(
