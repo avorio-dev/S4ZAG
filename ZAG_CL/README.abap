@@ -148,8 +148,9 @@
   ENDIF.
 
 
+
 **********************************************************************
-"ZAG_CL_SALV - EXAMPLE
+  "ZAG_CL_SALV - EXAMPLE
 **********************************************************************
   TYPES: BEGIN OF ty_alv,
            icon  TYPE icon_d,
@@ -158,14 +159,13 @@
            ernam TYPE mara-ernam,
            laeda TYPE mara-laeda,
            aenam TYPE mara-aenam,
-           t_col TYPE lvc_t_scol,
+           zeinr TYPE mara-zeinr,
+
+           t_col TYPE lvc_t_scol, "Use this if you want colors in output
          END OF ty_alv.
 
   DATA: gt_alv       TYPE TABLE OF ty_alv,
         lv_fieldname TYPE fieldname.
-
-  DATA(lo_salv) = NEW zag_cl_salv( xt_table = gt_alv[] ).
-
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
   LOOP AT lt_mara ASSIGNING FIELD-SYMBOL(<mara>).
@@ -190,10 +190,10 @@
     lv_diff = sy-datum - <mara>-ersda.
     IF lv_diff MOD 2 EQ 0.
 
-      "Set Cell Color
+      "Set Single Cell Color
       "-------------------------------------------------
       lv_fieldname = 'ERSDA'.
-      lo_salv->set_color_cell(
+      zag_cl_salv=>set_color_cell(
         EXPORTING
           x_color             = zag_cl_salv=>c_cell_col_green
           x_fieldname         = lv_fieldname
@@ -204,12 +204,15 @@
           fieldname_not_found = 2
           OTHERS              = 3
       ).
+      IF sy-subrc <> 0.
+        "Handle exceptions
+      ENDIF.
 
     ELSE.
 
       "Set Row Color
       "-------------------------------------------------
-      lo_salv->set_color_row(
+      zag_cl_salv=>set_color_row(
         EXPORTING
           x_color           = zag_cl_salv=>c_cell_col_red
         CHANGING
@@ -218,6 +221,9 @@
           col_tab_not_found = 1
           OTHERS            = 2
       ).
+      IF sy-subrc <> 0.
+        "Handle exceptions
+      ENDIF.
 
     ENDIF.
   ENDLOOP.
@@ -228,20 +234,25 @@
   lt_col_settings = VALUE #(
     ( fieldname = 'MATNR'
       label     = 'My Material'
-      hotspot   = ' ' )
+      no_out    = '' )
 
     ( fieldname = 'ERSDA'
-      label     = 'Data Creation'
-      hotspot   = ' ' )
+      label     = 'Data Creation' )
 
-    ( fieldname = 'aenam'
-      label     = 'Creator'
-      hotspot   = 'X' )
+    ( fieldname = 'ZEINR'
+      no_out    = 'X' )
+
    ).
 
-  lo_salv->display_generic_alv(
-  EXPORTING
-*      x_popup         = abap_true
-    xt_col_settings = lt_col_settings
-    xt_output       = gt_alv[]
-).
+  zag_cl_salv=>display_generic_alv(
+    EXPORTING
+      x_popup         = abap_true
+      xt_col_settings = lt_col_settings[]
+      xt_output       = gt_alv[]
+    EXCEPTIONS
+      general_fault   = 1
+      OTHERS          = 2
+  ).
+  IF sy-subrc <> 0.
+    "Handle exceptions
+  ENDIF.
