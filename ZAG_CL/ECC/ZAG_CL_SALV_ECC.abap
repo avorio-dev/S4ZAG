@@ -484,7 +484,7 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
     lv_scrtext_s = ''.
     lv_scrtext_m = ''.
     lv_scrtext_l = x_label.
-    lv_text_col  = x_label.
+    lv_text_col  = x_fieldname.
 
     lv_outlen = strlen( x_label ).
     TRY.
