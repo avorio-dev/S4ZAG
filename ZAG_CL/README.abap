@@ -249,10 +249,4 @@
       x_popup         = abap_true
       xt_col_settings = lt_col_settings[]
       xt_output       = gt_alv[]
-    EXCEPTIONS
-      general_fault   = 1
-      OTHERS          = 2
   ).
-  IF sy-subrc <> 0.
-    "Handle exceptions
-  ENDIF.
