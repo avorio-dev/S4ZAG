@@ -36,7 +36,7 @@ public section.
       !XT_COL_SETTINGS type TT_COL_SETTINGS optional
       !XT_OUTPUT type STANDARD TABLE
     exceptions
-      GENERAL_FAULT .
+      SALV_CREATION_ERROR .
   class-methods SET_COLOR_CELL
     importing
       !X_COLOR type LVC_COL
@@ -69,9 +69,7 @@ private section.
       !X_FIELDNAME type FIELDNAME
       !X_LABEL type STRING
     changing
-      !YO_COLUMN type ref to CL_SALV_COLUMN_TABLE
-    exceptions
-      GENERAL_FAULT .
+      !YO_COLUMN type ref to CL_SALV_COLUMN_TABLE .
 ENDCLASS.
 
 
@@ -85,7 +83,7 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
 * | [--->] X_POPUP                        TYPE        BOOLEAN (default =ABAP_FALSE)
 * | [--->] XT_COL_SETTINGS                TYPE        TT_COL_SETTINGS(optional)
 * | [--->] XT_OUTPUT                      TYPE        STANDARD TABLE
-* | [EXC!] GENERAL_FAULT
+* | [EXC!] SALV_CREATION_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD display_generic_alv.
 
@@ -147,7 +145,7 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
 
       CATCH cx_salv_msg INTO lx_salv_msg.
         lv_excep_msg = lx_salv_msg->get_text( ).
-        RAISE general_fault.
+        RAISE salv_creation_error.
     ENDTRY.
 
 
@@ -206,17 +204,12 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
 
         "Labels
         IF <col_settings>-label IS NOT INITIAL.
-          TRY.
-              set_salv_text_column( EXPORTING
-                                      x_fieldname = <col_settings>-fieldname
-                                      x_label     = <col_settings>-label
-                                    CHANGING
-                                      yo_column   = lr_column ).
+          set_salv_text_column( EXPORTING
+                                  x_fieldname = <col_settings>-fieldname
+                                  x_label     = <col_settings>-label
+                                CHANGING
+                                  yo_column   = lr_column ).
 
-            CATCH cx_root INTO lx_root.
-              lv_excep_msg = lx_root->get_text( ).
-              RAISE general_fault.
-          ENDTRY.
         ENDIF.
 
         "Hide columns
@@ -465,7 +458,6 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
 * | [--->] X_FIELDNAME                    TYPE        FIELDNAME
 * | [--->] X_LABEL                        TYPE        STRING
 * | [<-->] YO_COLUMN                      TYPE REF TO CL_SALV_COLUMN_TABLE
-* | [EXC!] GENERAL_FAULT
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD SET_SALV_TEXT_COLUMN.
 
@@ -496,10 +488,8 @@ CLASS ZAG_CL_SALV_ECC IMPLEMENTATION.
 
       CATCH cx_salv_not_found INTO lx_salv_not_found.
         lv_excep_msg = lx_salv_not_found->get_text( ).
-        RAISE general_fault.
       CATCH cx_salv_data_error INTO lx_salv_data_error.
         lv_excep_msg = lx_salv_data_error->get_text( ).
-        RAISE general_fault.
     ENDTRY.
 
   ENDMETHOD.
