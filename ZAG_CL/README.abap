@@ -4,11 +4,11 @@
   DATA: lt_recipients TYPE zag_cl_send_mail_bcs=>tt_recipients,
         lt_attch      TYPE zag_cl_send_mail_bcs=>tt_bcs_attch.
 
-  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
+  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_data).
 
   zag_cl_csv_xlsx=>get_compdescr_from_data(
     EXPORTING
-      xt_sap_table            = lt_sflight
+      xt_sap_table            = lt_data
     IMPORTING
       yo_structdescr          = DATA(lo_structdescr)
     EXCEPTIONS
@@ -18,17 +18,17 @@
 
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
-  
+
   APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
 
   zag_cl_csv_xlsx=>get_header_from_data(
     EXPORTING
-      xt_sap_table  = lt_sflight
+      xt_sap_table  = lt_data
     CHANGING
       y_str_header  = <csv_line>
   ).
 
-  LOOP AT lt_sflight ASSIGNING FIELD-SYMBOL(<sflight>).
+  LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<sflight>).
 
     APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING <csv_line>.
 
@@ -47,21 +47,22 @@
 
   zag_cl_send_mail_bcs=>send_mail_bcs(
     EXPORTING
-      x_sender         = sy-uname
-      xt_recipients    = lt_recipients
-      x_mail_obj       = 'ZAG Mail'
-      x_mail_body_str  = 'This is a mail generated with ZAG Library'
-*      x_mail_body_so10 =
-      xt_attch         = lt_attch
+      x_sender                  = sy-uname
+      xt_recipients             = lt_recipients
+      x_mail_obj                = 'ZAG Mail'
+      x_mail_body_str           = 'This is a mail generated with ZAG Library'
+*      x_mail_body_standard_text =
+      xt_attachments            = lt_attch
     IMPORTING
-      y_error_msg      = DATA(lv_error_msg)
+      y_mail_sent               = DATA(lv_mail_sent)
+      y_error_msg               = DATA(lv_error_msg)
     EXCEPTIONS
-      request_error    = 1
-      sender_error     = 2
-      recipient_error  = 3
-      body_error       = 4
-      attachment_error = 5
-      OTHERS           = 6
+      request_error             = 1
+      sender_error              = 2
+      recipient_error           = 3
+      body_error                = 4
+      attachment_error          = 5
+      OTHERS                    = 6
   ).
   IF sy-subrc <> 0.
     WRITE lv_error_msg.
