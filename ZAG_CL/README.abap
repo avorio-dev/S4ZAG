@@ -72,82 +72,111 @@
 **********************************************************************
 "ZAG_CL_CSV_XLSX - EXAMPLE
 **********************************************************************
-  SELECT * FROM SFLIGHT UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
+    SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
 
+  DATA(lv_source) = ''.
+  DATA(lv_filename) = zag_cl_csv_xlsx=>get_desktop_directory( ).
+
+  "Example 1 -> Download CSV on Server / Local
+  "-------------------------------------------------
+  lv_source   = 'S'. "S - Server / L - Local
+  lv_filename = |/tmp/test.csv|.
   zag_cl_csv_xlsx=>download(
     EXPORTING
-      x_filename              = '/tmp/test.csv'
-      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
-      xt_sap_data             = lt_sflight
-      x_source                = 'S'   " 'SERV' / 'LOCL'
+      x_filename                = lv_filename
+      x_source                  = lv_source " 'S' / 'L'
+    CHANGING
+      xt_sap_data               = lt_sflight
     EXCEPTIONS
-      not_supported_file      = 1
-      unable_open_path        = 2
-      unable_define_structure = 3
-      OTHERS                  = 4
+      not_supported_file        = 1
+      unable_open_path          = 2
+      unable_define_structdescr = 3
+      OTHERS                    = 4
   ).
   IF sy-subrc <> 0.
-    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    "Handle Exception
+  ENDIF.
+
+  "Example 2 -> Download XLSX on Server / Local
+  "-------------------------------------------------
+  lv_filename = zag_cl_csv_xlsx=>get_desktop_directory( ).
+  lv_source   = 'L'. "S - Server / L - Local
+  lv_filename = |{ lv_filename }/test.xlsx|.
+  zag_cl_csv_xlsx=>download(
+    EXPORTING
+      x_filename                = lv_filename
+      x_source                  = lv_source  " 'S' / 'L'
+    CHANGING
+      xt_sap_data               = lt_sflight
+    EXCEPTIONS
+      not_supported_file        = 1
+      unable_open_path          = 2
+      unable_define_structdescr = 3
+      OTHERS                    = 4
+  ).
+  IF sy-subrc <> 0.
+    "Handle Exception
   ENDIF.
 
 
   REFRESH lt_sflight.
+
+  "Example 3 - Upload XLSX from Local
+  "-------------------------------------------------
+  DATA lt_conversion_errors TYPE zag_cl_csv_xlsx=>tt_conversions_errors.
   zag_cl_csv_xlsx=>upload(
     EXPORTING
-      x_filename              = '/tmp/test.csv'
-      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
-      x_source                = 'S'   " 'LOCL'/'SERV'
+      x_filename                = lv_filename
+      x_header                  = 'X'
+      x_source                  = 'L'              " 'L'/'S'
     IMPORTING
-      yt_sap_data             = lt_sflight
+      yt_sap_data               = lt_sflight
+      yt_conversions_errors     = lt_conversion_errors
     EXCEPTIONS
-      not_supported_file      = 1
-      unable_open_path        = 2
-      unable_define_structure = 3
-      OTHERS                  = 4
+      input_error               = 1
+      not_supported_file        = 2
+      unable_open_path          = 3
+      unable_define_structdescr = 4
+      empty_file                = 5
+      conversion_error          = 6
+      OTHERS                    = 7
   ).
   IF sy-subrc <> 0.
-    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    "Handle Excepion
   ENDIF.
 
-  DATA(lv_filename) = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/test.xlsx|.
-  zag_cl_csv_xlsx=>download(
-    EXPORTING
-      x_filename              = lv_filename
-      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
-      xt_sap_data             = lt_sflight
-      x_source                = 'L'              " 'S' / 'L'
-    EXCEPTIONS
-      not_supported_file      = 1
-      unable_open_path        = 2
-      unable_define_structure = 3
-      OTHERS                  = 4
-  ).
-  IF sy-subrc <> 0.
-    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-  ENDIF.
 
-  REFRESH lt_sflight.
-  zag_cl_csv_xlsx=>upload(
-    EXPORTING
-      x_filename              = lv_filename
-      x_header                = 'X'              " Presenza riga testata ( 'X' = True )
-      x_source                = 'L'              " 'L'/'S'
-    IMPORTING
-      yt_sap_data             = lt_sflight
-    EXCEPTIONS
-      not_supported_file      = 1
-      unable_open_path        = 2
-      unable_define_structure = 3
-      OTHERS                  = 4
-  ).
-  IF sy-subrc <> 0.
-    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-      WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-  ENDIF.
+  "SHOW RESULTS
+  "-------------------------------------------------
+  IF lines( lt_conversion_errors ) GT 0.
 
+    zag_cl_salv=>display_generic_alv(
+      EXPORTING
+        x_popup             = abap_true
+        xt_output           = lt_conversion_errors
+      EXCEPTIONS
+        salv_creation_error = 1
+        OTHERS              = 2
+    ).
+    IF sy-subrc <> 0.
+      "Handle Exception
+    ENDIF.
+
+  ELSE.
+
+    zag_cl_salv=>display_generic_alv(
+      EXPORTING
+        x_popup             = abap_false
+        xt_output           = lt_sflight
+      EXCEPTIONS
+        salv_creation_error = 1
+        OTHERS              = 2
+    ).
+    IF sy-subrc <> 0.
+      "Handle Exception
+    ENDIF.
+
+  ENDIF.
 
 
 **********************************************************************
