@@ -4,6 +4,14 @@
 " In this way, no time will be wasted!!!
 " So, if you have suggestions, please contact me :)
 
+" if you want to use them, it will be enough to copy the code of the whole class
+" and paste it into an include if you are in a report, or in the code-based builder of SE24.
+" NB If you are in a report, 
+" you will need to comment the following line code at the beginning of the class declaration.
+"   final
+    create public .
+
+
 " EXAMPLE - ZAG_CL_SALV
 " EXAMPLE - ZAG_CL_CSV_XLSX
 " EXAMPLE - ZAG_CL_SEND_MAIL_BCS
