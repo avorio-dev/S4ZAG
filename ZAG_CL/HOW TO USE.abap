@@ -7,9 +7,48 @@
 **********************************************************************
 
 
+
+
+
 **********************************************************************
   "ZAG_CL_SALV - EXAMPLE
 **********************************************************************
+  " WHY USE IT?
+
+  " - DISPLAY_GENERIC_ALV
+  "     It allows to Display whatever table you want, providing only the table itself
+  "     You can also pass additional parameters like
+  "       - Display in popup
+  "       - Column Settings in which you can give provide your labels or hide fields
+  "
+  " - GET_FIELDCAT
+  "     It allows to extract Fieldcat from both table or simple row which you provide
+  "
+  " - SET_COLOR_CELL / SET_COLOR_ROW
+  "     It allows to set Color tab which will be printed
+  "     The only constraint is that you will need to have a component in your types
+  "     named T_COL TYPE lvc_t_scol
+
+**********************************************************************
+
+  "Example 1 -> Display a generic ALV
+  "-------------------------------------------------
+
+  SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
+
+  zag_cl_salv=>display_generic_alv(
+    EXPORTING
+      xt_output           = lt_mara
+    EXCEPTIONS
+      salv_creation_error = 1
+      OTHERS              = 2
+  ).
+
+
+  "Example 2 -> Set colors for cells and / or rows
+  "          -> Set Labels / Hide fields
+  "-------------------------------------------------
+
   TYPES: BEGIN OF ty_alv,
            icon  TYPE icon_d,
            matnr TYPE mara-matnr,
@@ -25,7 +64,7 @@
   DATA: gt_alv       TYPE TABLE OF ty_alv,
         lv_fieldname TYPE fieldname.
 
-  SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
+
   LOOP AT lt_mara ASSIGNING FIELD-SYMBOL(<mara>).
 
     "Set Data
@@ -109,6 +148,10 @@
       xt_output       = gt_alv[]
   ).
 
+
+
+
+
 **********************************************************************
 "ZAG_CL_CSV_XLSX - EXAMPLE
 **********************************************************************
@@ -137,7 +180,7 @@
 
 **********************************************************************
 
-    SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
+  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
 
   DATA(lv_source) = ''.
   DATA(lv_filename) = zag_cl_csv_xlsx=>get_desktop_directory( ).
@@ -242,6 +285,9 @@
     ENDIF.
 
   ENDIF.
+
+
+
 
 
 **********************************************************************
