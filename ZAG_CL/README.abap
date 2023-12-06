@@ -72,6 +72,31 @@
 **********************************************************************
 "ZAG_CL_CSV_XLSX - EXAMPLE
 **********************************************************************
+  " WHY USE IT?
+
+  " - DOWNLOAD
+  "     It allows to Download CSV and XLSX on Local or Server destination
+
+  " - UPLOAD
+  "     It allows to Upload CSV from Local or Server
+  "     It allows to Upload XLSX from Local
+
+  " - It provieds utility Methods like:
+  "   - CONV_SAP_TO_STRING / CONV_STRING_TO_SAP
+  "         allows to convert any sap line into a csv string and vice versa.
+  "         Also, it automatically apply conversion for Date / Time and Numbers
+  "
+  "   - F4_HELP_DIR_INPUT
+  "       provide a matchcode for directory in input or output
+  "
+  "   - GET_FIELDCAT_FROM_ITAB
+  "       provide the fieldcat of any table
+  "
+  "   - REMOVE_SPECIAL_CHAR
+  "       remove special characters from a string, and it can be expanded with new charset
+
+**********************************************************************
+
     SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
 
   DATA(lv_source) = ''.
