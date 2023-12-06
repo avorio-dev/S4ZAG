@@ -302,23 +302,84 @@
 
 
 
+
 **********************************************************************
-"ZAG_CL_SEND_MAIL_BCS - EXAMPLE
+  "ZAG_CL_SEND_MAIL_BCS - EXAMPLE
 **********************************************************************
-  DATA: lt_recipients TYPE zag_cl_send_mail_bcs=>tt_recipients,
-        lt_attch      TYPE zag_cl_send_mail_bcs=>tt_bcs_attch.
+  " WHY USE IT?
+
+  " - SEND_MAIL_BCS
+  "     Apart from the classic parameters such as Recipient / Email Subject / Email body,
+  "     it allows to attach files like CSV, XLSX and PDF.
+  "     Also, you will be able to use a Standard Text created by Trx SO10 as Email Body.
+  "     It will be enough to provide the name of Standard Text and, if you need,
+  "     you wil be able to specify a variable name in the Standard Text
+  "     ( For Example &LIFNR& ) and the corresponding value. The class will automatically
+  "     perform the substitutions
+
+  "    NB: If you not provide any mail body, the class will automatically put the subject mail as body
+  "        because it is a mandatory parameter.
+
+**********************************************************************
+
+  DATA: lt_recipients TYPE zag_cl_send_mail_bcs=>tt_recipients.
 
   SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_data).
 
+
+  "Example 1 -> Simple mail
+  "-------------------------------------------------
+
+  lt_recipients = VALUE #(
+    ( smtp_addr = 'yourmail@domain.com'
+      copy      = space                 )
+  ).
+
   zag_cl_csv_xlsx=>get_compdescr_from_data(
     EXPORTING
-      xt_sap_table            = lt_data
+*        xs_sap_line               =
+      xt_sap_table              = lt_data
     IMPORTING
-      yo_structdescr          = DATA(lo_structdescr)
+      yo_structdescr            = DATA(lo_structdescr)
     EXCEPTIONS
-      unable_define_structure = 1
-      OTHERS                  = 2
+      unable_define_structdescr = 1
+      OTHERS                    = 2
   ).
+
+  zag_cl_send_mail_bcs=>send_mail_bcs(
+    EXPORTING
+      x_sender                  = sy-uname
+      xt_recipients             = lt_recipients
+      x_mail_obj                = 'ZAG Mail'
+      x_mail_body_str           = 'ZAG Mail Body as String'
+    IMPORTING
+      y_mail_sent               = DATA(lv_mail_sent)
+      y_error_msg               = DATA(lv_error_msg)
+    EXCEPTIONS
+      request_error             = 1
+      sender_error              = 2
+      recipient_error           = 3
+      body_error                = 4
+      attachment_error          = 5
+      OTHERS                    = 6
+  ).
+  IF sy-subrc <> 0.
+    WRITE lv_error_msg.
+  ENDIF.
+
+
+
+  "Example 2 -> Mail with attach. and Standard Text as Mail Body
+  "-------------------------------------------------
+
+  DATA: ls_mail_body_stdtxt TYPE zag_cl_send_mail_bcs=>ty_standard_text,
+        lt_attch            TYPE zag_cl_send_mail_bcs=>tt_bcs_attch.
+
+
+  lt_recipients = VALUE #(
+      ( smtp_addr = 'yourmail@domain.com'
+        copy      = space                 )
+    ).
 
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
@@ -346,20 +407,25 @@
 
   ENDLOOP.
 
-  APPEND INITIAL LINE TO lt_recipients ASSIGNING FIELD-SYMBOL(<recipient>).
-  <recipient>-smtp_addr = 'yourmail@domain.com'.
+
+  ls_mail_body_stdtxt-std_txt_name = 'ZAG_SEND_MAIL_BCS_STDTXT'.
+  ls_mail_body_stdtxt-substitutions = VALUE #(
+    ( varname  = '&SUBSTITUTION&'
+      value    = sy-datum         )
+  ).
+
 
   zag_cl_send_mail_bcs=>send_mail_bcs(
     EXPORTING
       x_sender                  = sy-uname
       xt_recipients             = lt_recipients
       x_mail_obj                = 'ZAG Mail'
-      x_mail_body_str           = 'This is a mail generated with ZAG Library'
-*      x_mail_body_standard_text =
+      x_mail_body_str           = 'ZAG Mail Body as String'
+      x_mail_body_standard_text = ls_mail_body_stdtxt
       xt_attachments            = lt_attch
     IMPORTING
-      y_mail_sent               = DATA(lv_mail_sent)
-      y_error_msg               = DATA(lv_error_msg)
+      y_mail_sent               = lv_mail_sent
+      y_error_msg               = lv_error_msg
     EXCEPTIONS
       request_error             = 1
       sender_error              = 2
@@ -371,7 +437,6 @@
   IF sy-subrc <> 0.
     WRITE lv_error_msg.
   ENDIF.
-
 
 
 
