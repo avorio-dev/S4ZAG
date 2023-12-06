@@ -1,9 +1,13 @@
 **********************************************************************
-" Below there are examples on how to use the library classes
+" Below there are examples on how to use the library classes.
+" The target of this classes is to USE THEM, not to adapt! 
+" In this way, no time will be wasted!!!
+" So, if you have suggestions, please contact me :)
 
 " EXAMPLE - ZAG_CL_SALV
 " EXAMPLE - ZAG_CL_CSV_XLSX
 " EXAMPLE - ZAG_CL_SEND_MAIL_BCS
+
 **********************************************************************
 
 
