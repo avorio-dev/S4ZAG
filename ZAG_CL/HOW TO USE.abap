@@ -9,7 +9,7 @@
 " NB If you are in a report, 
 " you will need to comment the following line code at the beginning of the class declaration.
 "   final
-    create public .
+"   create public .
 
 
 " EXAMPLE - ZAG_CL_SALV
