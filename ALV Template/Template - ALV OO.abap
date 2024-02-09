@@ -76,7 +76,8 @@ DATA: go_instance_event   TYPE ty_ref_alv,
       gt_deleted_data     TYPE lvc_t_moce,
       gt_inserted_data    TYPE lvc_t_moce,
       gt_toolbar          TYPE ttb_button,
-      ok_code             TYPE sy-ucomm.
+      ok_code             TYPE sy-ucomm,
+      lv_ok_code          TYPE sy-ucomm.
 
 CONSTANTS: c_x              VALUE 'X',
            c_e              VALUE 'E',
@@ -707,7 +708,10 @@ MODULE user_command_generic INPUT.
   FIELD-SYMBOLS: <stacktrace> LIKE LINE OF gt_stacktrace_dynnr,
                  <parent>     LIKE LINE OF gt_stacktrace_dynnr.
 
-  CASE ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
     WHEN '&F03'
       OR 'BACK'.
 
