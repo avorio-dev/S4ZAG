@@ -858,11 +858,12 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
           OR cl_abap_typedescr=>typekind_string.
 
           "Normal Data -> Nothing To Do
-
-          remove_special_char(
-            CHANGING
-              y_text = lv_sx
-          ).
+          IF 1 = 2.
+            remove_special_char(
+              CHANGING
+                y_text = lv_sx
+            ).
+          ENDIF.
 
       ENDCASE.
 
@@ -2077,7 +2078,8 @@ CLASS ZAG_CL_CSV_XLSX_ECC IMPLEMENTATION.
          OR lv_curr_char CA c_pattern_lect_lower
          OR lv_curr_char CA c_pattern_digit
          OR lv_curr_char CA c_pattern_symb
-         OR lv_curr_char CA c_pattern_lect_acc  .
+         OR lv_curr_char CA c_pattern_lect_acc
+         OR lv_curr_char EQ space.
 
       IF lv_new_str IS INITIAL.
         lv_new_str = lv_curr_char.
