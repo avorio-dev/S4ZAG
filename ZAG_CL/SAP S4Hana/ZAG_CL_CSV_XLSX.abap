@@ -301,6 +301,9 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   METHOD conv_data_to_int.
 
     y_data_int = c_initial_data.
+    IF x_data_ext IS INITIAL.
+      EXIT.
+    ENDIF.
 
     IF strlen( x_data_ext ) EQ 10.
 
