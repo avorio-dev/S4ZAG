@@ -63,6 +63,7 @@ public section.
       !X_MAIL_BODY_STR type STRING optional
       !X_MAIL_BODY_STANDARD_TEXT type TY_STANDARD_TEXT optional
       !XT_ATTACHMENTS type TT_BCS_ATTCH optional
+      !X_COMMIT type OS_BOOLEAN default ABAP_TRUE
     exporting
       !Y_MAIL_SENT type OS_BOOLEAN
       !Y_ERROR_MSG type STRING
@@ -465,8 +466,22 @@ CLASS ZAG_CL_SEND_MAIL_BCS_ECC IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_SEND_MAIL_BCS_ECC->SEND_MAIL_BCS
+* | Static Public Method ZAG_CL_SEND_MAIL_BCS_ECC=>SEND_MAIL_BCS
 * +-------------------------------------------------------------------------------------------------+
+* | [--->] X_SENDER                       TYPE        SY-UNAME (default =SY-UNAME)
+* | [--->] XT_RECIPIENTS                  TYPE        TT_RECIPIENTS
+* | [--->] X_MAIL_OBJ                     TYPE        SO_OBJ_DES
+* | [--->] X_MAIL_BODY_STR                TYPE        STRING(optional)
+* | [--->] X_MAIL_BODY_STANDARD_TEXT      TYPE        TY_STANDARD_TEXT(optional)
+* | [--->] XT_ATTACHMENTS                 TYPE        TT_BCS_ATTCH(optional)
+* | [--->] X_COMMIT                       TYPE        OS_BOOLEAN (default =ABAP_TRUE)
+* | [<---] Y_MAIL_SENT                    TYPE        OS_BOOLEAN
+* | [<---] Y_ERROR_MSG                    TYPE        STRING
+* | [EXC!] REQUEST_ERROR
+* | [EXC!] SENDER_ERROR
+* | [EXC!] RECIPIENT_ERROR
+* | [EXC!] BODY_ERROR
+* | [EXC!] ATTACHMENT_ERROR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD send_mail_bcs.
 
@@ -583,7 +598,9 @@ CLASS ZAG_CL_SEND_MAIL_BCS_ECC IMPLEMENTATION.
         "-------------------------------------------------
         y_mail_sent = lo_send_request->send( i_with_error_screen = 'X' ).
         IF y_mail_sent EQ abap_true.
-          COMMIT WORK.
+          IF x_commit EQ abap_true.
+            COMMIT WORK.
+          ENDIF.
         ENDIF.
 
 
