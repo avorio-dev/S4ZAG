@@ -12,6 +12,7 @@
 "   create public .
 
 
+" EXAMPLE - ZAG_CL_ALV_IDA
 " EXAMPLE - ZAG_CL_SALV
 " EXAMPLE - ZAG_CL_CSV_XLSX
 " EXAMPLE - ZAG_CL_SEND_MAIL_BCS
@@ -20,6 +21,168 @@
 
 
 
+
+**********************************************************************
+  "ZAG_CL_ALV_IDA - EXAMPLE
+**********************************************************************
+  " WHY USE IT?
+
+  " - DISPLAY
+
+**********************************************************************
+
+ "Example 1 -> Display a generic ALV
+ "-------------------------------------------------
+  DATA: lo_ida TYPE REF TO zag_cl_alv_ida.
+  
+  lv_tabname = 'EKPO'.
+  
+  CREATE OBJECT lo_ida
+    EXPORTING
+      xv_ddic_tabname     = CONV #( lv_tabname )
+    EXCEPTIONS
+      table_not_supported = 1
+      OTHERS              = 2.
+  IF sy-subrc <> 0.
+ *   MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+ *     WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+  
+  lo_ida->display( ).
+
+
+ "Example 1 -> Display ALV with settings and handler double click
+ "-------------------------------------------------
+  DATA: lv_tabname      TYPE string,
+        lt_selopt       TYPE zag_cl_alv_ida=>tt_selopt,
+        lt_field_list   TYPE zag_cl_alv_ida=>tt_field_list,
+        lt_field_label  TYPE zag_cl_alv_ida=>tt_field_label,
+        lt_sort_group   TYPE zag_cl_alv_ida=>tt_sort_group,
+        ls_double_click TYPE zag_cl_alv_ida=>ts_double_click.
+
+
+  "DDIC Tabname or CDS Name
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  lv_tabname = 'EKPO'.
+
+
+  "Select Options
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  lt_selopt = VALUE #(
+     ( fieldname = 'BUKRS'
+       selopt_t  = VALUE #(
+        ( sign = 'I' option = 'EQ'
+          low  = 'ITA1'
+          high = 'ITA1' )
+       )
+     )
+
+     ( fieldname = 'MATNR'
+       selopt_t  = VALUE #(
+         ( sign = 'I' option = 'NE'
+           low  = ''
+           high = '' )
+        )
+     )
+  ).
+
+
+  "List of fields to extract
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  lt_field_list = VALUE zag_cl_alv_ida=>tt_field_list(
+    ( CONV string('EBELN') )
+    ( CONV string('EBELP') )
+    ( CONV string('AEDAT') )
+    ( CONV string('MATNR') )
+    ( CONV string('NETWR') )
+  ).
+
+
+  "Field Labels
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  lt_field_label = VALUE #(
+    ( fieldname = 'EBELN' label = 'PO Order' )
+    ( fieldname = 'EBELP' label = 'PO Item' )
+    ( fieldname = 'MATNR' label = 'Mat.' )
+    ( fieldname = 'NETWR' label = 'Amount' )
+  ).
+
+
+  "Sort and Grouping
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  lt_sort_group = VALUE #(
+    ( field_name = 'MATNR'
+      descending = abap_false
+      is_grouped = abap_true )
+
+    ( field_name = 'AEDAT'
+      descending = abap_true
+      is_grouped = abap_false )
+
+    ( field_name = 'EBELN'
+      descending = abap_false
+      is_grouped = abap_false )
+
+    ( field_name = 'EBELP'
+      descending = abap_false
+      is_grouped = abap_false )
+  ).
+
+
+  "Double Click Handler
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  ls_double_click-repid   = sy-repid.
+  ls_double_click-perform = 'DOUBLE_CLICK'.
+
+
+  "ALV
+  """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+  DATA: lo_ida TYPE REF TO zag_cl_alv_ida.
+
+  CREATE OBJECT lo_ida
+    EXPORTING
+      xv_ddic_tabname     = CONV #( lv_tabname )
+      xt_selopt           = lt_selopt[]
+      xt_field_list       = lt_field_list[]
+      xt_field_label      = lt_field_label[]
+      xt_sort_group       = lt_sort_group[]
+      xs_double_click     = ls_double_click
+    EXCEPTIONS
+      table_not_supported = 1
+      OTHERS              = 2.
+  IF sy-subrc <> 0.
+*   MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+*     WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  lo_ida->display( ).
+
+*&---------------------------------------------------------------------*
+*& Form DOUBLE_CLICK
+*&---------------------------------------------------------------------*
+FORM double_click USING xs_selected_row TYPE REF TO data.
+
+  DATA: ls_ekpo        TYPE ekpo.
+
+  ASSIGN xs_selected_row->* TO FIELD-SYMBOL(<ekpo>).
+  MOVE-CORRESPONDING <ekpo> TO ls_ekpo.
+
+  DATA(lo_ida_item) = NEW zag_cl_alv_ida(
+    xv_ddic_tabname = 'EKPO'
+    xt_selopt       = VALUE #(
+     ( fieldname = 'EBELN'
+       selopt_t  = VALUE #(
+        ( sign = 'I' option = 'EQ'
+          low  = ls_ekpo-ebeln
+          high = ls_ekpo-ebeln )
+       )
+     ) )
+  ).
+  IF lo_ida_item IS BOUND.
+    lo_ida_item->display( ).
+  ENDIF.
+
+ENDFORM.
 
 
 **********************************************************************
