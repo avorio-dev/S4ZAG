@@ -563,6 +563,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
 
         "Send email
         "-------------------------------------------------
+        lo_send_request->set_send_immediately( i_send_immediately = 'X' ).
         y_mail_sent = lo_send_request->send( i_with_error_screen = 'X' ).
         IF y_mail_sent EQ abap_true.
           IF x_commit EQ abap_true.
