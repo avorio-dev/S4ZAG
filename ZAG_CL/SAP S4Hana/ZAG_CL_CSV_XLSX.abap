@@ -59,6 +59,24 @@ public section.
     exceptions
       CONVERSION_ERROR
       UNABLE_DEFINE_STRUCTDESCR .
+  class-methods CONV_TSAP_TO_TSTRING
+    importing
+      !X_HEADER type OS_BOOLEAN default 'X'
+      !XT_SAP_DATA type TABLE
+    exporting
+      !YT_STR_DATA type STRING_TABLE
+    exceptions
+      UNABLE_DEFINE_STRUCTDESCR .
+  class-methods CONV_TSTRING_TO_TSAP
+    importing
+      !X_HEADER type XFELD default 'X'
+      !XT_STR_DATA type STRING_TABLE
+    exporting
+      !YT_SAP_DATA type TABLE
+      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
+    exceptions
+      UNABLE_DEFINE_STRUCTDESCR
+      CONVERSION_ERROR .
   class-methods DOWNLOAD
     importing
       !X_FILENAME type STRING
@@ -283,6 +301,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [<---] Y_DATA_EXT                     TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_data_to_ext.
+
+    CHECK x_data_int NE c_initial_data.
 
     y_data_ext = |{ x_data_int+6(2) }{ x_separator }{ x_data_int+4(2) }{ x_separator }{ x_data_int(4) }|.
     CONDENSE y_data_ext NO-GAPS.
@@ -642,7 +662,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
         ENDCASE.
 
-
         IF y_str_data IS INITIAL.
           y_str_data = lv_tmp_data.
         ELSE.
@@ -664,7 +683,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [EXC!] CONVERSION_ERROR
 * | [EXC!] UNABLE_DEFINE_STRUCTDESCR
 * +--------------------------------------------------------------------------------------</SIGNATURE>
-    METHOD conv_string_to_sap.
+    METHOD CONV_STRING_TO_SAP.
 
       DATA: lo_structdescr TYPE REF TO cl_abap_structdescr,
             lv_sap_ref     TYPE REF TO data.
@@ -906,6 +925,158 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_TSAP_TO_TSTRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_HEADER                       TYPE        OS_BOOLEAN (default ='X')
+* | [--->] XT_SAP_DATA                    TYPE        TABLE
+* | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
+* | [EXC!] UNABLE_DEFINE_STRUCTDESCR
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD conv_tsap_to_tstring.
+
+    REFRESH yt_str_data.
+
+    "Get components from table / structure
+    "-------------------------------------------------
+    get_compdescr_from_data(
+      EXPORTING
+        xt_sap_table            = xt_sap_data
+      IMPORTING
+        yo_structdescr          = DATA(lo_structdescr)
+      EXCEPTIONS
+        unable_define_structdescr = 1
+        OTHERS                    = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE unable_define_structdescr.
+    ENDIF.
+
+
+    "Build header line
+    "-------------------------------------------------
+    IF x_header EQ abap_true.
+
+      APPEND INITIAL LINE TO yt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
+
+      get_header_from_data(
+        EXPORTING
+          xt_sap_table            = xt_sap_data
+        CHANGING
+          y_str_header            = <str_data>
+        EXCEPTIONS
+          unable_define_structdescr = 1
+          OTHERS                    = 2
+      ).
+      IF sy-subrc <> 0.
+        RAISE unable_define_structdescr.
+      ENDIF.
+
+    ENDIF.
+
+
+    "Convert SAP Data to String table
+    "-------------------------------------------------
+    LOOP AT xt_sap_data ASSIGNING FIELD-SYMBOL(<sap_data>).
+
+      APPEND INITIAL LINE TO yt_str_data ASSIGNING <str_data>.
+
+      conv_sap_to_string(
+        EXPORTING
+          xo_structdescr            = lo_structdescr
+          x_sap_data                = <sap_data>
+        IMPORTING
+          y_str_data                = <str_data>
+        EXCEPTIONS
+          unable_define_structdescr = 1
+          OTHERS                    = 2
+      ).
+      IF sy-subrc <> 0.
+        RAISE unable_define_structdescr.
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_TSTRING_TO_TSAP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_HEADER                       TYPE        XFELD (default ='X')
+* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
+* | [<---] YT_SAP_DATA                    TYPE        TABLE
+* | [<---] YT_CONVERSIONS_ERRORS          TYPE        TT_CONVERSIONS_ERRORS
+* | [EXC!] UNABLE_DEFINE_STRUCTDESCR
+* | [EXC!] CONVERSION_ERROR
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD conv_tstring_to_tsap.
+
+    "Get components from table / structure
+    "-------------------------------------------------
+    get_compdescr_from_data(
+      EXPORTING
+        xt_sap_table            = yt_sap_data
+      IMPORTING
+        yo_structdescr          = DATA(lo_structdescr)      " Runtime Type Services
+      EXCEPTIONS
+        unable_define_structdescr = 1
+        OTHERS                    = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE unable_define_structdescr.
+    ENDIF.
+
+
+    "Conversion in SAP Format for CSV
+    "-------------------------------------------------
+    DATA(lv_skip_header) = abap_false.
+    LOOP AT xt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
+      DATA(lv_tabix) = sy-tabix.
+
+      IF x_header EQ 'X'.
+        IF lv_skip_header EQ abap_true.
+          CONTINUE.
+
+        ELSE.
+          lv_skip_header = abap_true.
+
+        ENDIF.
+      ENDIF.
+
+      APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<data_sap>).
+      conv_string_to_sap(
+        EXPORTING
+          x_str_data                = <data_str>
+          xo_structdescr            = lo_structdescr
+        IMPORTING
+          y_sap_data                = <data_sap>
+          y_conversions_errors      = DATA(ls_conv_error)
+        EXCEPTIONS
+          conversion_error          = 1
+          unable_define_structdescr = 2
+          OTHERS                    = 3
+      ).
+      CASE sy-subrc.
+        WHEN 0.
+          "OK
+        WHEN 1.
+          ls_conv_error-row_num = lv_tabix.
+          APPEND ls_conv_error TO yt_conversions_errors.
+        WHEN 2.
+          RAISE unable_define_structdescr.
+      ENDCASE.
+
+    ENDLOOP.
+
+    IF yt_conversions_errors IS NOT INITIAL.
+      RAISE conversion_error.
+    ENDIF.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
 * | Static Public Method ZAG_CL_CSV_XLSX=>DOWNLOAD
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_FILENAME                     TYPE        STRING
@@ -918,8 +1089,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * +--------------------------------------------------------------------------------------</SIGNATURE>
     METHOD download.
 
-      DATA: lt_str_data TYPE string_table,
-            lv_filetype TYPE char10 VALUE IS INITIAL.
+      DATA: lv_filetype TYPE char10 VALUE IS INITIAL.
 
       "-------------------------------------------------
 
@@ -934,66 +1104,18 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ENDIF.
 
 
-      "Get components from table / structure
+      "Convert SAP Table data into String table Data
       "-------------------------------------------------
-      get_compdescr_from_data(
+      conv_tsap_to_tstring(
         EXPORTING
-          xt_sap_table            = xt_sap_data
+          x_header    = x_header
+          xt_sap_data = xt_sap_data
         IMPORTING
-          yo_structdescr          = DATA(lo_structdescr)
+          yt_str_data = DATA(lt_str_data)
         EXCEPTIONS
           unable_define_structdescr = 1
           OTHERS                    = 2
       ).
-      IF sy-subrc <> 0.
-        RAISE unable_define_structdescr.
-      ENDIF.
-
-
-      "Build header line
-      "-------------------------------------------------
-      IF x_header EQ abap_true.
-
-        APPEND INITIAL LINE TO lt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
-
-        get_header_from_data(
-          EXPORTING
-            xt_sap_table            = xt_sap_data
-          CHANGING
-            y_str_header            = <str_data>
-          EXCEPTIONS
-            unable_define_structdescr = 1
-            OTHERS                    = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE unable_define_structdescr.
-        ENDIF.
-
-      ENDIF.
-
-
-      "Convert SAP Data to String table
-      "-------------------------------------------------
-      REFRESH lt_str_data[].
-      LOOP AT xt_sap_data ASSIGNING FIELD-SYMBOL(<sap_data>).
-
-        APPEND INITIAL LINE TO lt_str_data ASSIGNING <str_data>.
-
-        conv_sap_to_string(
-          EXPORTING
-            xo_structdescr            = lo_structdescr
-            x_sap_data                = <sap_data>
-          IMPORTING
-            y_str_data                = <str_data>
-          EXCEPTIONS
-            unable_define_structdescr = 1
-            OTHERS                    = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE unable_define_structdescr.
-        ENDIF.
-
-      ENDLOOP.
 
 
       "-------------------------------------------------
