@@ -302,7 +302,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_data_to_ext.
 
-    CHECK x_data_int NE c_initial_data.
+    IF x_data_int EQ c_initial_data.
+      y_data_ext = ''.
+      EXIT.
+    ENDIF.
 
     y_data_ext = |{ x_data_int+6(2) }{ x_separator }{ x_data_int+4(2) }{ x_separator }{ x_data_int(4) }|.
     CONDENSE y_data_ext NO-GAPS.
