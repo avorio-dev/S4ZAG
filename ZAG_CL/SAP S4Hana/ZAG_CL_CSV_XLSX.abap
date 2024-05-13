@@ -33,14 +33,6 @@ public section.
   constants C_FILETYPE_CSV type CHAR3 value 'CSV' ##NO_TEXT.
   constants C_FILETYPE_XLSX type CHAR4 value 'XLSX' ##NO_TEXT.
 
-  methods CONSTRUCTOR
-    importing
-      !XS_SAP_LINE type ANY optional
-      !XT_SAP_TABLE type TABLE optional
-      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
-    exceptions
-      INPUT_ERROR
-      UNABLE_DEFINE_STRUCTDESCR .
   class-methods CONV_DATA_TO_EXT
     importing
       !X_DATA_INT type DATS
@@ -68,35 +60,27 @@ public section.
     exceptions
       FORMAT_ERROR
       PLAUSIBILITY_ERROR .
-  methods CONV_SAP_TO_STRING
+  class-methods CONV_SAP_TO_STRING
     importing
       !X_SAP_DATA type ANY
       !X_SEPARATOR type CHAR1 default C_SEPARATOR_SEMICOLON
+      !XT_FCAT type LVC_T_FCAT
+      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
+      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
     exporting
       !Y_STR_DATA type STRING .
-  methods CONV_STRING_TO_SAP
+  class-methods CONV_STRING_TO_SAP
     importing
       !X_STR_DATA type STRING
+      !XT_FCAT type LVC_T_FCAT
+      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
+      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
     exporting
       !Y_SAP_DATA type ANY
       !Y_CONVERSIONS_ERRORS type TS_CONVERSIONS_ERRORS
     exceptions
       CONVERSION_ERROR
       PLAUSIBILITY_ERROR .
-  methods CONV_TAB_TO_EXT
-    importing
-      !X_HEADER type OS_BOOLEAN default 'X'
-    returning
-      value(YT_STR_DATA) type STRING_TABLE .
-  methods CONV_TAB_TO_INT
-    importing
-      !X_HEADER type XFELD default 'X'
-      !XT_STR_DATA type STRING_TABLE
-    exporting
-      !YT_SAP_DATA type TABLE
-      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
-    exceptions
-      CONVERSION_ERROR .
   class-methods CONV_TIME_TO_EXT
     importing
       !X_TIME type UZEIT
@@ -120,6 +104,43 @@ public section.
       !X_SOURCE type CHAR4 default 'LOCL'
     exporting
       !Y_PATH_OUTPUT type STRING .
+  class-methods GET_DESKTOP_DIRECTORY
+    returning
+      value(Y_DESKTOP_DIR) type STRING .
+  class-methods GET_FIELDCAT_FROM_DATA
+    importing
+      !XS_SAP_LINE type ANY optional
+      !XT_SAP_TABLE type TABLE optional
+    exporting
+      !YO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
+      !YT_FCAT type LVC_T_FCAT
+    exceptions
+      UNABLE_DEFINE_STRUCTDESCR .
+  class-methods REMOVE_SPECIAL_CHAR
+    changing
+      !Y_TEXT type STRING .
+  methods CONSTRUCTOR
+    importing
+      !XS_SAP_LINE type ANY optional
+      !XT_SAP_TABLE type TABLE optional
+      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
+    exceptions
+      INPUT_ERROR
+      UNABLE_DEFINE_STRUCTDESCR .
+  methods CONV_TAB_TO_EXT
+    importing
+      !X_HEADER type OS_BOOLEAN default 'X'
+    returning
+      value(YT_STR_DATA) type STRING_TABLE .
+  methods CONV_TAB_TO_INT
+    importing
+      !X_HEADER type XFELD default 'X'
+      !XT_STR_DATA type STRING_TABLE
+    exporting
+      !YT_SAP_DATA type TABLE
+      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
+    exceptions
+      CONVERSION_ERROR .
   methods FILE_DOWNLOAD
     importing
       !X_FILENAME type STRING
@@ -142,24 +163,9 @@ public section.
       UNABLE_OPEN_PATH
       EMPTY_FILE
       CONVERSION_ERROR .
-  class-methods GET_DESKTOP_DIRECTORY
-    returning
-      value(Y_DESKTOP_DIR) type STRING .
-  class-methods GET_FIELDCAT_FROM_DATA
-    importing
-      !XS_SAP_LINE type ANY optional
-      !XT_SAP_TABLE type TABLE optional
-    exporting
-      !YO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
-      !YT_FCAT type LVC_T_FCAT
-    exceptions
-      UNABLE_DEFINE_STRUCTDESCR .
   methods GET_HEADER_FROM_DATA
     returning
       value(Y_STR_HEADER) type STRING .
-  class-methods REMOVE_SPECIAL_CHAR
-    changing
-      !Y_TEXT type STRING .
   PROTECTED SECTION.
 private section.
 
@@ -167,13 +173,13 @@ private section.
   data GT_FCAT type LVC_T_FCAT .
   data GS_EXIT_CONFIG type TS_EXIT_CONFIG .
   data GREF_SAP_DATA type ref to DATA .
-  data:
+  class-data:
     gr_typekind_numbers TYPE RANGE OF abap_typekind .
-  data:
+  class-data:
     gr_typekind_date TYPE RANGE OF abap_typekind .
-  data:
+  class-data:
     gr_typekind_time TYPE RANGE OF abap_typekind .
-  data:
+  class-data:
     gr_typekind_charlike TYPE RANGE OF abap_typekind .
 
   methods DOWNLOAD_CSV_LOCAL
@@ -286,7 +292,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     "Init range for managed abap typekind
     "---------------------------------------------------------------
 
-    me->gr_typekind_numbers = VALUE #(
+    gr_typekind_numbers = VALUE #(
       sign = 'I' option = 'EQ'
       ( low = cl_abap_typedescr=>typekind_float )
       ( low = cl_abap_typedescr=>typekind_decfloat )
@@ -302,17 +308,17 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ( low = cl_abap_typedescr=>typekind_packed )
     ).
 
-    me->gr_typekind_date = VALUE #(
+    gr_typekind_date = VALUE #(
       sign = 'I' option = 'EQ'
       ( low = cl_abap_typedescr=>typekind_date )
     ).
 
-    me->gr_typekind_time = VALUE #(
+    gr_typekind_time = VALUE #(
       sign = 'I' option = 'EQ'
       ( low = cl_abap_typedescr=>typekind_time )
     ).
 
-    me->gr_typekind_charlike = VALUE #(
+    gr_typekind_charlike = VALUE #(
       sign = 'I' option = 'EQ'
       ( low = cl_abap_typedescr=>typekind_char )
       ( low = cl_abap_typedescr=>typekind_clike )
@@ -333,11 +339,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_data_to_ext.
 
-    "Data conversion exit from SAP to External
-    "From
-    "-> 20241231
-    "To
-    "-> 31/12/2024
+*    Data conversion exit from SAP to External
+*    From
+*        -> 20241231
+*    To
+*        -> 31/12/2024
 
     y_data_ext = COND #(
       WHEN x_data_int EQ c_initial_data THEN ''
@@ -690,20 +696,23 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->CONV_SAP_TO_STRING
+* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_SAP_TO_STRING
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_SAP_DATA                     TYPE        ANY
 * | [--->] X_SEPARATOR                    TYPE        CHAR1 (default =C_SEPARATOR_SEMICOLON)
+* | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
+* | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
+* | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
 * | [<---] Y_STR_DATA                     TYPE        STRING
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_sap_to_string.
 
     y_str_data  = ''.
 
-    LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+    LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
       CHECK <fcat>-fieldname NE 'MANDT'.
 
-      ASSIGN me->go_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
+      ASSIGN xo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
       CHECK sy-subrc EQ 0.
 
       CHECK <component>-type_kind IN gr_typekind_numbers[]
@@ -806,8 +815,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
       "User exit
       "---------------------------------------------------------------
-      IF me->gs_exit_config-repid IS NOT INITIAL.
-        PERFORM (me->gs_exit_config-exit_sap_to_string) IN PROGRAM (gs_exit_config-repid) IF FOUND
+      IF xs_exit_config-repid IS NOT INITIAL.
+        PERFORM (xs_exit_config-exit_sap_to_string) IN PROGRAM (xs_exit_config-repid) IF FOUND
                                                         USING
                                                             <fcat>
                                                             <value>
@@ -828,9 +837,12 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
 
 * <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->CONV_STRING_TO_SAP
+* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_STRING_TO_SAP
 * +-------------------------------------------------------------------------------------------------+
 * | [--->] X_STR_DATA                     TYPE        STRING
+* | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
+* | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
+* | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
 * | [<---] Y_SAP_DATA                     TYPE        ANY
 * | [<---] Y_CONVERSIONS_ERRORS           TYPE        TS_CONVERSIONS_ERRORS
 * | [EXC!] CONVERSION_ERROR
@@ -853,10 +865,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     DATA(lv_tmp_string) = x_str_data.
 
-    LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+    LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
       CHECK <fcat>-fieldname NE 'MANDT'.
 
-      ASSIGN me->go_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
+      ASSIGN xo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
       CHECK sy-subrc EQ 0.
 
       ASSIGN COMPONENT <component>-name OF STRUCTURE <sap_data> TO FIELD-SYMBOL(<value>).
@@ -1044,8 +1056,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
       "User Exit
       "---------------------------------------------------------------
-      IF me->gs_exit_config-repid IS NOT INITIAL.
-        PERFORM (me->gs_exit_config-exit_string_to_sap) IN PROGRAM (gs_exit_config-repid) IF FOUND
+      IF xs_exit_config-repid IS NOT INITIAL.
+        PERFORM (xs_exit_config-exit_string_to_sap) IN PROGRAM (xs_exit_config-repid) IF FOUND
                                                             USING
                                                                 <fcat>
                                                                 <value>
@@ -1093,12 +1105,15 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     LOOP AT <gt_sap_data> ASSIGNING FIELD-SYMBOL(<sap_data>).
 
       APPEND INITIAL LINE TO yt_str_data ASSIGNING <str_data>.
-      me->conv_sap_to_string(
+      conv_sap_to_string(
         EXPORTING
-          x_sap_data  = <sap_data>
-          x_separator = c_separator_semicolon
+          x_sap_data     = <sap_data>
+          x_separator    = c_separator_semicolon
+          xt_fcat        = me->gt_fcat
+          xo_structdescr = me->go_structdescr
+          xs_exit_config = me->gs_exit_config
         IMPORTING
-          y_str_data  = <str_data>
+          y_str_data     = <str_data>
       ).
 
     ENDLOOP.
@@ -1130,16 +1145,19 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ENDIF.
 
       APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<data_sap>).
-      me->conv_string_to_sap(
+      conv_string_to_sap(
         EXPORTING
-          x_str_data                = <data_str>
+          x_str_data           = <data_str>
+          xt_fcat              = me->gt_fcat
+          xo_structdescr       = me->go_structdescr
+          xs_exit_config       = me->gs_exit_config
         IMPORTING
-          y_sap_data                = <data_sap>
-          y_conversions_errors      = DATA(ls_conv_error)
+          y_sap_data           = <data_sap>
+          y_conversions_errors = DATA(ls_conv_error)
         EXCEPTIONS
-          conversion_error          = 1
-          plausibility_error        = 2
-          OTHERS                    = 3
+          conversion_error     = 1
+          plausibility_error   = 2
+          OTHERS               = 3
       ).
       CASE sy-subrc.
         WHEN 0.
