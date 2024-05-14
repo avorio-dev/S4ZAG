@@ -17,9 +17,10 @@ public section.
     tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
   types:
     BEGIN OF ts_exit_config,
-        repid              TYPE sy-repid,
-        exit_sap_to_string TYPE string,
-        exit_string_to_sap TYPE string,
+        repid                    TYPE sy-repid,
+        exit_sap_to_str          TYPE string,
+        exit_str_to_sap_preconv  TYPE string,
+        exit_str_to_sap_postconv TYPE string,
       END OF ts_exit_config .
 
   constants C_CR_LF type ABAP_CR_LF value %_CR_LF ##NO_TEXT.
@@ -816,9 +817,10 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       "User exit
       "---------------------------------------------------------------
       IF xs_exit_config-repid IS NOT INITIAL.
-        PERFORM (xs_exit_config-exit_sap_to_string) IN PROGRAM (xs_exit_config-repid) IF FOUND
+        PERFORM (xs_exit_config-exit_sap_to_str) IN PROGRAM (xs_exit_config-repid) IF FOUND
                                                         USING
                                                             <fcat>
+                                                            x_sap_data
                                                             <value>
                                                         CHANGING
                                                             lv_tmp_data.
@@ -872,11 +874,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       CHECK sy-subrc EQ 0.
 
       ASSIGN COMPONENT <component>-name OF STRUCTURE <sap_data> TO FIELD-SYMBOL(<value>).
-
       y_conversions_errors-field       = <fcat>-fieldname.
       y_conversions_errors-field_descr = <fcat>-rollname.
-      y_conversions_errors-value       = <value>.
-
 
       IF <component>-type_kind NOT IN gr_typekind_numbers[]
         AND <component>-type_kind NOT IN gr_typekind_date[]
@@ -893,6 +892,22 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
         INTO DATA(lv_current_str)
              DATA(lv_next_str).
 
+      DATA(lv_orignal_str) = lv_current_str.
+
+
+      "User Exit - POST Conversions
+      "---------------------------------------------------------------
+      IF xs_exit_config-repid IS NOT INITIAL.
+        PERFORM (xs_exit_config-exit_str_to_sap_preconv) IN PROGRAM (xs_exit_config-repid) IF FOUND
+                                                            USING
+                                                                <fcat>
+                                                            CHANGING
+                                                                lv_current_str.
+      ENDIF.
+
+
+      "Deletion special chars
+      "-------------------------------------------------
       IF 1 = 2.
         remove_special_char(
           CHANGING
@@ -1054,13 +1069,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ENDIF.
 
 
-      "User Exit
+      "User Exit - POST Conversions
       "---------------------------------------------------------------
       IF xs_exit_config-repid IS NOT INITIAL.
-        PERFORM (xs_exit_config-exit_string_to_sap) IN PROGRAM (xs_exit_config-repid) IF FOUND
+        PERFORM (xs_exit_config-exit_str_to_sap_postconv) IN PROGRAM (xs_exit_config-repid) IF FOUND
                                                             USING
                                                                 <fcat>
-                                                                <value>
+                                                                lv_orignal_str
                                                             CHANGING
                                                                 lv_current_str.
       ENDIF.
