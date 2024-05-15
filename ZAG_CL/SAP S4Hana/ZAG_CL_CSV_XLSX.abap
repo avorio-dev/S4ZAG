@@ -24,6 +24,8 @@ public section.
       END OF ts_exit_config .
 
   constants C_CR_LF type ABAP_CR_LF value %_CR_LF ##NO_TEXT.
+  constants C_FILETYPE_CSV type CHAR3 value 'CSV' ##NO_TEXT.
+  constants C_FILETYPE_XLSX type CHAR4 value 'XLSX' ##NO_TEXT.
   constants C_INITIAL_DATA type DATUM value '00000000' ##NO_TEXT.
   constants C_INITIAL_TIME type TIME value 000000 ##NO_TEXT.
   constants C_MAX_DATA type DATUM value '99991231' ##NO_TEXT.
@@ -31,8 +33,6 @@ public section.
   constants C_SEPARATOR_SEMICOLON type CHAR1 value ';' ##NO_TEXT.
   constants C_SOURCE_LOCAL type CHAR1 value 'L' ##NO_TEXT.
   constants C_SOURCE_SERVER type CHAR1 value 'S' ##NO_TEXT.
-  constants C_FILETYPE_CSV type CHAR3 value 'CSV' ##NO_TEXT.
-  constants C_FILETYPE_XLSX type CHAR4 value 'XLSX' ##NO_TEXT.
 
   class-methods CONV_DATA_TO_EXT
     importing
@@ -76,6 +76,7 @@ public section.
       !XT_FCAT type LVC_T_FCAT
       !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
       !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
+      !X_SEPARATOR type ABAP_CHAR1 default C_SEPARATOR_SEMICOLON
     exporting
       !Y_SAP_DATA type ANY
       !Y_CONVERSIONS_ERRORS type TS_CONVERSIONS_ERRORS
@@ -170,18 +171,20 @@ public section.
   PROTECTED SECTION.
 private section.
 
-  data GO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR .
-  data GT_FCAT type LVC_T_FCAT .
-  data GS_EXIT_CONFIG type TS_EXIT_CONFIG .
-  data GREF_SAP_DATA type ref to DATA .
+  constants C_MANDT type FIELDNAME value 'MANDT' ##NO_TEXT.
   class-data:
-    gr_typekind_numbers TYPE RANGE OF abap_typekind .
+    gr_typekind_charlike TYPE RANGE OF abap_typekind .
   class-data:
     gr_typekind_date TYPE RANGE OF abap_typekind .
   class-data:
-    gr_typekind_time TYPE RANGE OF abap_typekind .
+    gr_typekind_numbers TYPE RANGE OF abap_typekind .
   class-data:
-    gr_typekind_charlike TYPE RANGE OF abap_typekind .
+    gr_typekind_time TYPE RANGE OF abap_typekind .
+  data GO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR .
+  data GREF_SAP_DATA type ref to DATA .
+  data GS_EXIT_CONFIG type TS_EXIT_CONFIG .
+  data GT_FCAT type LVC_T_FCAT .
+  data GV_SEPARATOR type ABAP_CHAR1 .
 
   methods DOWNLOAD_CSV_LOCAL
     importing
@@ -264,13 +267,16 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       APPEND xs_sap_line TO <sap_data>.
 
     ELSEIF xt_sap_table IS SUPPLIED.
-      me->gref_sap_data = REF #( xt_sap_table ).
+      CREATE DATA me->gref_sap_data LIKE xt_sap_table.
       ASSIGN me->gref_sap_data->* TO <sap_data>.
+
+      APPEND LINES OF xt_sap_table TO <sap_data>.
 
     ENDIF.
 
 
     me->gs_exit_config = xs_exit_config.
+    me->gv_separator   = c_separator_semicolon.
 
 
     "Set Fieldcat and Fields Descriptor
@@ -375,38 +381,42 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 *        -> 20241231
 
     y_data_int = c_initial_data.
-    IF x_data_ext IS INITIAL.
+
+    DATA(lv_data_ext) = x_data_ext.
+    CONDENSE lv_data_ext NO-GAPS.
+
+    IF lv_data_ext IS INITIAL.
       EXIT.
     ENDIF.
 
-    IF strlen( x_data_ext ) NE 10
-      AND strlen( x_data_ext ) NE 8.
+    IF strlen( lv_data_ext ) NE 10
+      AND strlen( lv_data_ext ) NE 8.
       RAISE format_error.
     ENDIF.
 
 
-    IF strlen( x_data_ext ) EQ 10.
+    IF strlen( lv_data_ext ) EQ 10.
 
       "Data format managed
       "25-12-2023
       "2023-12-25
 
-      IF x_data_ext+2(1) CA '0123456789'.                   "#EC NOTEXT
+      IF lv_data_ext+2(1) CA '0123456789'.                   "#EC NOTEXT
         "Format like 25-12-2023
-        y_data_int = |{ x_data_ext(4) }{ x_data_ext+5(2) }{ x_data_ext+8(2) }|.
+        y_data_int = |{ lv_data_ext(4) }{ lv_data_ext+5(2) }{ lv_data_ext+8(2) }|.
 
       ELSEIF x_data_ext+2(1) NA '0123456789'.              "#EC NOTEXT.
         "Format like 2023-12-25
-        y_data_int = |{ x_data_ext+6(4) }{ x_data_ext+3(2) }{ x_data_ext(2) }|.
+        y_data_int = |{ lv_data_ext+6(4) }{ lv_data_ext+3(2) }{ lv_data_ext(2) }|.
 
       ELSE.
         RAISE format_error.
 
       ENDIF.
 
-    ELSEIF strlen( x_data_ext ) EQ 8.
+    ELSEIF strlen( lv_data_ext ) EQ 8.
       "Format like 20231225
-      y_data_int = x_data_ext.
+      y_data_int = lv_data_ext.
 
     ENDIF.
 
@@ -711,7 +721,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     y_str_data  = ''.
 
     LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-      CHECK <fcat>-fieldname NE 'MANDT'.
+      CHECK <fcat>-fieldname NE c_mandt.
 
       ASSIGN xo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
       CHECK sy-subrc EQ 0.
@@ -845,6 +855,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
 * | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
 * | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
+* | [--->] X_SEPARATOR                    TYPE        ABAP_CHAR1 (default =C_SEPARATOR_SEMICOLON)
 * | [<---] Y_SAP_DATA                     TYPE        ANY
 * | [<---] Y_CONVERSIONS_ERRORS           TYPE        TS_CONVERSIONS_ERRORS
 * | [EXC!] CONVERSION_ERROR
@@ -868,14 +879,16 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     DATA(lv_tmp_string) = x_str_data.
 
     LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-      CHECK <fcat>-fieldname NE 'MANDT'.
+      CHECK <fcat>-fieldname NE c_mandt.
 
       ASSIGN xo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
-      CHECK sy-subrc EQ 0.
+      IF sy-subrc <> 0.
+        BREAK-POINT.
+      ENDIF.
 
       ASSIGN COMPONENT <component>-name OF STRUCTURE <sap_data> TO FIELD-SYMBOL(<value>).
       y_conversions_errors-field       = <fcat>-fieldname.
-      y_conversions_errors-field_descr = <fcat>-rollname.
+      y_conversions_errors-field_descr = <fcat>-reptext.
 
       IF <component>-type_kind NOT IN gr_typekind_numbers[]
         AND <component>-type_kind NOT IN gr_typekind_date[]
@@ -888,7 +901,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ENDIF.
 
 
-      SPLIT lv_tmp_string AT ';'
+      SPLIT lv_tmp_string AT x_separator
         INTO DATA(lv_current_str)
              DATA(lv_next_str).
 
@@ -1123,7 +1136,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       conv_sap_to_string(
         EXPORTING
           x_sap_data     = <sap_data>
-          x_separator    = c_separator_semicolon
+          x_separator    = me->gv_separator
           xt_fcat        = me->gt_fcat
           xo_structdescr = me->go_structdescr
           xs_exit_config = me->gs_exit_config
@@ -1166,6 +1179,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           xt_fcat              = me->gt_fcat
           xo_structdescr       = me->go_structdescr
           xs_exit_config       = me->gs_exit_config
+          x_separator          = me->gv_separator
         IMPORTING
           y_sap_data           = <data_sap>
           y_conversions_errors = DATA(ls_conv_error)
@@ -1235,14 +1249,21 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     y_time = c_initial_time.
 
-    IF strlen( x_time ) NE 8
-      AND strlen( x_time ) NE 6.
+    DATA(lv_time_ext) = x_time.
+    CONDENSE lv_time_ext NO-GAPS.
+
+    IF lv_time_ext IS INITIAL.
+      EXIT.
+    ENDIF.
+
+    IF strlen( lv_time_ext ) NE 8
+      AND strlen( lv_time_ext ) NE 6.
       RAISE format_error.
     ENDIF.
 
     y_time = COND #(
-        WHEN strlen( x_time ) EQ 6 THEN x_time
-        WHEN strlen( x_time ) EQ 8 THEN |{ x_time(2) }{ x_time+3(2) }{ x_time+6(2) }|
+        WHEN strlen( lv_time_ext ) EQ 6 THEN lv_time_ext
+        WHEN strlen( lv_time_ext ) EQ 8 THEN |{ lv_time_ext(2) }{ lv_time_ext+3(2) }{ lv_time_ext+6(2) }|
    ).
 
     CALL FUNCTION 'TIME_CHECK_PLAUSIBILITY'
@@ -1337,57 +1358,89 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 * +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_excel_local.
 
+*    TYPES: BEGIN OF ts_string,
+*             string TYPE string,
+*           END OF ts_string.
+*
+*    DATA lt_str_data TYPE TABLE OF ts_string.
+*
+*    get_fieldcat_from_data(
+*      EXPORTING
+*        xt_sap_table              = lt_str_data
+*      IMPORTING
+*        yt_fcat                   = DATA(lt_fcat)
+*      EXCEPTIONS
+*        unable_define_structdescr = 1
+*        OTHERS                    = 2
+*    ).
+*    IF sy-subrc <> 0.
+**     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+**       WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+*    ENDIF.
+*
+*    lt_str_data = VALUE #( FOR <str> IN xt_str_data ( string = <str> ) ).
+*    DATA(lref_str_data) = REF #( lt_str_data ).
+*
+*
+*    cl_salv_bs_lex=>export_from_result_data_table(
+*      EXPORTING
+*        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
+*        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = lref_str_data
+*                                                                           t_fieldcatalog  = lt_fcat )
+*      IMPORTING
+*        er_result_file       = DATA(lv_xdata) ).
+
+
+
     "Standard Version ->
     "Conversion of fields like data, numbers exc.
     "will be performed by SAP Standard
     "-------------------------------------------------
-*    cl_salv_bs_lex=>export_from_result_data_table(
-*      EXPORTING
-*        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
-*        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = me->gref_sap_data
-*                                                                           t_fieldcatalog  = me->gt_fcat )
-*      IMPORTING
-*        er_result_file       = DATA(lv_xdata) ).
+    cl_salv_bs_lex=>export_from_result_data_table(
+      EXPORTING
+        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
+        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = me->gref_sap_data
+                                                                           t_fieldcatalog  = me->gt_fcat )
+      IMPORTING
+        er_result_file       = DATA(lv_xdata) ).
 
-    "TODO check if works
-    DATA(lv_xdata) = CONV xstring( cl_bcs_convert=>xtab_to_xstring( it_xtab = xt_str_data[] ) ).
 
     DATA(lv_xlength) = xstrlen( lv_xdata ).
     DATA(lt_bin_tab) = cl_bcs_convert=>xstring_to_solix( iv_xstring = lv_xdata ).
 
     cl_gui_frontend_services=>gui_download(
-    EXPORTING
-      bin_filesize              = lv_xlength           " File length for binary files
-      filename                  = x_filename           " Name of file
-      filetype                  = 'BIN'                " File type (ASCII, binary ...)
-    CHANGING
-      data_tab                  = lt_bin_tab           " Transfer table
-    EXCEPTIONS
-      file_write_error          = 1                    " Cannot write to file
-      no_batch                  = 2                    " Cannot execute front-end function in background
-      gui_refuse_filetransfer   = 3                    " Incorrect Front End
-      invalid_type              = 4                    " Invalid value for parameter FILETYPE
-      no_authority              = 5                    " No Download Authorization
-      unknown_error             = 6                    " Unknown error
-      header_not_allowed        = 7                    " Invalid header
-      separator_not_allowed     = 8                    " Invalid separator
-      filesize_not_allowed      = 9                    " Invalid file size
-      header_too_long           = 10                   " Header information currently restricted to 1023 bytes
-      dp_error_create           = 11                   " Cannot create DataProvider
-      dp_error_send             = 12                   " Error Sending Data with DataProvider
-      dp_error_write            = 13                   " Error Writing Data with DataProvider
-      unknown_dp_error          = 14                   " Error when calling data provider
-      access_denied             = 15                   " Access to File Denied
-      dp_out_of_memory          = 16                   " Not enough memory in data provider
-      disk_full                 = 17                   " Storage medium is full.
-      dp_timeout                = 18                   " Data provider timeout
-      file_not_found            = 19                   " Could not find file
-      dataprovider_exception    = 20                   " General Exception Error in DataProvider
-      control_flush_error       = 21                   " Error in Control Framework
-      not_supported_by_gui      = 22                   " GUI does not support this
-      error_no_gui              = 23                   " GUI not available
-      OTHERS                    = 24
-    ).
+        EXPORTING
+          bin_filesize              = lv_xlength           " File length for binary files
+          filename                  = x_filename           " Name of file
+          filetype                  = 'BIN'                " File type (ASCII, binary ...)
+        CHANGING
+          data_tab                  = lt_bin_tab          " Transfer table
+        EXCEPTIONS
+          file_write_error          = 1                    " Cannot write to file
+          no_batch                  = 2                    " Cannot execute front-end function in background
+          gui_refuse_filetransfer   = 3                    " Incorrect Front End
+          invalid_type              = 4                    " Invalid value for parameter FILETYPE
+          no_authority              = 5                    " No Download Authorization
+          unknown_error             = 6                    " Unknown error
+          header_not_allowed        = 7                    " Invalid header
+          separator_not_allowed     = 8                    " Invalid separator
+          filesize_not_allowed      = 9                    " Invalid file size
+          header_too_long           = 10                   " Header information currently restricted to 1023 bytes
+          dp_error_create           = 11                   " Cannot create DataProvider
+          dp_error_send             = 12                   " Error Sending Data with DataProvider
+          dp_error_write            = 13                   " Error Writing Data with DataProvider
+          unknown_dp_error          = 14                   " Error when calling data provider
+          access_denied             = 15                   " Access to File Denied
+          dp_out_of_memory          = 16                   " Not enough memory in data provider
+          disk_full                 = 17                   " Storage medium is full.
+          dp_timeout                = 18                   " Data provider timeout
+          file_not_found            = 19                   " Could not find file
+          dataprovider_exception    = 20                   " General Exception Error in DataProvider
+          control_flush_error       = 21                   " Error in Control Framework
+          not_supported_by_gui      = 22                   " GUI does not support this
+          error_no_gui              = 23                   " GUI not available
+          OTHERS                    = 24
+        ).
     IF sy-subrc <> 0.
       RAISE unable_open_path.
     ENDIF.
@@ -1410,21 +1463,13 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "-------------------------------------------------
 
-*    cl_salv_bs_lex=>export_from_result_data_table(
-*      EXPORTING
-*        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
-*        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = me->gref_sap_data
-*                                                                           t_fieldcatalog  = me->gt_fcat )
-*      IMPORTING
-*        er_result_file       = DATA(lv_xdata) ).
-
-    "TODO check if works
-    TRY.
-        DATA(lv_xdata) = CONV xstring( cl_bcs_convert=>xtab_to_xstring( it_xtab = xt_str_data[] ) ).
-
-      CATCH cx_bcs INTO DATA(lx_bcs). " BCS: General Exceptions
-        RAISE unable_open_path.
-    ENDTRY.
+    cl_salv_bs_lex=>export_from_result_data_table(
+      EXPORTING
+        is_format            = if_salv_bs_lex_format=>mc_format_xlsx
+        ir_result_data_table = cl_salv_ex_util=>factory_result_data_table( r_data          = me->gref_sap_data
+                                                                           t_fieldcatalog  = me->gt_fcat )
+      IMPORTING
+        er_result_file       = DATA(lv_xdata) ).
 
     DATA(lv_xlength) = xstrlen( lv_xdata ).
 
@@ -1582,11 +1627,16 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     "Check if file is supported
     "-------------------------------------------------
     IF x_filename CP '*.xlsx'.
-      lv_filetype = c_filetype_xlsx.
+      lv_filetype      = c_filetype_xlsx.
+      me->gv_separator = c_separator_horizontal_tab.
+
     ELSEIF x_filename CP '*.csv'.
-      lv_filetype = c_filetype_csv.
+      lv_filetype      = c_filetype_csv.
+      me->gv_separator = c_separator_semicolon.
+
     ELSE.
       RAISE not_supported_file.
+
     ENDIF.
 
     FIELD-SYMBOLS: <gt_sap_data> TYPE STANDARD TABLE.
@@ -1706,9 +1756,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     "Check if file is supported
     "-------------------------------------------------
     IF x_filename CP '*.xlsx'.
-      lv_filetype = c_filetype_xlsx.
+      lv_filetype  = c_filetype_xlsx.
+
     ELSEIF x_filename CP '*.csv'.
-      lv_filetype = c_filetype_csv.
+      lv_filetype  = c_filetype_csv.
+
     ELSE.
       RAISE not_supported_file.
     ENDIF.
@@ -1796,10 +1848,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     "Conversion in SAP Format for CSV
     "-------------------------------------------------
-    IF lines( lt_str_data ) EQ 0.
-      RAISE empty_file.
-    ENDIF.
-
     me->conv_tab_to_int(
       EXPORTING
         x_header              = x_header
@@ -1817,6 +1865,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       WHEN 1.
         RAISE conversion_error.
     ENDCASE.
+
+
+    IF lines( yt_sap_data ) EQ 0.
+      RAISE empty_file.
+    ENDIF.
 
   ENDMETHOD.
 
@@ -1924,11 +1977,11 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     y_str_header = ''.
 
     LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-      CHECK <fcat>-fieldname NE 'MANDT'.
+      CHECK <fcat>-fieldname NE c_mandt.
 
       y_str_header = COND #(
         WHEN y_str_header EQ '' THEN <fcat>-reptext
-        WHEN y_str_header NE '' THEN |{ y_str_header };{ <fcat>-reptext }|
+        WHEN y_str_header NE '' THEN |{ y_str_header }{ me->gv_separator }{ <fcat>-reptext }|
       ).
 
     ENDLOOP.
@@ -2157,7 +2210,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
         LOOP AT me->go_structdescr->components ASSIGNING FIELD-SYMBOL(<comp>).
 
-          ASSIGN COMPONENT <comp>-name OF STRUCTURE <excel> TO FIELD-SYMBOL(<excel_col>).
+          ASSIGN COMPONENT sy-tabix OF STRUCTURE <excel> TO FIELD-SYMBOL(<excel_col>).
+          CHECK sy-subrc EQ 0.
           <str_data> = COND #(
             WHEN <str_data> EQ '' THEN <excel_col>
             WHEN <str_data> NE '' THEN |{ <str_data> };{ <excel_col> }|
