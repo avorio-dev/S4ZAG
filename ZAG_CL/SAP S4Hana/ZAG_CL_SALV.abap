@@ -1,22 +1,22 @@
-CLASS zag_cl_salv DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC .
+class ZAG_CL_SALV definition
+  public
+  final
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    TYPES:
-      BEGIN OF ty_col_settings,
+  types:
+    BEGIN OF ty_col_settings,
         fieldname TYPE lvc_s_fcat-fieldname,
         label     TYPE string,
         no_out    TYPE flag,
         hotspot   TYPE flag,
       END OF ty_col_settings .
-    TYPES:
-      tt_col_settings TYPE TABLE OF ty_col_settings .
+  types:
+    tt_col_settings TYPE TABLE OF ty_col_settings .
 
-    CONSTANTS:
-      BEGIN OF cc_icon,
+  constants:
+    BEGIN OF cc_icon,
         green TYPE icon_d VALUE '@5B@' ##NO_TEXT,
         red   TYPE icon_d VALUE '@5C@' ##NO_TEXT,
         yell  TYPE icon_d VALUE '@5D@' ##NO_TEXT,
@@ -25,9 +25,9 @@ CLASS zag_cl_salv DEFINITION
         exec  TYPE icon_d VALUE '@15@' ##NO_TEXT,
         refr  TYPE icon_d VALUE '@42@' ##NO_TEXT,
         save  TYPE icon_d VALUE '@2L@' ##NO_TEXT,
-      END OF cc_icon,
-
-      BEGIN OF cc_cell_col,
+      END OF cc_icon .
+  constants:
+    BEGIN OF cc_cell_col,
         cyan  TYPE lvc_col VALUE '1' ##NO_TEXT,
         grey  TYPE lvc_col VALUE '2' ##NO_TEXT,
         yell  TYPE lvc_col VALUE '3' ##NO_TEXT,
@@ -35,48 +35,51 @@ CLASS zag_cl_salv DEFINITION
         green TYPE lvc_col VALUE '5' ##NO_TEXT,
         red   TYPE lvc_col VALUE '6' ##NO_TEXT,
         oran  TYPE lvc_col VALUE '7' ##NO_TEXT,
-      END OF cc_cell_col.
+      END OF cc_cell_col .
+  constants C_COL_FIELDNAME type LVC_FNAME value 'T_COL' ##NO_TEXT.
 
-    CONSTANTS c_col_fieldname TYPE lvc_fname VALUE 'T_COL' ##NO_TEXT.
-
-    CLASS-METHODS display_generic_alv
-      IMPORTING
-        !x_popup         TYPE boolean DEFAULT abap_false
-        !xt_col_settings TYPE tt_col_settings OPTIONAL
-        !xt_output       TYPE STANDARD TABLE
-      EXCEPTIONS
-        salv_creation_error .
-    CLASS-METHODS display_transposed_row
-      IMPORTING
-        !x_popup       TYPE flag DEFAULT abap_true
-        !x_row         TYPE any
-      EXPORTING
-        !yt_transposed TYPE STANDARD TABLE .
-    CLASS-METHODS set_color_cell
-      IMPORTING
-        !x_color     TYPE lvc_col
-        !x_fieldname TYPE fieldname
-      CHANGING
-        !y_row       TYPE any
-      EXCEPTIONS
-        col_tab_not_found
-        fieldname_not_found .
-    CLASS-METHODS set_color_row
-      IMPORTING
-        !x_color TYPE lvc_col
-      CHANGING
-        !y_row   TYPE any
-      EXCEPTIONS
-        col_tab_not_found
-        fcat_not_found .
-    CLASS-METHODS get_fieldcat
-      IMPORTING
-        !xs_row        TYPE any OPTIONAL
-        !xt_table      TYPE STANDARD TABLE OPTIONAL
-      RETURNING
-        VALUE(yt_fcat) TYPE lvc_t_fcat
-      EXCEPTIONS
-        fcat_not_found .
+  class-methods DISPLAY_GENERIC_ALV
+    importing
+      !X_POPUP type BOOLEAN default ABAP_FALSE
+      !XT_COL_SETTINGS type TT_COL_SETTINGS optional
+      !XT_OUTPUT type STANDARD TABLE
+    exceptions
+      SALV_CREATION_ERROR .
+  class-methods DISPLAY_TRANSPOSED_ROW
+    importing
+      !X_POPUP type FLAG default ABAP_TRUE
+      !X_ROW type ANY
+    exporting
+      !YT_TRANSPOSED type STANDARD TABLE .
+  class-methods SET_COLOR_CELL
+    importing
+      !X_COLOR type LVC_COL
+      !X_COL_INT type FLAG optional
+      !X_COL_INV type FLAG optional
+      !X_FIELDNAME type FIELDNAME
+    changing
+      !Y_ROW type ANY
+    exceptions
+      COL_TAB_NOT_FOUND
+      FIELDNAME_NOT_FOUND .
+  class-methods SET_COLOR_ROW
+    importing
+      !X_COLOR type LVC_COL
+      !X_COL_INT type FLAG optional
+      !X_COL_INV type FLAG optional
+    changing
+      !Y_ROW type ANY
+    exceptions
+      COL_TAB_NOT_FOUND
+      FCAT_NOT_FOUND .
+  class-methods GET_FIELDCAT
+    importing
+      !XS_ROW type ANY optional
+      !XT_TABLE type STANDARD TABLE optional
+    returning
+      value(YT_FCAT) type LVC_T_FCAT
+    exceptions
+      FCAT_NOT_FOUND .
   PRIVATE SECTION.
 
     DATA gt_fcat TYPE lvc_t_fcat .
@@ -91,9 +94,17 @@ ENDCLASS.
 
 
 
-CLASS zag_cl_salv IMPLEMENTATION.
+CLASS ZAG_CL_SALV IMPLEMENTATION.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_SALV=>DISPLAY_GENERIC_ALV
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_POPUP                        TYPE        BOOLEAN (default =ABAP_FALSE)
+* | [--->] XT_COL_SETTINGS                TYPE        TT_COL_SETTINGS(optional)
+* | [--->] XT_OUTPUT                      TYPE        STANDARD TABLE
+* | [EXC!] SALV_CREATION_ERROR
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD display_generic_alv.
 
     DATA: lref_output     TYPE REF TO data,
@@ -303,6 +314,13 @@ CLASS zag_cl_salv IMPLEMENTATION.
   ENDMETHOD.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_SALV=>DISPLAY_TRANSPOSED_ROW
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_POPUP                        TYPE        FLAG (default =ABAP_TRUE)
+* | [--->] X_ROW                          TYPE        ANY
+* | [<---] YT_TRANSPOSED                  TYPE        STANDARD TABLE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD display_transposed_row.
 
     DATA: lref_t_row      TYPE REF TO data.
@@ -407,6 +425,14 @@ CLASS zag_cl_salv IMPLEMENTATION.
   ENDMETHOD.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_SALV=>GET_FIELDCAT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] XS_ROW                         TYPE        ANY(optional)
+* | [--->] XT_TABLE                       TYPE        STANDARD TABLE(optional)
+* | [<-()] YT_FCAT                        TYPE        LVC_T_FCAT
+* | [EXC!] FCAT_NOT_FOUND
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD get_fieldcat.
 
     DATA: lref_table TYPE REF TO data.
@@ -448,6 +474,17 @@ CLASS zag_cl_salv IMPLEMENTATION.
   ENDMETHOD.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_SALV=>SET_COLOR_CELL
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_COLOR                        TYPE        LVC_COL
+* | [--->] X_COL_INT                      TYPE        FLAG(optional)
+* | [--->] X_COL_INV                      TYPE        FLAG(optional)
+* | [--->] X_FIELDNAME                    TYPE        FIELDNAME
+* | [<-->] Y_ROW                          TYPE        ANY
+* | [EXC!] COL_TAB_NOT_FOUND
+* | [EXC!] FIELDNAME_NOT_FOUND
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_color_cell.
 
     DATA: ls_scol TYPE lvc_s_scol.
@@ -471,11 +508,25 @@ CLASS zag_cl_salv IMPLEMENTATION.
     CLEAR ls_scol.
     ls_scol-fname     = x_fieldname.
     ls_scol-color-col = x_color.
+    ls_scol-color-int = COND #( WHEN x_col_int EQ ' ' THEN '0'
+                                WHEN x_col_int EQ 'X' THEN '1' ).
+    ls_scol-color-inv = COND #( WHEN x_col_inv EQ ' ' THEN '0'
+                                WHEN x_col_inv EQ 'X' THEN '1' ).
     INSERT ls_scol INTO TABLE <t_col> .
 
   ENDMETHOD.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZAG_CL_SALV=>SET_COLOR_ROW
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_COLOR                        TYPE        LVC_COL
+* | [--->] X_COL_INT                      TYPE        FLAG(optional)
+* | [--->] X_COL_INV                      TYPE        FLAG(optional)
+* | [<-->] Y_ROW                          TYPE        ANY
+* | [EXC!] COL_TAB_NOT_FOUND
+* | [EXC!] FCAT_NOT_FOUND
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_color_row.
 
     DATA: ls_scol TYPE lvc_s_scol.
@@ -499,6 +550,10 @@ CLASS zag_cl_salv IMPLEMENTATION.
           CLEAR ls_scol.
           ls_scol-fname     = <fcat>-fieldname.
           ls_scol-color-col = x_color.
+          ls_scol-color-int = COND #( WHEN x_col_int EQ ' ' THEN '0'
+                                      WHEN x_col_int EQ 'X' THEN '1' ).
+          ls_scol-color-inv = COND #( WHEN x_col_inv EQ ' ' THEN '0'
+                                      WHEN x_col_inv EQ 'X' THEN '1' ).
           INSERT ls_scol INTO TABLE <t_col> .
 
         ENDLOOP.
@@ -511,6 +566,13 @@ CLASS zag_cl_salv IMPLEMENTATION.
   ENDMETHOD.
 
 
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Private Method ZAG_CL_SALV=>SET_SALV_TEXT_COLUMN
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] X_FIELDNAME                    TYPE        FIELDNAME
+* | [--->] X_LABEL                        TYPE        STRING
+* | [<-->] YO_COLUMN                      TYPE REF TO CL_SALV_COLUMN_TABLE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_salv_text_column.
 
     DATA: lv_outlen    TYPE lvc_outlen,
