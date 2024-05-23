@@ -28,6 +28,7 @@ public section.
   constants C_CELL_COL_RED type LVC_COL value '6' ##NO_TEXT.
   constants C_CELL_COL_ORAN type LVC_COL value '7' ##NO_TEXT.
   constants C_CELL_COL_NULL type LVC_COL value '2' ##NO_TEXT.
+  constants C_CELL_COL_BLUE type LVC_COL value '4' ##NO_TEXT.
   constants C_COL_FIELDNAME type LVC_FNAME value 'T_COL' ##NO_TEXT.
 
   class-methods DISPLAY_GENERIC_ALV
