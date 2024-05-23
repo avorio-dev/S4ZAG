@@ -294,6 +294,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
     IF sy-subrc <> 0.
       RAISE unable_define_structdescr.
     ENDIF.
+    DELETE me->gt_fcat WHERE fieldname EQ c_mandt.
 
 
     "Init range for managed abap typekind
@@ -2214,7 +2215,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           CHECK sy-subrc EQ 0.
           <str_data> = COND #(
             WHEN <str_data> EQ '' THEN <excel_col>
-            WHEN <str_data> NE '' THEN |{ <str_data> };{ <excel_col> }|
+            WHEN <str_data> NE '' THEN |{ <str_data> }{ me->gv_separator }{ <excel_col> }|
           ).
 
         ENDLOOP.
