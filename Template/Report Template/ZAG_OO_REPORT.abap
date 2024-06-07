@@ -1,9 +1,21 @@
 REPORT zag_oo_report.
 
-INCLUDE zag_oo_report_top.
 INCLUDE zag_oo_report_def.
 INCLUDE zag_oo_report_imp.
 
+
+"SELECTION SCREEN
+**********************************************************************
+
+TABLES: but000, t001.
+SELECTION-SCREEN BEGIN OF BLOCK a1 WITH FRAME TITLE TEXT-t01.
+SELECT-OPTIONS: s_partn FOR but000-partner,
+                s_bukrs FOR t001-bukrs.
+SELECTION-SCREEN END OF BLOCK a1.
+
+
+"MAIN PROCESS
+**********************************************************************
 INITIALIZATION.
   DATA(lo_selection_screen) = NEW lcl_selection_screen( ).
   DATA(lo_data_processor)   = NEW lcl_data_processor( ).
