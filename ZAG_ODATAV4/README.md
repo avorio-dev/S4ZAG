@@ -22,3 +22,7 @@
 3. Register a service **ZAG_SRV_VENDOR** providing the just created model and provider classes
 4. Assign the service to the service group **ZAG_SG_VENDOR**
 5. Publish the service group using transaction **/iwfnd/v4_admin** – (Gateway System)
+
+
+## How to run the service?
+<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
