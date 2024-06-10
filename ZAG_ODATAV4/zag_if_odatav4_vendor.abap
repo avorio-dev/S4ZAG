@@ -3,7 +3,7 @@ INTERFACE zag_if_odatav4_vendor
 
   TYPES:
 
-    "Data Sources List
+    " Data Sources List
     "---------------------------------------------------------------
     BEGIN OF ts_cds_views,
       vendor   TYPE zag_cds_lfa1,
@@ -12,7 +12,7 @@ INTERFACE zag_if_odatav4_vendor
     END OF ts_cds_views,
 
 
-    "KEY Fields
+    " KEY Fields
     "---------------------------------------------------------------
     BEGIN OF ts_key_range,
       lifnr TYPE RANGE OF ts_cds_views-vendor-lifnr,
@@ -23,7 +23,7 @@ INTERFACE zag_if_odatav4_vendor
 
   CONSTANTS:
 
-    "Data Sources Names
+    " Data Sources Names
     "---------------------------------------------------------------
     BEGIN OF cc_cds_view_names,
       vendor   TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFA1',
@@ -32,7 +32,7 @@ INTERFACE zag_if_odatav4_vendor
     END OF cc_cds_view_names,
 
 
-    "Entity Type Names
+    " Entity Type Names
     "---------------------------------------------------------------
     BEGIN OF cc_entity_type_names,
       BEGIN OF internal,
@@ -49,7 +49,7 @@ INTERFACE zag_if_odatav4_vendor
     END OF cc_entity_type_names,
 
 
-    "Entity Set Names
+    " Entity Set Names
     "---------------------------------------------------------------
     BEGIN OF cc_entity_set_names,
       BEGIN OF internal,
@@ -65,7 +65,7 @@ INTERFACE zag_if_odatav4_vendor
     END OF cc_entity_set_names ,
 
 
-    "Navigation Properties Names
+    " Navigation Properties Names
     "---------------------------------------------------------------
     BEGIN OF cc_nav_prop_names,
       BEGIN OF internal,
