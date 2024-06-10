@@ -142,7 +142,7 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
 
   METHOD define_company.
 
-    DATA: ls_ref_cds_view TYPE ts_cds_views-company.
+    DATA: ls_ref_cds_view   TYPE ts_cds_views-company.
 
 
     "Create Entity Type
@@ -150,9 +150,9 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     DATA(lo_entity_type) = io_model->create_entity_type_by_struct(
                              iv_entity_type_name          = cc_entity_type_names-internal-company
                              is_structure                 = ls_ref_cds_view
-                             iv_add_annos_to_prim_props   = abap_true
                              iv_add_conv_to_prim_props    = abap_true
                              iv_add_f4_help_to_prim_props = abap_true
+                             iv_gen_prim_props            = abap_true
     ).
     lo_entity_type->set_edm_name( iv_edm_name = cc_entity_type_names-edm-company ).
 
@@ -207,9 +207,9 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     DATA(lo_entity_type) = io_model->create_entity_type_by_struct(
                              iv_entity_type_name          = cc_entity_type_names-internal-purchorg
                              is_structure                 = ls_ref_cds_view
-                             iv_add_annos_to_prim_props   = abap_true
                              iv_add_conv_to_prim_props    = abap_true
                              iv_add_f4_help_to_prim_props = abap_true
+                             iv_gen_prim_props            = abap_true
     ).
     lo_entity_type->set_edm_name( iv_edm_name = cc_entity_type_names-edm-purchorg ).
 
