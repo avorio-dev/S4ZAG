@@ -125,19 +125,6 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     ).
 
 
-    FREE lo_entity_set.
-    lo_entity_set = lo_entity_type->create_entity_set(
-        iv_entity_set_name = cc_entity_set_names-internal-purchorg
-    ).
-    lo_entity_set->set_edm_name( iv_edm_name = cc_entity_set_names-edm-purchorg ).
-
-    lo_entity_set->add_navigation_prop_binding(
-      EXPORTING
-        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_purchorg )
-        iv_target_entity_set        = cc_entity_set_names-internal-purchorg
-    ).
-
-
   ENDMETHOD.
 
   METHOD define_company.
