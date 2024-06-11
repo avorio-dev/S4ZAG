@@ -88,6 +88,26 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     lo_primitive_prop->set_is_key( ).
 
 
+    " Create Entity Set / Add the binding of the navigation path
+    "---------------------------------------------------------------
+    DATA(lo_entity_set) = lo_entity_type->create_entity_set(
+        iv_entity_set_name = cc_entity_set_names-internal-vendor
+    ).
+    lo_entity_set->set_edm_name( iv_edm_name = cc_entity_set_names-edm-vendor ).
+
+    lo_entity_set->add_navigation_prop_binding(
+      EXPORTING
+        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_company )
+        iv_target_entity_set        = cc_entity_set_names-internal-company
+    ).
+
+    lo_entity_set->add_navigation_prop_binding(
+      EXPORTING
+        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_purchorg )
+        iv_target_entity_set        = cc_entity_set_names-internal-purchorg
+    ).
+
+
     " Create Navigation Property
     "---------------------------------------------------------------
     DATA(lo_nav_prop) = lo_entity_type->create_navigation_property(
@@ -102,27 +122,13 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
 
     FREE lo_nav_prop.
     lo_nav_prop = lo_entity_type->create_navigation_property(
-    iv_property_name = cc_nav_prop_names-internal-vendor_to_purchorg
+        iv_property_name = cc_nav_prop_names-internal-vendor_to_purchorg
     ).
     lo_nav_prop->set_edm_name( iv_edm_name = cc_nav_prop_names-edm-vendor_to_purchorg ).
 
     lo_nav_prop->set_target_entity_type_name( cc_entity_type_names-internal-purchorg ).
     lo_nav_prop->set_target_multiplicity( /iwbep/if_v4_med_element=>gcs_med_nav_multiplicity-to_many_optional ).
     lo_nav_prop->set_on_delete_action( /iwbep/if_v4_med_element=>gcs_med_on_delete_action-none ).
-
-
-    " Create Entity Set / Add the binding of the navigation path
-    "---------------------------------------------------------------
-    DATA(lo_entity_set) = lo_entity_type->create_entity_set(
-        iv_entity_set_name = cc_entity_set_names-internal-vendor
-    ).
-    lo_entity_set->set_edm_name( iv_edm_name = cc_entity_set_names-edm-vendor ).
-
-    lo_entity_set->add_navigation_prop_binding(
-      EXPORTING
-        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_company )
-        iv_target_entity_set        = cc_entity_set_names-internal-company
-    ).
 
 
   ENDMETHOD.
