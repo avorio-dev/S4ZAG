@@ -20,7 +20,7 @@ It's clear that with this syntax we can expand to any number of levels. We can a
 
 What are we doing here? We select the _Continents_ and expand to _Countries_. From _Countries_ we expand to both _Cities_ and _CapitalCity_. From _Cities_ we expand again to _Suburbs_. For field selection we specify _Name_ only for _Continent_ and _Name_ & _Population_ for _Countries_ and for _Cities_.
 
-## OData V4 Framework 
+## 2. OData V4 Framework 
 - /IWBEP/IF_V4_DP_BASIC 
 	- Methods provide basic functionality (Create, Update, Delete, Navigation, …)
 	- When being implemented à Working OData service supporting most requests
@@ -53,8 +53,8 @@ A UPDATE_ENTITY method for example will have the following methods
 The corresponding parameter **ip_response** is used to return business data to the SAP Gateway framework 
 and to tell the framework which processing steps the service implementation has handled iself (see todo and done flags below).
 
-### ToDo and Done-Flags
 
+### ToDo and Done-Flags
 The SAP Gateway V4 framework has introduced so called ToDo-Flags which provide a hint for the application developer what his implemenations has to do. 
 Depending ont the query options that have been used in the request you will get simple list with boolean values for the following flags:
 deltatoken, select, filter, skip, orderby, skiptoken, search, top, ...
