@@ -14,7 +14,7 @@
 - **Data Provider**
 	- [ZAG_CL_ODATAV4_VENDOR_DATA](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/zag_cl_odatav4_vendor_data.abap)
 
-#
+\
 ## How to configure the service?
 
 1. Run TCode **/iwbep/v4_admin**
@@ -23,7 +23,7 @@
 4. Assign the service to the service group **ZAG_SG_VENDOR**
 5. Publish the service group using transaction **/iwfnd/v4_admin** – (Gateway System)
 
-#
+\
 ## How to run the service?
 - how to get the **metadata**:
 ###
