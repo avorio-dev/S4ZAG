@@ -42,10 +42,30 @@ What are we doing here? We select the _Continents_ and expand to _Countries_. Fr
 	- Transaction and lifecycle handling
  
 
+
+### io_request and io_response
+All interface methods have an import parameter called **io_request**.
+It can be used to retrieve all information you need to handle the request in your service implemenation.
+A UPDATE_ENTITY method for example will have the following methods
+1. GET_BUSI_DATA to retrieve entity data from the request, for example the payload of the incoming request.
+2. GET_ENTITY_SET to retrieve the entity set of the processed entity. So we can switch to entity set specific methods
+
+The corresponding parameter **ip_response** is used to return business data to the SAP Gateway framework 
+and to tell the framework which processing steps the service implementation has handled iself (see todo and done flags below).
+
+##ToDo and Done-Flags
+
+The SAP Gateway V4 framework has introduced so called ToDo-Flags which provide a hint for the application developer what his implemenations has to do. 
+Depending ont the query options that have been used in the request you will get simple list with boolean values for the following flags:
+deltatoken, select, filter, skip, orderby, skiptoken, search, top, ...
+
+Done-Flags confirm that the response fits to the request. They allow the application developer to inform the framework to handle feature generically e.g., $top, $skip, and $select. 
+Using such flags also allows an implementation tobe compatible in the future. Instead of a wrong result an exception will be raised if a done flag is not set.
+
 ---
 # OData V4 Code-Based Implementation
 
-## 2. What do you need to implement?
+## 1. What do you need to implement?
 
 -  **CDS Databse**
 	- [ZAG_CDS_LFA1](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/ZAG_CDS_LFA1.abap)
@@ -60,7 +80,7 @@ What are we doing here? We select the _Continents_ and expand to _Countries_. Fr
 	- [ZAG_CL_ODATAV4_VENDOR_DATA](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/zag_cl_odatav4_vendor_data.abap)
 
 
-## 3. How to configure the service?
+## 2. How to configure the service?
 
 1. Run TCode **/iwbep/v4_admin**
 2. Register a service group **ZAG_SG_VENDOR** 
@@ -69,7 +89,7 @@ What are we doing here? We select the _Continents_ and expand to _Countries_. Fr
 5. Publish the service group using transaction **/iwfnd/v4_admin** – (Gateway System)
 
 
-## 4. How to run the service?
+## 3. How to run the service?
 
 >Each link listed below will need to be concatenated to your **<system_host>** if you are testing with Browser/Postman.
 >If you're using GW_CLIENT instead, it will be enough copy/paste it
