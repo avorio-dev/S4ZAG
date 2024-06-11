@@ -30,7 +30,7 @@
 >If you're using GW_CLIENT instead, it will be enough copy/paste it
 	
 - how to get the **metadata**:
-	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
+	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
 
 - how to get the **Vendors List**/**Companies List**/**Purch.Org List**
 	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
