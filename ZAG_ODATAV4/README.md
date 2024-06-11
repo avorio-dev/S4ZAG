@@ -25,13 +25,12 @@
 
 
 ## How to run the service?
+
+>Each link listed below will need to be concatenated to your **<system_host>**
+	
 - how to get the **metadata**:
-###
-	><your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
+	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
 - how to get the **Vendors List**/**Companies List**/**Purch.Org List**
-###
-	><your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
-###
- 	><your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Company
-###
-  	><your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Purchorg
+	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
+ 	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Company
+  	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Purchorg
