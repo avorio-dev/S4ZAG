@@ -53,7 +53,7 @@ A UPDATE_ENTITY method for example will have the following methods
 The corresponding parameter **ip_response** is used to return business data to the SAP Gateway framework 
 and to tell the framework which processing steps the service implementation has handled iself (see todo and done flags below).
 
-##ToDo and Done-Flags
+### ToDo and Done-Flags
 
 The SAP Gateway V4 framework has introduced so called ToDo-Flags which provide a hint for the application developer what his implemenations has to do. 
 Depending ont the query options that have been used in the request you will get simple list with boolean values for the following flags:
