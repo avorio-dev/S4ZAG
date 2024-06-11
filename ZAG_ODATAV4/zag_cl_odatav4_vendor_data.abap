@@ -462,7 +462,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
   METHOD read_list_company.
 
     DATA: lt_key_company TYPE STANDARD TABLE OF ts_cds_views-company,
-          lr_key_company TYPE zag_if_odatav4_vendor=>ts_key_range-bukrs,
+          lr_key_lifnr   TYPE zag_if_odatav4_vendor=>ts_key_range-lifnr,
+          lr_key_bukrs   TYPE zag_if_odatav4_vendor=>ts_key_range-bukrs,
           lv_max_index   TYPE i,
           lt_company     TYPE STANDARD TABLE OF ts_cds_views-company.
 
@@ -487,12 +488,21 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
             et_key_data = lt_key_company
       ).
 
-      CLEAR lr_key_company[].
-      lr_key_company = VALUE #( FOR <key> IN lt_key_company
-          ( sign = 'I' option = 'EQ' low = <key>-lifnr )
+
+      CLEAR lr_key_lifnr[].
+      lr_key_lifnr = VALUE #( FOR <lifnr> IN lt_key_company
+        ( sign = 'I' option = 'EQ' low = <lifnr>-lifnr )
       ).
-      SORT lr_key_company.
-      DELETE ADJACENT DUPLICATES FROM lr_key_company.
+      SORT lr_key_lifnr.
+      DELETE ADJACENT DUPLICATES FROM lr_key_lifnr.
+
+
+      CLEAR lr_key_bukrs[].
+      lr_key_bukrs = VALUE #( FOR <company> IN lt_key_company
+          ( sign = 'I' option = 'EQ' low = <company>-bukrs )
+      ).
+      SORT lr_key_bukrs.
+      DELETE ADJACENT DUPLICATES FROM lr_key_bukrs.
 
       ls_done_list-key_data = abap_true.
 
@@ -516,7 +526,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
          FROM zag_cds_lfb1
          INTO CORRESPONDING FIELDS OF TABLE @lt_company
           WHERE (iv_where_clause)
-            AND lifnr IN @lr_key_company[]
+            AND lifnr IN @lr_key_lifnr[]
+            AND bukrs IN @lr_key_bukrs[]
         ORDER BY (iv_orderby_string).
 
         " Skipping entries specified by $skip
@@ -535,7 +546,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           SELECT COUNT( * )
               FROM zag_cds_lfb1
               WHERE (iv_where_clause)
-                AND lifnr IN @lr_key_company[].
+                AND lifnr IN @lr_key_lifnr[]
+                AND bukrs IN @lr_key_bukrs[].
 
           io_response->set_count( sy-dbcnt ).
 
@@ -554,7 +566,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
   METHOD read_list_purchorg.
 
     DATA: lt_key_purchorg TYPE STANDARD TABLE OF ts_cds_views-purchorg,
-          lr_key_purchorg TYPE zag_if_odatav4_vendor=>ts_key_range-ekorg,
+          lr_key_lifnr    TYPE zag_if_odatav4_vendor=>ts_key_range-lifnr,
+          lr_key_ekorg    TYPE zag_if_odatav4_vendor=>ts_key_range-ekorg,
           lv_max_index    TYPE i,
           lt_purchorg     TYPE STANDARD TABLE OF ts_cds_views-purchorg.
 
@@ -579,12 +592,21 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
             et_key_data = lt_key_purchorg
       ).
 
-      CLEAR lr_key_purchorg[].
-      lr_key_purchorg = VALUE #( FOR <key> IN lt_key_purchorg
-          ( sign = 'I' option = 'EQ' low = <key>-lifnr )
+
+      CLEAR lr_key_lifnr[].
+      lr_key_lifnr = VALUE #( FOR <lifnr> IN lt_key_purchorg
+          ( sign = 'I' option = 'EQ' low = <lifnr>-lifnr )
       ).
-      SORT lr_key_purchorg.
-      DELETE ADJACENT DUPLICATES FROM lr_key_purchorg.
+      SORT lr_key_lifnr.
+      DELETE ADJACENT DUPLICATES FROM lr_key_lifnr.
+
+
+      CLEAR lr_key_ekorg[].
+      lr_key_ekorg = VALUE #( FOR <purchorg> IN lt_key_purchorg
+          ( sign = 'I' option = 'EQ' low = <purchorg>-ekorg )
+      ).
+      SORT lr_key_ekorg.
+      DELETE ADJACENT DUPLICATES FROM lr_key_ekorg.
 
       ls_done_list-key_data = abap_true.
 
@@ -608,7 +630,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
          FROM zag_cds_lfm1
          INTO CORRESPONDING FIELDS OF TABLE @lt_key_purchorg
           WHERE (iv_where_clause)
-            AND lifnr IN @lr_key_purchorg[]
+            AND lifnr IN @lr_key_lifnr[]
+            AND ekorg IN @lr_key_ekorg[]
         ORDER BY (iv_orderby_string).
 
         " Skipping entries specified by $skip
@@ -627,7 +650,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           SELECT COUNT( * )
               FROM zag_cds_lfm1
               WHERE (iv_where_clause)
-                AND lifnr IN @lr_key_purchorg[].
+                AND lifnr IN @lr_key_lifnr[]
+                AND ekorg IN @lr_key_ekorg[].
 
           io_response->set_count( sy-dbcnt ).
 
@@ -735,8 +759,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
   METHOD read_ref_key_list_vendor.
 
     DATA: ls_key_data          TYPE ts_cds_views-vendor,
-          lt_company_key_data  TYPE STANDARD TABLE OF ts_cds_views-company,
-          lt_purchorg_key_data TYPE STANDARD TABLE OF ts_cds_views-purchorg,
+          lt_key_company       TYPE STANDARD TABLE OF ts_cds_views-company,
+          lt_key_purchorg      TYPE STANDARD TABLE OF ts_cds_views-purchorg,
           lv_nav_property_name TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name.
 
 
@@ -767,23 +791,23 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     CASE lv_nav_property_name.
       WHEN cc_nav_prop_names-internal-vendor_to_company.
 
-        CLEAR lt_company_key_data[].
+        CLEAR lt_key_company[].
         SELECT lifnr, bukrs
             FROM zag_cds_lfb1
-            INTO TABLE @lt_company_key_data
+            INTO TABLE @lt_key_company
             WHERE lifnr EQ @ls_key_data-lifnr.
 
-        io_response->set_target_key_data( lt_company_key_data ).
+        io_response->set_target_key_data( lt_key_company ).
 
       WHEN cc_nav_prop_names-internal-vendor_to_purchorg.
 
-        CLEAR lt_purchorg_key_data[].
+        CLEAR lt_key_purchorg[].
         SELECT lifnr, ekorg
             FROM zag_cds_lfm1
-            INTO TABLE @lt_purchorg_key_data
+            INTO TABLE @lt_key_purchorg
             WHERE lifnr EQ @ls_key_data-lifnr.
 
-        io_response->set_target_key_data( lt_purchorg_key_data ).
+        io_response->set_target_key_data( lt_key_purchorg ).
 
       WHEN OTHERS.
 
