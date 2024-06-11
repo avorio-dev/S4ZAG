@@ -44,6 +44,12 @@
 - how to get a **Single Vendor**
   	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('1')
 
-- how to get a **Single Vendor** with all company/purchorg related infor
+- how to get a **Single Vendor** with all company/purchorg related info
   	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('1')?$expand=_Company,_Purchorg
+
+- how to get the **first 10** records
+  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor?$top=5
+
+- how to get the **first 1/2 records** of respect. company/purchorg of a specific vendor
+  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('100047')?$expand=_Company($top=1),_Purchorg($top=2)  
 
