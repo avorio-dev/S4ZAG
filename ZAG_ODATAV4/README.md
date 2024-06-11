@@ -1,4 +1,4 @@
-# OData V4 Code-Based Implementation
+# OData V4 Theory
 
 ## 1. What's the difference between v4 and v2?
 
@@ -19,6 +19,31 @@ It's clear that with this syntax we can expand to any number of levels. We can a
 > ..../Continents?$expand=Countries($expand=Cities($expand=Suburbs;$select=Name,Population),CapitalCity;$select=Name,Population)&$select=Name
 
 What are we doing here? We select the _Continents_ and expand to _Countries_. From _Countries_ we expand to both _Cities_ and _CapitalCity_. From _Cities_ we expand again to _Suburbs_. For field selection we specify _Name_ only for _Continent_ and _Name_ & _Population_ for _Countries_ and for _Cities_.
+
+## OData V4 Framework 
+- /IWBEP/IF_V4_DP_BASIC 
+	- Methods provide basic functionality (Create, Update, Delete, Navigation, …)
+	- When being implemented à Working OData service supporting most requests
+
+- /IWBEP/IF_V4_DP_INTERMEDIATE
+	- Medium complex functionality
+	- eTag handling, PATCH, $expand
+	- Contains generic calls to other (especially the basic) interfaces
+  
+- /IWBEP/IF_V4_DP_ADVANCED
+	- Always called first by the framework
+	- Contains generic calls to the other (especially the basic) interfaces
+	- Will for example be overwritten by the new RESTful ABAP Programming model (planned)
+  
+- /IWBEP/IF_V4_DP_BATCH
+	- $batch. Generic $batch and changeset
+  
+- /IWBEP/IF_V4_DP_PROCESS_STEPS
+	- Transaction and lifecycle handling
+ 
+
+---
+# OData V4 Code-Based Implementation
 
 ## 2. What do you need to implement?
 
