@@ -1,6 +1,6 @@
 # OData V4 Code-Based Implementation
 
-## What's the difference between v4 and v2?
+## 1. What's the difference between v4 and v2?
 
 The list of new & improved features in v4 is [extensive](http://docs.oasis-open.org/odata/new-in-odata/v4.0/new-in-odata-v4.0.html) and I will highlight just a few here:  
 
@@ -20,7 +20,7 @@ It's clear that with this syntax we can expand to any number of levels. We can a
 
 What are we doing here? We select the _Continents_ and expand to _Countries_. From _Countries_ we expand to both _Cities_ and _CapitalCity_. From _Cities_ we expand again to _Suburbs_. For field selection we specify _Name_ only for _Continent_ and _Name_ & _Population_ for _Countries_ and for _Cities_.
 
-## What do you need to implement?
+## 2. What do you need to implement?
 
 -  **CDS Databse**
 	- [ZAG_CDS_LFA1](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/ZAG_CDS_LFA1.abap)
@@ -44,7 +44,7 @@ What are we doing here? We select the _Continents_ and expand to _Countries_. Fr
 5. Publish the service group using transaction **/iwfnd/v4_admin** – (Gateway System)
 
 
-## How to run the service?
+## 3. How to run the service?
 
 >Each link listed below will need to be concatenated to your **<system_host>** if you are testing with Browser/Postman.
 >If you're using GW_CLIENT instead, it will be enough copy/paste it
