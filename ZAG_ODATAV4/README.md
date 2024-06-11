@@ -28,4 +28,8 @@
 - how to get the **metadata**:
 ###
 	<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
-- how to get the **vendor list**
+- how to get the **Vendors List**/**Companies List**/**Purch.Org List**
+###
+	<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
+ 	<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Company
+  	<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Purchorg
