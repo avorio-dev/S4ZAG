@@ -26,13 +26,31 @@
 
 ## How to run the service?
 
->Each link listed below will need to be concatenated to your **<system_host>**
+>Each link listed below will need to be concatenated to your **<system_host>** if you are testing with Browser/Postman.
+>If you're using GW_CLIENT instead, it will be enough copy/paste it
 	
 - how to get the **metadata**:
 	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/$metadata?sap-statistics=true
-- how to get the **Vendors List**/**Companies List**/**Purch.Org List**
-	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
- 
- 	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Company
 
-   	>		<your_system_host>/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Purchorg
+- how to get the **Vendors List**/**Companies List**/**Purch.Org List**
+	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor
+ 
+ 	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Company
+
+   	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Purchorg
+
+- how to get a **Single Vendor**
+  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('1')
+
+- how to get a **Single Vendor** with all company/purchorg related infor
+  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('1')?$expand=_Company,_Purchorg
+
+
+
+
+
+
+
+
+
+   
