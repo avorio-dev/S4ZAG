@@ -1,5 +1,25 @@
 # OData V4 Code-Based Implementation
 
+## What's the difference between v4 and v2?
+
+The list of new & improved features in v4 is [extensive](http://docs.oasis-open.org/odata/new-in-odata/v4.0/new-in-odata-v4.0.html) and I will highlight just a few here:  
+
+-   Better performance through reduced payload size (both for metadata and response data)  
+-   Improved data types, e.g. separate date and time types rather than combined datetime only
+-   You can filter and sort on expanded properties. For example, we can query order headers expanded to order items, with a filter for only order item quantity > 100. In v2 we could only filter by the main entity (in this case the order header)
+-   The query syntax is much more logical with multiple expands. This is because the parameters are nested
+  
+Lets consider the last point in more detail. With v2 we would query like this  
+> ..../Continents?$expand=Countries/Cities
+
+With v4 we can query  
+> ..../Continents?$expand=Countries($expand=Cities)
+
+It's clear that with this syntax we can expand to any number of levels. We can also apply parameters like $select or $filter at any level we choose, e.g.  
+> ..../Continents?$expand=Countries($expand=Cities($expand=Suburbs;$select=Name,Population),CapitalCity;$select=Name,Population)&$select=Name
+
+What are we doing here? We select the _Continents_ and expand to _Countries_. From _Countries_ we expand to both _Cities_ and _CapitalCity_. From _Cities_ we expand again to _Suburbs_. For field selection we specify _Name_ only for _Continent_ and _Name_ & _Population_ for _Countries_ and for _Cities_.
+
 ## What do you need to implement?
 
 -  **CDS Databse**
