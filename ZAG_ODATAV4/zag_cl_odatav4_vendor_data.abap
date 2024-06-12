@@ -370,6 +370,12 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
       WHEN cc_entity_type_names-internal-vendor.
 
+        create_entity_vendor(
+          EXPORTING
+            io_request  = io_request
+            io_response = io_response
+        ).
+
       WHEN cc_entity_type_names-internal-company.
 
       WHEN cc_entity_type_names-internal-purchorg.
@@ -396,6 +402,12 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     CASE lv_source_entity_name.
 
       WHEN cc_entity_type_names-internal-vendor.
+
+        delete_entity_vendor(
+          EXPORTING
+            io_request  = io_request
+            io_response = io_response
+        ).
 
       WHEN cc_entity_type_names-internal-company.
 
@@ -424,6 +436,12 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     CASE lv_source_entity_name.
 
       WHEN cc_entity_type_names-internal-vendor.
+
+        update_entity_vendor(
+          EXPORTING
+            io_request  = io_request
+            io_response = io_response
+        ).
 
       WHEN cc_entity_type_names-internal-company.
 
