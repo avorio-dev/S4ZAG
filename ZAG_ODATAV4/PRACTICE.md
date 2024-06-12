@@ -1,4 +1,4 @@
-# [OData V4 Code-Based Implementation](https://community.sap.com/t5/technology-blogs-by-sap/odata-v4-code-based-implementation-overview/ba-p/13361814)
+# [OData V4 Code-Based Implementation](https://community.sap.com/t5/technology-blogs-by-members/simple-odata-v4-service-using-code-based-implementation/ba-p/13519406)
 
 ## 1. What do you need to implement?
 
