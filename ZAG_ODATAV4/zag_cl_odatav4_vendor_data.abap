@@ -967,6 +967,14 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       ls_done_list-busi_data = abap_true. "business data processed
     ENDIF.
 
+    IF ls_todo_list-process-partial_busi_data = abap_true.
+        " Check if the mandatory properties have been provided
+
+
+        "If all mandatory data have been provided
+        ls_done_list-partial_busi_data = abap_true.
+    ENDIF.
+
 
 
     "CREATE YOUR ENTITY HERE
@@ -1018,7 +1026,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
   METHOD update_entity_vendor.
 
-    DATA: ls_cds_lfa1  TYPE ts_cds_views-vendor.
+    DATA: ls_key_data TYPE ts_cds_views-vendor,
+          ls_cds_lfa1 TYPE ts_cds_views-vendor.
 
 
     " Get the request options the application should/must handle
@@ -1028,6 +1037,13 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
 
+    IF ls_todo_list-process-key_data = abap_true.
+      io_request->get_key_data(
+            IMPORTING
+              es_key_data = ls_key_data
+          ).
+      ls_done_list-key_data = abap_true.
+    ENDIF.
 
     IF ls_todo_list-process-busi_data = abap_true.
       io_request->get_busi_data(
@@ -1041,6 +1057,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     "UPDATE YOUR ENTITY HERE
 
 
+    IF ls_todo_list-return-busi_data = abap_true.
+
+      io_response->set_busi_data( ls_cds_lfa1 ).
+
+    ENDIF.
 
     io_response->set_is_done( ls_done_list ).
 
