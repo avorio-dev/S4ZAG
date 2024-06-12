@@ -991,12 +991,21 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
   METHOD delete_entity_vendor.
 
+    DATA: ls_key_data TYPE ts_cds_views-vendor.
+
+
     " Get the request options the application should/must handle
     "---------------------------------------------------------------
     DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_list,
           ls_done_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_process_list.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+    io_request->get_key_data(
+      IMPORTING
+        es_key_data = ls_key_data
+    ).
+    ls_done_list-key_data = abap_true.
 
 
 
