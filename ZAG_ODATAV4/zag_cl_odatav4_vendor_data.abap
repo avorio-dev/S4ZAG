@@ -1008,6 +1008,9 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ls_done_list-key_data = abap_true.
 
 
+    "DELETE YOUR ENTITY HERE
+
+
 
     io_response->set_is_done( ls_done_list ).
 
@@ -1033,6 +1036,9 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       ).
       ls_done_list-busi_data = abap_true. "business data processed
     ENDIF.
+
+
+    "UPDATE YOUR ENTITY HERE
 
 
 
