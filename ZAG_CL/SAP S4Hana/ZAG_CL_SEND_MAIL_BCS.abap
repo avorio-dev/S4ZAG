@@ -1,4 +1,4 @@
-class ZAG_CL_SEND_MAIL_BCS definition
+class ZAG_CL_SEND_MAIL definition
   public
   final
   create public .
@@ -129,19 +129,10 @@ ENDCLASS.
 
 
 
-CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
+CLASS ZAG_CL_SEND_MAIL IMPLEMENTATION.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_FILL_ATTACHMENT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XT_ATTACHMENTS                 TYPE        TT_BCS_ATTCH(optional)
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
-* | [<-->] YO_DOCUMENT                    TYPE REF TO CL_DOCUMENT_BCS
-* | [EXC!] ATTACHMENT_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD bcs_fill_attachment.
+  METHOD BCS_FILL_ATTACHMENT.
 
     DATA: lt_soli_tab      TYPE soli_tab,
           lt_solix_tab     TYPE solix_tab,
@@ -242,18 +233,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_FILL_BODY
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_MAIL_OBJ                     TYPE        SO_OBJ_DES
-* | [--->] X_MAIL_BODY_STR                TYPE        STRING(optional)
-* | [--->] X_MAIL_BODY_STANDARD_TEXT      TYPE        TY_STANDARD_TEXT(optional)
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
-* | [<-->] YO_DOCUMENT                    TYPE REF TO CL_DOCUMENT_BCS
-* | [EXC!] BODY_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD bcs_fill_body.
+  METHOD BCS_FILL_BODY.
 
     DATA: lv_subject TYPE so_obj_des,
           lt_lines   TYPE bcsy_text.
@@ -313,15 +293,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_SET_RECIPIENT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XT_RECIPIENTS                  TYPE        TT_RECIPIENTS
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
-* | [EXC!] RECIPIENT_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD bcs_set_recipient.
+  METHOD BCS_SET_RECIPIENT.
 
     LOOP AT xt_recipients ASSIGNING FIELD-SYMBOL(<recipient>).
 
@@ -345,15 +317,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SEND_MAIL_BCS=>BCS_SET_SENDER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_SENDER                       TYPE        SY-UNAME
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [<-->] YO_SEND_REQUEST                TYPE REF TO CL_BCS
-* | [EXC!] SENDER_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD bcs_set_sender.
+  METHOD BCS_SET_SENDER.
 
     TRY.
         DATA(lo_sender) = cl_sapuser_bcs=>create( x_sender ).
@@ -371,16 +335,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SEND_MAIL_BCS=>FILL_FROM_SO10
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_STDTXT_NAME                  TYPE        THEAD-TDNAME
-* | [--->] XT_STDTXT_SUBS                 TYPE        TT_STDTXT_SUBS(optional)
-* | [<---] YT_LINES                       TYPE        BCSY_TEXT
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [EXC!] SO10_READING_FAULT
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD fill_from_so10.
+  METHOD FILL_FROM_SO10.
 
     DATA: lt_lines TYPE TABLE OF tline.
 
@@ -435,25 +390,7 @@ CLASS ZAG_CL_SEND_MAIL_BCS IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SEND_MAIL_BCS=>SEND_MAIL_BCS
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_SENDER                       TYPE        SYST_UNAME (default =SY-UNAME)
-* | [--->] XT_RECIPIENTS                  TYPE        TT_RECIPIENTS
-* | [--->] X_MAIL_OBJ                     TYPE        SO_OBJ_DES
-* | [--->] X_MAIL_BODY_STR                TYPE        STRING(optional)
-* | [--->] X_MAIL_BODY_STANDARD_TEXT      TYPE        TY_STANDARD_TEXT(optional)
-* | [--->] XT_ATTACHMENTS                 TYPE        TT_BCS_ATTCH(optional)
-* | [--->] X_COMMIT                       TYPE        OS_BOOLEAN (default =ABAP_TRUE)
-* | [<---] Y_MAIL_SENT                    TYPE        OS_BOOLEAN
-* | [<---] Y_ERROR_MSG                    TYPE        STRING
-* | [EXC!] REQUEST_ERROR
-* | [EXC!] SENDER_ERROR
-* | [EXC!] RECIPIENT_ERROR
-* | [EXC!] BODY_ERROR
-* | [EXC!] ATTACHMENT_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD send_mail_bcs.
+  METHOD SEND_MAIL_BCS.
 
     DATA: lo_send_request TYPE REF TO cl_bcs,
           lo_document     TYPE REF TO cl_document_bcs.
