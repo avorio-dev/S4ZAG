@@ -260,7 +260,8 @@
 
 **********************************************************************
 
-  DATA: lt_recipients TYPE zag_cl_send_mail_bcs=>tt_recipients.
+
+  DATA: lt_recipients TYPE zag_cl_send_mail=>tt_recipients.
 
   SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_data).
 
@@ -273,23 +274,15 @@
       copy      = space                 )
   ).
 
-  zag_cl_csv_xlsx=>get_compdescr_from_data(
-    EXPORTING
-*        xs_sap_line               =
-      xt_sap_table              = lt_data
-    IMPORTING
-      yo_structdescr            = DATA(lo_structdescr)
-    EXCEPTIONS
-      unable_define_structdescr = 1
-      OTHERS                    = 2
-  ).
-
-  zag_cl_send_mail_bcs=>send_mail_bcs(
+  zag_cl_send_mail=>send_mail(
     EXPORTING
       x_sender                  = sy-uname
       xt_recipients             = lt_recipients
-      x_mail_obj                = 'ZAG Mail'
-      x_mail_body_str           = 'ZAG Mail Body as String'
+      x_mail_obj                = 'Mail Object'
+      x_mail_body_str           = 'Mail Body'
+*      x_mail_body_standard_text =
+*      xt_attachments            =
+      x_commit                  = abap_true
     IMPORTING
       y_mail_sent               = DATA(lv_mail_sent)
       y_error_msg               = DATA(lv_error_msg)
@@ -301,17 +294,14 @@
       attachment_error          = 5
       OTHERS                    = 6
   ).
-  IF sy-subrc <> 0.
-    WRITE lv_error_msg.
-  ENDIF.
 
 
 
   "Example 2 -> Mail with attach. and Standard Text as Mail Body
   "-------------------------------------------------
 
-  DATA: ls_mail_body_stdtxt TYPE zag_cl_send_mail_bcs=>ty_standard_text,
-        lt_attch            TYPE zag_cl_send_mail_bcs=>tt_bcs_attch.
+  DATA: ls_mail_body_stdtxt TYPE zag_cl_send_mail=>ty_standard_text,
+        lt_attch            TYPE zag_cl_send_mail=>tt_bcs_attch.
 
 
   lt_recipients = VALUE #(
@@ -322,21 +312,30 @@
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
 
-  APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
 
-  zag_cl_csv_xlsx=>get_header_from_data(
+  DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx( xt_sap_table = lt_data ).
+  lo_csv_xlsx->get_fieldcat_from_data(
     EXPORTING
-      xt_sap_table  = lt_data
-    CHANGING
-      y_str_header  = <csv_line>
+      xt_sap_table              = lt_data
+    IMPORTING
+      yt_fcat                   = DATA(lt_fcat)
+      yo_structdescr            = DATA(lo_structdescr)
+    EXCEPTIONS
+      unable_define_structdescr = 1
+      OTHERS                    = 2
   ).
+
+
+  APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
+  <csv_line> = lo_csv_xlsx->get_header_from_data( ).
 
   LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<sflight>).
 
     APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING <csv_line>.
 
-    zag_cl_csv_xlsx=>conv_sap_to_string(
+    lo_csv_xlsx->conv_sap_to_string(
       EXPORTING
+        xt_fcat        = lt_fcat
         xo_structdescr = lo_structdescr
         x_sap_data     = <sflight>
       IMPORTING
@@ -352,15 +351,15 @@
       value    = sy-datum         )
   ).
 
-
-  zag_cl_send_mail_bcs=>send_mail_bcs(
+  zag_cl_send_mail=>send_mail(
     EXPORTING
       x_sender                  = sy-uname
       xt_recipients             = lt_recipients
-      x_mail_obj                = 'ZAG Mail'
-      x_mail_body_str           = 'ZAG Mail Body as String'
+      x_mail_obj                = 'Mail Object'
+      x_mail_body_str           = 'Mail Body'
       x_mail_body_standard_text = ls_mail_body_stdtxt
       xt_attachments            = lt_attch
+      x_commit                  = abap_true
     IMPORTING
       y_mail_sent               = lv_mail_sent
       y_error_msg               = lv_error_msg
@@ -372,9 +371,6 @@
       attachment_error          = 5
       OTHERS                    = 6
   ).
-  IF sy-subrc <> 0.
-    WRITE lv_error_msg.
-  ENDIF.
 ```
 
 ## 4. ZAG_CL_ALV_IDA <a name="zag_cl_salv_ida"></a>
