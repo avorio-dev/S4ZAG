@@ -15,10 +15,15 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
       /iwbep/if_v4_dp_basic~update_entity REDEFINITION,
       /iwbep/if_v4_dp_basic~delete_entity REDEFINITION.
 
+    METHODS:
+      /iwbep/if_v4_dp_advanced~create_entity REDEFINITION.
+
   PROTECTED SECTION.
   PRIVATE SECTION.
     ALIASES:
           ts_cds_views         FOR zag_if_odatav4_vendor~ts_cds_views,
+          ts_deep_vendor       FOR zag_if_odatav4_vendor~ts_deep_struct,
+          tt_deep_vendor       FOR zag_if_odatav4_vendor~tt_deep_struct,
           cc_entity_set_names  FOR zag_if_odatav4_vendor~cc_entity_set_names,
           cc_entity_type_names FOR zag_if_odatav4_vendor~cc_entity_type_names,
           cc_nav_prop_names    FOR zag_if_odatav4_vendor~cc_nav_prop_names.
@@ -72,6 +77,13 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
         IMPORTING
           io_request  TYPE REF TO /iwbep/if_v4_requ_basic_delete
           io_response TYPE REF TO /iwbep/if_v4_resp_basic_delete
+        RAISING
+          /iwbep/cx_gateway,
+
+      create_deep_vendor
+        IMPORTING
+          io_request  TYPE REF TO /iwbep/if_v4_requ_adv_create
+          io_response TYPE REF TO /iwbep/if_v4_resp_adv_create
         RAISING
           /iwbep/cx_gateway.
 
@@ -968,11 +980,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ENDIF.
 
     IF ls_todo_list-process-partial_busi_data = abap_true.
-        " Check if the mandatory properties have been provided
+      " Check if the mandatory properties have been provided
 
 
-        "If all mandatory data have been provided
-        ls_done_list-partial_busi_data = abap_true.
+      "If all mandatory data have been provided
+      ls_done_list-partial_busi_data = abap_true.
     ENDIF.
 
 
@@ -1064,6 +1076,105 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ENDIF.
 
     io_response->set_is_done( ls_done_list ).
+
+  ENDMETHOD.
+
+  METHOD /iwbep/if_v4_dp_advanced~create_entity.
+
+    DATA: lv_entity_type_name TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name,
+          ls_todo_list        TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list.
+
+
+    io_request->get_entity_type( IMPORTING ev_entity_type_name = lv_entity_type_name ).
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+    IF lv_entity_type_name = cc_entity_type_names-internal-vendor
+        AND ls_todo_list-process-deep_busi_data = abap_false.
+
+      super->/iwbep/if_v4_dp_advanced~create_entity(
+        EXPORTING
+          io_request  = io_request
+          io_response = io_response ).
+
+    ELSE.
+
+      create_deep_vendor(
+        io_request  = io_request
+        io_response = io_response
+      ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD create_deep_vendor.
+
+    DATA:
+      ls_deep_vendor       TYPE ts_deep_vendor,
+      ls_todo_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list,
+      ls_done_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list.
+
+
+    " Get the request options the application should/must handle
+    "---------------------------------------------------------------
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list,
+          ls_done_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_process_list.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+
+    io_request->get_data_description_express(
+      IMPORTING
+        ev_data_description_express = DATA(ls_data_description_express)
+    ).
+
+
+    CHECK ls_data_description_express EQ cc_nav_prop_names-internal-vendor_to_company
+       OR ls_data_description_express EQ cc_nav_prop_names-internal-vendor_to_purchorg.
+
+    ls_done_list-deep_busi_data    = abap_true.
+    ls_done_list-partial_busi_data = abap_true.
+
+    io_request->get_busi_data(
+      IMPORTING
+        es_busi_data = ls_deep_vendor ).
+
+
+    " Partial busi data for subnodes
+    io_request->get_data_description_tree_list(
+        IMPORTING
+            et_data_desc_root_node = DATA(lt_data_descr_tree)
+    ).
+
+    LOOP AT lt_data_descr_tree ASSIGNING FIELD-SYMBOL(<lo_data_descr_tree>).
+
+      <lo_data_descr_tree>->get_todos(
+        IMPORTING
+            es_todo_list = ls_todo_list_subnode
+      ).
+
+      IF ls_todo_list_subnode-partial_busi_data = abap_true.
+
+        ls_done_list_subnode-partial_busi_data = abap_true.
+
+        " Process tree to know what for properties where provided
+
+      ENDIF.
+
+      <lo_data_descr_tree>->set_is_done( ls_done_list_subnode ).
+
+    ENDLOOP.
+
+
+
+    IF ls_todo_list-return-busi_data = abap_true.
+      ls_done_list-busi_data = abap_true.
+      io_response->set_busi_data( is_busi_data = ls_deep_vendor ).
+    ENDIF.
+
+
+    io_response->set_is_done( is_todo_list = ls_done_list ).
+
 
   ENDMETHOD.
 
