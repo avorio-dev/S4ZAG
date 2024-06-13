@@ -60,5 +60,8 @@
   	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('100047')?$expand=_Company($top=1),_Purchorg($top=2)
    
 - how to get the **data filtered** both main entity and expanded entities
-  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor?$expand=_Company($filter=Bukrs eq 'FCH1'),_Purchorg($filter=Ekorg eq 'BA00')&$filter=Ort01 eq 'Bari'	
+  	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor?$expand=_Company($filter=Bukrs eq 'FCH1'),_Purchorg($filter=Ekorg eq 'BA00')&$filter=Ort01 eq 'Bari'
+
+- how to get **specific fields**
+	>		/sap/opu/odata4/sap/zag_sg_vendor/default/sap/zag_srv_vendor/0001/Vendor('1')?$select=Name1,Adrnr&$expand=_Company($select=Loevm,Akont)
 
