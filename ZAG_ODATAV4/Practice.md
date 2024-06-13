@@ -14,7 +14,11 @@
 - **Data Provider**
 	- [ZAG_CL_ODATAV4_VENDOR_DATA](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/zag_cl_odatav4_vendor_data.abap)
 
-- Check in Tcode **/IWFND/VIRUS_SCAN** if virus scan profile for V4 is disabled
+	> If you are using deep structures and you are having problems like
+ 	> "sap scan profile virus /IWBEP/V4/ODATA_UPLOAD inactive"
+ 	> You can:
+ 	> - Config the profile /IWBEP/V4/ODATA_UPLOAD in tcode **VSCANPROFILE** 
+ 	> - Disable in Tcode **/IWFND/VIRUS_SCAN** virus scan profile for V4
 
 ---
 
