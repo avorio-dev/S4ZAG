@@ -1,253 +1,248 @@
-class ZAG_CL_CSV_XLSX definition
-  public
-  final
-  create public .
+CLASS zag_cl_csv_xlsx DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ts_conversions_errors,
+    TYPES:
+      BEGIN OF ts_conversions_errors,
         row_num     TYPE i,
         field       TYPE fieldname,
         field_descr TYPE string,
         value       TYPE string,
         error       TYPE string,
       END OF ts_conversions_errors .
-  types:
-    tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
-  types:
-    BEGIN OF ts_exit_config,
+    TYPES:
+      tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
+    TYPES:
+      BEGIN OF ts_exit_config,
         repid                    TYPE sy-repid,
         exit_sap_to_str          TYPE string,
         exit_str_to_sap_preconv  TYPE string,
         exit_str_to_sap_postconv TYPE string,
       END OF ts_exit_config .
 
-  constants C_CR_LF type ABAP_CR_LF value %_CR_LF ##NO_TEXT.
-  constants C_FILETYPE_CSV type CHAR3 value 'CSV' ##NO_TEXT.
-  constants C_FILETYPE_XLSX type CHAR4 value 'XLSX' ##NO_TEXT.
-  constants C_INITIAL_DATA type DATUM value '00000000' ##NO_TEXT.
-  constants C_INITIAL_TIME type TIME value 000000 ##NO_TEXT.
-  constants C_MAX_DATA type DATUM value '99991231' ##NO_TEXT.
-  constants C_SEPARATOR_HORIZONTAL_TAB type ABAP_CHAR1 value %_HORIZONTAL_TAB ##NO_TEXT.
-  constants C_SEPARATOR_SEMICOLON type CHAR1 value ';' ##NO_TEXT.
-  constants C_SOURCE_LOCAL type CHAR1 value 'L' ##NO_TEXT.
-  constants C_SOURCE_SERVER type CHAR1 value 'S' ##NO_TEXT.
+    CONSTANTS:
+      BEGIN OF cc_file_source,
+        local  TYPE char1 VALUE 'L' ##NO_TEXT,
+        server TYPE char1 VALUE 'S' ##NO_TEXT,
+      END OF cc_file_source.
 
-  class-methods CONV_DATA_TO_EXT
-    importing
-      !X_DATA_INT type DATS
-      !X_SEPARATOR type C default '/'
-    returning
-      value(Y_DATA_EXT) type STRING .
-  class-methods CONV_DATA_TO_INT
-    importing
-      !X_DATA_EXT type STRING
-    returning
-      value(Y_DATA_INT) type DATS
-    exceptions
-      FORMAT_ERROR
-      PLAUSIBILITY_ERROR .
-  class-methods CONV_NUMB_TO_EXT
-    importing
-      !X_NUMB_INT type STRING
-    returning
-      value(Y_NUMB_EXT) type STRING .
-  class-methods CONV_NUMB_TO_INT
-    importing
-      !X_NUMB_EXT type STRING
-    returning
-      value(Y_NUMB_INT) type STRING
-    exceptions
-      FORMAT_ERROR
-      PLAUSIBILITY_ERROR .
-  class-methods CONV_SAP_TO_STRING
-    importing
-      !X_SAP_DATA type ANY
-      !X_SEPARATOR type CHAR1 default C_SEPARATOR_SEMICOLON
-      !XT_FCAT type LVC_T_FCAT
-      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
-      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
-    exporting
-      !Y_STR_DATA type STRING .
-  class-methods CONV_STRING_TO_SAP
-    importing
-      !X_STR_DATA type STRING
-      !XT_FCAT type LVC_T_FCAT
-      !XO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
-      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
-      !X_SEPARATOR type ABAP_CHAR1 default C_SEPARATOR_SEMICOLON
-    exporting
-      !Y_SAP_DATA type ANY
-      !Y_CONVERSIONS_ERRORS type TS_CONVERSIONS_ERRORS
-    exceptions
-      CONVERSION_ERROR
-      PLAUSIBILITY_ERROR .
-  class-methods CONV_TIME_TO_EXT
-    importing
-      !X_TIME type UZEIT
-    returning
-      value(Y_TIME) type STRING .
-  class-methods CONV_TIME_TO_INT
-    importing
-      !X_TIME type STRING
-    returning
-      value(Y_TIME) type UZEIT
-    exceptions
-      FORMAT_ERROR
-      PLAUSIBILITY_ERROR .
-  class-methods F4_HELP_DIR_INPUT
-    importing
-      !X_SOURCE type CHAR4 default 'LOCL'
-    exporting
-      !Y_PATH_INPUT type STRING .
-  class-methods F4_HELP_DIR_OUTPUT
-    importing
-      !X_SOURCE type CHAR4 default 'LOCL'
-    exporting
-      !Y_PATH_OUTPUT type STRING .
-  class-methods GET_DESKTOP_DIRECTORY
-    returning
-      value(Y_DESKTOP_DIR) type STRING .
-  class-methods GET_FIELDCAT_FROM_DATA
-    importing
-      !XS_SAP_LINE type ANY optional
-      !XT_SAP_TABLE type TABLE optional
-    exporting
-      !YO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR
-      !YT_FCAT type LVC_T_FCAT
-    exceptions
-      UNABLE_DEFINE_STRUCTDESCR .
-  class-methods REMOVE_SPECIAL_CHAR
-    changing
-      !Y_TEXT type STRING .
-  methods CONSTRUCTOR
-    importing
-      !XS_SAP_LINE type ANY optional
-      !XT_SAP_TABLE type TABLE optional
-      !XS_EXIT_CONFIG type TS_EXIT_CONFIG optional
-    exceptions
-      INPUT_ERROR
-      UNABLE_DEFINE_STRUCTDESCR .
-  methods CONV_TAB_TO_EXT
-    importing
-      !X_HEADER type OS_BOOLEAN default 'X'
-    returning
-      value(YT_STR_DATA) type STRING_TABLE .
-  methods CONV_TAB_TO_INT
-    importing
-      !X_HEADER type XFELD default 'X'
-      !XT_STR_DATA type STRING_TABLE
-    exporting
-      !YT_SAP_DATA type TABLE
-      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
-    exceptions
-      CONVERSION_ERROR .
-  methods FILE_DOWNLOAD
-    importing
-      !X_FILENAME type STRING
-      !X_HEADER type OS_BOOLEAN default 'X'
-      !X_SOURCE type CHAR1 default 'L'
-    exceptions
-      NOT_SUPPORTED_FILE
-      UNABLE_OPEN_PATH .
-  methods FILE_UPLOAD
-    importing
-      !X_FILENAME type STRING
-      !X_HEADER type XFELD default 'X'
-      !X_SOURCE type CHAR1 default 'L'
-    exporting
-      !YT_SAP_DATA type TABLE
-      !YT_CONVERSIONS_ERRORS type TT_CONVERSIONS_ERRORS
-    exceptions
-      INPUT_ERROR
-      NOT_SUPPORTED_FILE
-      UNABLE_OPEN_PATH
-      EMPTY_FILE
-      CONVERSION_ERROR .
-  methods GET_HEADER_FROM_DATA
-    returning
-      value(Y_STR_HEADER) type STRING .
+    CONSTANTS c_cr_lf TYPE abap_cr_lf VALUE %_cr_lf ##NO_TEXT.
+    CONSTANTS c_filetype_csv TYPE char3 VALUE 'CSV' ##NO_TEXT.
+    CONSTANTS c_filetype_xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT.
+    CONSTANTS c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT.
+    CONSTANTS c_initial_time TYPE time VALUE 000000 ##NO_TEXT.
+    CONSTANTS c_max_data TYPE datum VALUE '99991231' ##NO_TEXT.
+    CONSTANTS c_separator_horizontal_tab TYPE abap_char1 VALUE %_horizontal_tab ##NO_TEXT.
+    CONSTANTS c_separator_semicolon TYPE char1 VALUE ';' ##NO_TEXT.
+
+    CLASS-METHODS conv_data_to_ext
+      IMPORTING
+        !x_data_int       TYPE dats
+        !x_separator      TYPE c DEFAULT '/'
+      RETURNING
+        VALUE(y_data_ext) TYPE string .
+    CLASS-METHODS conv_data_to_int
+      IMPORTING
+        !x_data_ext       TYPE string
+      RETURNING
+        VALUE(y_data_int) TYPE dats
+      EXCEPTIONS
+        format_error
+        plausibility_error .
+    CLASS-METHODS conv_numb_to_ext
+      IMPORTING
+        !x_numb_int       TYPE string
+      RETURNING
+        VALUE(y_numb_ext) TYPE string .
+    CLASS-METHODS conv_numb_to_int
+      IMPORTING
+        !x_numb_ext       TYPE string
+      RETURNING
+        VALUE(y_numb_int) TYPE string
+      EXCEPTIONS
+        format_error
+        plausibility_error .
+    CLASS-METHODS conv_sap_to_string
+      IMPORTING
+        !x_sap_data     TYPE any
+        !x_separator    TYPE char1 DEFAULT c_separator_semicolon
+        !xt_fcat        TYPE lvc_t_fcat
+        !xo_structdescr TYPE REF TO cl_abap_structdescr
+        !xs_exit_config TYPE ts_exit_config OPTIONAL
+      EXPORTING
+        !y_str_data     TYPE string .
+    CLASS-METHODS conv_string_to_sap
+      IMPORTING
+        !x_str_data           TYPE string
+        !xt_fcat              TYPE lvc_t_fcat
+        !xo_structdescr       TYPE REF TO cl_abap_structdescr
+        !xs_exit_config       TYPE ts_exit_config OPTIONAL
+        !x_separator          TYPE abap_char1 DEFAULT c_separator_semicolon
+      EXPORTING
+        !y_sap_data           TYPE any
+        !y_conversions_errors TYPE ts_conversions_errors
+      EXCEPTIONS
+        conversion_error
+        plausibility_error .
+    CLASS-METHODS conv_time_to_ext
+      IMPORTING
+        !x_time       TYPE uzeit
+      RETURNING
+        VALUE(y_time) TYPE string .
+    CLASS-METHODS conv_time_to_int
+      IMPORTING
+        !x_time       TYPE string
+      RETURNING
+        VALUE(y_time) TYPE uzeit
+      EXCEPTIONS
+        format_error
+        plausibility_error .
+    CLASS-METHODS f4_help_dir_input
+      IMPORTING
+        !x_source     TYPE char4 DEFAULT 'LOCL'
+      EXPORTING
+        !y_path_input TYPE string .
+    CLASS-METHODS f4_help_dir_output
+      IMPORTING
+        !x_source      TYPE char4 DEFAULT 'LOCL'
+      EXPORTING
+        !y_path_output TYPE string .
+    CLASS-METHODS get_desktop_directory
+      RETURNING
+        VALUE(y_desktop_dir) TYPE string .
+    CLASS-METHODS get_fieldcat_from_data
+      IMPORTING
+        !xs_sap_line    TYPE any OPTIONAL
+        !xt_sap_table   TYPE table OPTIONAL
+      EXPORTING
+        !yo_structdescr TYPE REF TO cl_abap_structdescr
+        !yt_fcat        TYPE lvc_t_fcat
+      EXCEPTIONS
+        unable_define_structdescr .
+    CLASS-METHODS remove_special_char
+      CHANGING
+        !y_text TYPE string .
+    METHODS constructor
+      IMPORTING
+        !xs_sap_line    TYPE any OPTIONAL
+        !xt_sap_table   TYPE table OPTIONAL
+        !xs_exit_config TYPE ts_exit_config OPTIONAL
+      EXCEPTIONS
+        input_error
+        unable_define_structdescr .
+    METHODS conv_tab_to_ext
+      IMPORTING
+        !x_header          TYPE os_boolean DEFAULT 'X'
+      RETURNING
+        VALUE(yt_str_data) TYPE string_table .
+    METHODS conv_tab_to_int
+      IMPORTING
+        !x_header              TYPE xfeld DEFAULT 'X'
+        !xt_str_data           TYPE string_table
+      EXPORTING
+        !yt_sap_data           TYPE table
+        !yt_conversions_errors TYPE tt_conversions_errors
+      EXCEPTIONS
+        conversion_error .
+    METHODS file_download
+      IMPORTING
+        !x_filename TYPE string
+        !x_header   TYPE os_boolean DEFAULT 'X'
+        !x_source   TYPE char1 DEFAULT 'L'
+      EXCEPTIONS
+        not_supported_file
+        unable_open_path .
+    METHODS file_upload
+      IMPORTING
+        !x_filename            TYPE string
+        !x_header              TYPE xfeld DEFAULT 'X'
+        !x_source              TYPE char1 DEFAULT 'L'
+      EXPORTING
+        !yt_sap_data           TYPE table
+        !yt_conversions_errors TYPE tt_conversions_errors
+      EXCEPTIONS
+        input_error
+        not_supported_file
+        unable_open_path
+        empty_file
+        conversion_error .
+    METHODS get_header_from_data
+      RETURNING
+        VALUE(y_str_header) TYPE string .
   PROTECTED SECTION.
-private section.
+  PRIVATE SECTION.
 
-  constants C_MANDT type FIELDNAME value 'MANDT' ##NO_TEXT.
-  class-data:
-    gr_typekind_charlike TYPE RANGE OF abap_typekind .
-  class-data:
-    gr_typekind_date TYPE RANGE OF abap_typekind .
-  class-data:
-    gr_typekind_numbers TYPE RANGE OF abap_typekind .
-  class-data:
-    gr_typekind_time TYPE RANGE OF abap_typekind .
-  data GO_STRUCTDESCR type ref to CL_ABAP_STRUCTDESCR .
-  data GREF_SAP_DATA type ref to DATA .
-  data GS_EXIT_CONFIG type TS_EXIT_CONFIG .
-  data GT_FCAT type LVC_T_FCAT .
-  data GV_SEPARATOR type ABAP_CHAR1 .
+    CONSTANTS c_mandt TYPE fieldname VALUE 'MANDT' ##NO_TEXT.
+    CLASS-DATA:
+      gr_typekind_charlike TYPE RANGE OF abap_typekind .
+    CLASS-DATA:
+      gr_typekind_date TYPE RANGE OF abap_typekind .
+    CLASS-DATA:
+      gr_typekind_numbers TYPE RANGE OF abap_typekind .
+    CLASS-DATA:
+      gr_typekind_time TYPE RANGE OF abap_typekind .
+    DATA go_structdescr TYPE REF TO cl_abap_structdescr .
+    DATA gref_sap_data TYPE REF TO data .
+    DATA gs_exit_config TYPE ts_exit_config .
+    DATA gt_fcat TYPE lvc_t_fcat .
+    DATA gv_separator TYPE abap_char1 .
 
-  methods DOWNLOAD_CSV_LOCAL
-    importing
-      !X_FILENAME type STRING
-    changing
-      !XT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods DOWNLOAD_CSV_SERVER
-    importing
-      !X_FILENAME type STRING
-      !XT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods DOWNLOAD_EXCEL_LOCAL
-    importing
-      !X_FILENAME type STRING
-      !XT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods DOWNLOAD_EXCEL_SERVER
-    importing
-      !X_FILENAME type STRING
-      !XT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods UPLOAD_CSV_LOCAL
-    importing
-      !X_FILENAME type STRING
-    exporting
-      !YT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods UPLOAD_CSV_SERVER
-    importing
-      !X_FILENAME type STRING
-    exporting
-      !YT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
-  methods UPLOAD_EXCEL_LOCAL
-    importing
-      !X_FILENAME type STRING
-    exporting
-      !YT_STR_DATA type STRING_TABLE
-    exceptions
-      UNABLE_OPEN_PATH .
+    METHODS download_csv_local
+      IMPORTING
+        !x_filename  TYPE string
+      CHANGING
+        !xt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS download_csv_server
+      IMPORTING
+        !x_filename  TYPE string
+        !xt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS download_excel_local
+      IMPORTING
+        !x_filename  TYPE string
+        !xt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS download_excel_server
+      IMPORTING
+        !x_filename  TYPE string
+        !xt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS upload_csv_local
+      IMPORTING
+        !x_filename  TYPE string
+      EXPORTING
+        !yt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS upload_csv_server
+      IMPORTING
+        !x_filename  TYPE string
+      EXPORTING
+        !yt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
+    METHODS upload_excel_local
+      IMPORTING
+        !x_filename  TYPE string
+      EXPORTING
+        !yt_str_data TYPE string_table
+      EXCEPTIONS
+        unable_open_path .
 ENDCLASS.
 
 
 
-CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
+CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->CONSTRUCTOR
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XS_SAP_LINE                    TYPE        ANY(optional)
-* | [--->] XT_SAP_TABLE                   TYPE        TABLE(optional)
-* | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
-* | [EXC!] INPUT_ERROR
-* | [EXC!] UNABLE_DEFINE_STRUCTDESCR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD constructor.
 
     FIELD-SYMBOLS: <sap_data> TYPE STANDARD TABLE.
@@ -338,13 +333,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_DATA_TO_EXT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_DATA_INT                     TYPE        DATS
-* | [--->] X_SEPARATOR                    TYPE        C (default ='/')
-* | [<-()] Y_DATA_EXT                     TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_data_to_ext.
 
 *    Data conversion exit from SAP to External
@@ -363,14 +351,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_DATA_TO_INT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_DATA_EXT                     TYPE        STRING
-* | [<-()] Y_DATA_INT                     TYPE        DATS
-* | [EXC!] FORMAT_ERROR
-* | [EXC!] PLAUSIBILITY_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_data_to_int.
 
 *    Data conversion exit from External to SAP
@@ -402,7 +382,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       "25-12-2023
       "2023-12-25
 
-      IF lv_data_ext+2(1) CA '0123456789'.                   "#EC NOTEXT
+      IF lv_data_ext+2(1) CA '0123456789'.                  "#EC NOTEXT
         "Format like 25-12-2023
         y_data_int = |{ lv_data_ext(4) }{ lv_data_ext+5(2) }{ lv_data_ext+8(2) }|.
 
@@ -435,12 +415,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_NUMB_TO_EXT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_NUMB_INT                     TYPE        STRING
-* | [<-()] Y_NUMB_EXT                     TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_numb_to_ext.
 
 *    Number conversion exit from SAP to External
@@ -469,14 +443,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_NUMB_TO_INT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_NUMB_EXT                     TYPE        STRING
-* | [<-()] Y_NUMB_INT                     TYPE        STRING
-* | [EXC!] FORMAT_ERROR
-* | [EXC!] PLAUSIBILITY_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_numb_to_int.
 
 *    Number conversion exit from External to SAP
@@ -707,16 +673,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_SAP_TO_STRING
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_SAP_DATA                     TYPE        ANY
-* | [--->] X_SEPARATOR                    TYPE        CHAR1 (default =C_SEPARATOR_SEMICOLON)
-* | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
-* | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
-* | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
-* | [<---] Y_STR_DATA                     TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_sap_to_string.
 
     y_str_data  = ''.
@@ -727,11 +683,18 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       ASSIGN xo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
       CHECK sy-subrc EQ 0.
 
-      CHECK <component>-type_kind IN gr_typekind_numbers[]
-         OR <component>-type_kind IN gr_typekind_date[]
-         OR <component>-type_kind IN gr_typekind_time[]
-         OR <component>-type_kind IN gr_typekind_charlike[].
+      IF NOT ( <component>-type_kind IN gr_typekind_numbers[]
+            OR <component>-type_kind IN gr_typekind_date[]
+            OR <component>-type_kind IN gr_typekind_time[]
+            OR <component>-type_kind IN gr_typekind_charlike[] ).
 
+        y_str_data = COND #(
+            WHEN y_str_data EQ '' THEN x_separator
+            WHEN y_str_data NE '' THEN |{ y_str_data }{ x_separator }|
+        ).
+
+        CONTINUE.
+      ENDIF.
 
       ASSIGN COMPONENT <component>-name OF STRUCTURE x_sap_data TO FIELD-SYMBOL(<value>).
       DATA(lv_tmp_data) = CONV string( <value> ).
@@ -745,6 +708,21 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
           "it mustn't be converted to ext format like normal numbers
           "it must be converted from conv_exit_output routine
         ELSE.
+
+          IF <fcat>-edit_mask CS 'EXCRT'
+            OR <fcat>-edit_mask CS 'EXCRX'.
+
+            IF lv_tmp_data CS '123456789'.
+
+              CALL FUNCTION 'CONVERSION_EXIT_EXCRT_OUTPUT'
+                EXPORTING
+                  input  = lv_tmp_data
+                IMPORTING
+                  output = lv_tmp_data.
+
+            ENDIF.
+
+          ENDIF.
 
           lv_tmp_data = conv_numb_to_ext( x_numb_int = lv_tmp_data ).
 
@@ -808,6 +786,8 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
               IF sy-subrc <> 0.
               ENDIF.
 
+            WHEN 'EXCRT'
+              OR 'EXCRX'.
 
             WHEN OTHERS.
               CALL FUNCTION lv_fm_conv_exit
@@ -849,19 +829,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_STRING_TO_SAP
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_STR_DATA                     TYPE        STRING
-* | [--->] XT_FCAT                        TYPE        LVC_T_FCAT
-* | [--->] XO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
-* | [--->] XS_EXIT_CONFIG                 TYPE        TS_EXIT_CONFIG(optional)
-* | [--->] X_SEPARATOR                    TYPE        ABAP_CHAR1 (default =C_SEPARATOR_SEMICOLON)
-* | [<---] Y_SAP_DATA                     TYPE        ANY
-* | [<---] Y_CONVERSIONS_ERRORS           TYPE        TS_CONVERSIONS_ERRORS
-* | [EXC!] CONVERSION_ERROR
-* | [EXC!] PLAUSIBILITY_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_string_to_sap.
 
     DATA: lv_sap_ref     TYPE REF TO data.
@@ -896,8 +863,9 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
         AND <component>-type_kind NOT IN gr_typekind_time[]
         AND <component>-type_kind NOT IN gr_typekind_charlike[].
 
-        y_conversions_errors-error = 'Unmanaged data type'. "#EC NOTEXT
-        RAISE conversion_error.
+*        y_conversions_errors-error = 'Unmanaged data type'. "#EC NOTEXT
+*        RAISE conversion_error.
+        CONTINUE.
 
       ENDIF.
 
@@ -958,6 +926,9 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
               IF sy-subrc <> 0.
               ENDIF.
 
+            WHEN 'EXCRT'
+              OR 'EXCRX'.
+
 
             WHEN OTHERS.
               CALL FUNCTION lv_fm_conv_exit
@@ -1003,6 +974,22 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
             RAISE plausibility_error.
 
         ENDCASE.
+
+
+        IF <fcat>-edit_mask CS 'EXCRT'
+         OR <fcat>-edit_mask CS 'EXCRX'.
+
+          IF lv_tmp_num NE 0.
+
+            CALL FUNCTION 'CONVERSION_EXIT_EXCRT_INPUT'
+              EXPORTING
+                input  = lv_tmp_num
+              IMPORTING
+                output = lv_tmp_num.
+
+          ENDIF.
+
+        ENDIF.
 
       ENDIF.
 
@@ -1105,12 +1092,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->CONV_TAB_TO_EXT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_HEADER                       TYPE        OS_BOOLEAN (default ='X')
-* | [<-()] YT_STR_DATA                    TYPE        STRING_TABLE
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_tab_to_ext.
 
     FIELD-SYMBOLS: <gt_sap_data> TYPE STANDARD TABLE.
@@ -1150,15 +1131,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->CONV_TAB_TO_INT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_HEADER                       TYPE        XFELD (default ='X')
-* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
-* | [<---] YT_SAP_DATA                    TYPE        TABLE
-* | [<---] YT_CONVERSIONS_ERRORS          TYPE        TT_CONVERSIONS_ERRORS
-* | [EXC!] CONVERSION_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_tab_to_int.
 
     CLEAR: yt_sap_data[], yt_conversions_errors[].
@@ -1207,12 +1179,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_TIME_TO_EXT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_TIME                         TYPE        UZEIT
-* | [<-()] Y_TIME                         TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_time_to_ext.
 
 *    Time conversion exit from SAP to External
@@ -1231,14 +1197,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>CONV_TIME_TO_INT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_TIME                         TYPE        STRING
-* | [<-()] Y_TIME                         TYPE        UZEIT
-* | [EXC!] FORMAT_ERROR
-* | [EXC!] PLAUSIBILITY_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD conv_time_to_int.
 
 *    Time conversion exit from External to SAP
@@ -1280,13 +1238,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->DOWNLOAD_CSV_LOCAL
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [<-->] XT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_csv_local.
 
     CALL METHOD cl_gui_frontend_services=>gui_download
@@ -1326,13 +1277,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->DOWNLOAD_CSV_SERVER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_csv_server.
 
     OPEN DATASET x_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
@@ -1350,13 +1294,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->DOWNLOAD_EXCEL_LOCAL
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_excel_local.
 
 *    TYPES: BEGIN OF ts_string,
@@ -1449,13 +1386,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->DOWNLOAD_EXCEL_SERVER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] XT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD download_excel_server.
 
     DATA: lt_data_ref TYPE REF TO data.
@@ -1489,12 +1419,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>F4_HELP_DIR_INPUT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_SOURCE                       TYPE        CHAR4 (default ='LOCL')
-* | [<---] Y_PATH_INPUT                   TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD f4_help_dir_input.
 
     DATA: lv_path TYPE string VALUE IS INITIAL.
@@ -1511,7 +1435,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     CASE x_source.
 
-      WHEN c_source_server.
+      WHEN cc_file_source-server.
 
         lv_instancenumber = ''.
         CALL FUNCTION 'GET_SYSTEM_NUMBER'
@@ -1537,7 +1461,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
         CHECK sy-subrc EQ 0.
         lv_path = lv_path_tmp.
 
-      WHEN c_source_local.
+      WHEN cc_file_source-local.
 
         lv_path = get_desktop_directory( ).
 
@@ -1559,12 +1483,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>F4_HELP_DIR_OUTPUT
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_SOURCE                       TYPE        CHAR4 (default ='LOCL')
-* | [<---] Y_PATH_OUTPUT                  TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD f4_help_dir_output.
 
     DATA: lv_path TYPE string VALUE IS INITIAL.
@@ -1573,7 +1491,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
 
     CASE x_source.
 
-      WHEN c_source_server.
+      WHEN cc_file_source-server.
 
         CALL FUNCTION '/SAPDMC/LSM_F4_SERVER_FILE'
           EXPORTING
@@ -1586,7 +1504,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
             OTHERS           = 2.
         CHECK sy-subrc EQ 0.
 
-      WHEN c_source_local.
+      WHEN cc_file_source-local.
 
         lv_path = get_desktop_directory( ).
 
@@ -1610,15 +1528,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->FILE_DOWNLOAD
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] X_HEADER                       TYPE        OS_BOOLEAN (default ='X')
-* | [--->] X_SOURCE                       TYPE        CHAR1 (default ='L')
-* | [EXC!] NOT_SUPPORTED_FILE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD file_download.
 
     DATA: lv_filetype TYPE char10 VALUE IS INITIAL.
@@ -1656,7 +1565,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       WHEN c_filetype_xlsx. "**********************************************************************
 
         CASE x_source.
-          WHEN c_source_local.
+          WHEN cc_file_source-local.
             "-------------------------------------------------
 
             download_excel_local(
@@ -1671,7 +1580,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
               RAISE unable_open_path.
             ENDIF.
 
-          WHEN c_source_server.
+          WHEN cc_file_source-server.
             "-------------------------------------------------
 
             download_excel_server(
@@ -1692,7 +1601,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       WHEN c_filetype_csv. "**********************************************************************
 
         CASE x_source.
-          WHEN c_source_local.
+          WHEN cc_file_source-local.
             "-------------------------------------------------
 
             download_csv_local(
@@ -1708,7 +1617,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
               RAISE unable_open_path.
             ENDIF.
 
-          WHEN c_source_server.
+          WHEN cc_file_source-server.
             "-------------------------------------------------
 
             download_csv_server(
@@ -1730,20 +1639,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->FILE_UPLOAD
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [--->] X_HEADER                       TYPE        XFELD (default ='X')
-* | [--->] X_SOURCE                       TYPE        CHAR1 (default ='L')
-* | [<---] YT_SAP_DATA                    TYPE        TABLE
-* | [<---] YT_CONVERSIONS_ERRORS          TYPE        TT_CONVERSIONS_ERRORS
-* | [EXC!] INPUT_ERROR
-* | [EXC!] NOT_SUPPORTED_FILE
-* | [EXC!] UNABLE_OPEN_PATH
-* | [EXC!] EMPTY_FILE
-* | [EXC!] CONVERSION_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD file_upload.
 
     DATA: lt_str_data TYPE string_table,
@@ -1774,7 +1669,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       WHEN c_filetype_xlsx. "**********************************************************************
 
         CASE x_source.
-          WHEN c_source_local.
+          WHEN cc_file_source-local.
             "-------------------------------------------------
 
             "Upload from XLSX with in-built conversion in SAP Format
@@ -1796,7 +1691,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
             ENDCASE.
 
 
-          WHEN c_source_server.
+          WHEN cc_file_source-server.
             "-------------------------------------------------
 
             RAISE input_error.
@@ -1806,7 +1701,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
       WHEN c_filetype_csv. "**********************************************************************
 
         CASE x_source.
-          WHEN c_source_local.
+          WHEN cc_file_source-local.
             "-------------------------------------------------
 
             me->upload_csv_local(
@@ -1822,7 +1717,7 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
               RAISE unable_open_path.
             ENDIF.
 
-          WHEN c_source_server.
+          WHEN cc_file_source-server.
             "-------------------------------------------------
 
             me->upload_csv_server(
@@ -1875,11 +1770,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>GET_DESKTOP_DIRECTORY
-* +-------------------------------------------------------------------------------------------------+
-* | [<-()] Y_DESKTOP_DIR                  TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD get_desktop_directory.
 
     y_desktop_dir = ''.
@@ -1898,15 +1788,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>GET_FIELDCAT_FROM_DATA
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XS_SAP_LINE                    TYPE        ANY(optional)
-* | [--->] XT_SAP_TABLE                   TYPE        TABLE(optional)
-* | [<---] YO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
-* | [<---] YT_FCAT                        TYPE        LVC_T_FCAT
-* | [EXC!] UNABLE_DEFINE_STRUCTDESCR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD get_fieldcat_from_data.
 
     DATA: lref_sap_data  TYPE REF TO data,
@@ -1968,11 +1849,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method ZAG_CL_CSV_XLSX->GET_HEADER_FROM_DATA
-* +-------------------------------------------------------------------------------------------------+
-* | [<-()] Y_STR_HEADER                   TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD get_header_from_data.
 
     y_str_header = ''.
@@ -1993,11 +1869,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_CSV_XLSX=>REMOVE_SPECIAL_CHAR
-* +-------------------------------------------------------------------------------------------------+
-* | [<-->] Y_TEXT                         TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD remove_special_char.
 
     CONSTANTS: c_pattern_lect_upper TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', "#EC NOTEXT
@@ -2057,13 +1928,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->UPLOAD_CSV_LOCAL
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD upload_csv_local.
 
     CLEAR yt_str_data[].
@@ -2082,13 +1946,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->UPLOAD_CSV_SERVER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD upload_csv_server.
 
     DATA: ls_str_data TYPE string.
@@ -2118,13 +1975,6 @@ CLASS ZAG_CL_CSV_XLSX IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method ZAG_CL_CSV_XLSX->UPLOAD_EXCEL_LOCAL
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_FILENAME                     TYPE        STRING
-* | [<---] YT_STR_DATA                    TYPE        STRING_TABLE
-* | [EXC!] UNABLE_OPEN_PATH
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD upload_excel_local.
 
     DATA: lv_except_msg    TYPE string,
