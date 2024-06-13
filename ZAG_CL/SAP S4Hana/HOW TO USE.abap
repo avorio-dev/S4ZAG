@@ -327,138 +327,87 @@ ENDFORM.
 
 
 
-**********************************************************************
-"ZAG_CL_CSV_XLSX - EXAMPLE
-**********************************************************************
-  " WHY USE IT?
+  SELECT * UP TO 10 ROWS FROM but000 INTO TABLE @DATA(lt_but000).
 
-  " - DOWNLOAD
-  "     It allows to Download CSV and XLSX on Local or Server destination
+  DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx(
+    xt_sap_table = lt_but000
+  ).
 
-  " - UPLOAD
-  "     It allows to Upload CSV from Local or Server
-  "     It allows to Upload XLSX from Local
-
-  " - It provieds utility Methods like:
-  "   - CONV_SAP_TO_STRING / CONV_STRING_TO_SAP
-  "         allows to convert any sap line into a csv string and vice versa.
-  "         Also, it automatically apply conversion for Date / Time and Numbers
-  "
-  "   - F4_HELP_DIR_INPUT
-  "       provide a matchcode for directory in input or output
-  "
-  "   - GET_FIELDCAT_FROM_ITAB
-  "       provide the fieldcat of any table
-  "
-  "   - REMOVE_SPECIAL_CHAR
-  "       remove special characters from a string, and it can be expanded with new charset
-
-**********************************************************************
-
-  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_sflight).
-
-  DATA(lv_source) = ''.
-  DATA(lv_filename) = zag_cl_csv_xlsx=>get_desktop_directory( ).
-
-  "Example 1 -> Download CSV on Server / Local
+  "DOWNLOAD
   "-------------------------------------------------
-  lv_source   = 'S'. "S - Server / L - Local
-  lv_filename = |/tmp/test.csv|.
-  zag_cl_csv_xlsx=>download(
+
+  "Download Example - LOCAL
+  lo_csv_xlsx->file_download(
     EXPORTING
-      x_filename                = lv_filename
-      x_source                  = lv_source " 'S' / 'L'
-    CHANGING
-      xt_sap_data               = lt_sflight
+      x_filename         = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/my_zag_file.csv|
+      x_source           = zag_cl_csv_xlsx=>cc_file_source-local
     EXCEPTIONS
-      not_supported_file        = 1
-      unable_open_path          = 2
-      unable_define_structdescr = 3
-      OTHERS                    = 4
+      not_supported_file = 1
+      unable_open_path   = 2
+      OTHERS             = 3
   ).
   IF sy-subrc <> 0.
-    "Handle Exception
-  ENDIF.
-
-  "Example 2 -> Download XLSX on Server / Local
-  "-------------------------------------------------
-  lv_filename = zag_cl_csv_xlsx=>get_desktop_directory( ).
-  lv_source   = 'L'. "S - Server / L - Local
-  lv_filename = |{ lv_filename }/test.xlsx|.
-  zag_cl_csv_xlsx=>download(
-    EXPORTING
-      x_filename                = lv_filename
-      x_source                  = lv_source  " 'S' / 'L'
-    CHANGING
-      xt_sap_data               = lt_sflight
-    EXCEPTIONS
-      not_supported_file        = 1
-      unable_open_path          = 2
-      unable_define_structdescr = 3
-      OTHERS                    = 4
-  ).
-  IF sy-subrc <> 0.
-    "Handle Exception
   ENDIF.
 
 
-  REFRESH lt_sflight.
+  "Download Example - SERVER
+  lo_csv_xlsx->file_download(
+    EXPORTING
+      x_filename         = '/tmp/my_zag_file.csv'
+      x_source           = zag_cl_csv_xlsx=>cc_file_source-server
+    EXCEPTIONS
+      not_supported_file = 1
+      unable_open_path   = 2
+      OTHERS             = 3
+  ).
+  IF sy-subrc <> 0.
+  ENDIF.
 
-  "Example 3 - Upload XLSX from Local
+
+
+  "UPLOAD
   "-------------------------------------------------
+
   DATA lt_conversion_errors TYPE zag_cl_csv_xlsx=>tt_conversions_errors.
-  zag_cl_csv_xlsx=>upload(
+
+  "Upload Example - LOCAL
+  lo_csv_xlsx->file_upload(
     EXPORTING
-      x_filename                = lv_filename
-      x_header                  = 'X'
-      x_source                  = 'L'              " 'L'/'S'
+      x_filename            = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/my_zag_file.csv|
+      x_header              = 'X'
+      x_source              = zag_cl_csv_xlsx=>cc_file_source-local
     IMPORTING
-      yt_sap_data               = lt_sflight
-      yt_conversions_errors     = lt_conversion_errors
+      yt_sap_data           = lt_but000
+      yt_conversions_errors = lt_conversion_errors
     EXCEPTIONS
-      input_error               = 1
-      not_supported_file        = 2
-      unable_open_path          = 3
-      unable_define_structdescr = 4
-      empty_file                = 5
-      conversion_error          = 6
-      OTHERS                    = 7
+      input_error           = 1
+      not_supported_file    = 2
+      unable_open_path      = 3
+      empty_file            = 4
+      conversion_error      = 5
+      OTHERS                = 6
   ).
   IF sy-subrc <> 0.
-    "Handle Excepion
   ENDIF.
 
-
-  "SHOW RESULTS
-  "-------------------------------------------------
-  IF lines( lt_conversion_errors ) GT 0.
-
-    zag_cl_salv=>display_generic_alv(
-      EXPORTING
-        x_popup             = abap_true
-        xt_output           = lt_conversion_errors
-      EXCEPTIONS
-        salv_creation_error = 1
-        OTHERS              = 2
-    ).
-    IF sy-subrc <> 0.
-      "Handle Exception
-    ENDIF.
-
-  ELSE.
-
-    zag_cl_salv=>display_generic_alv(
-      EXPORTING
-        x_popup             = abap_false
-        xt_output           = lt_sflight
-      EXCEPTIONS
-        salv_creation_error = 1
-        OTHERS              = 2
-    ).
-    IF sy-subrc <> 0.
-      "Handle Exception
-    ENDIF.
-
+  "Upload Example - SERVER
+  lo_csv_xlsx->file_upload(
+    EXPORTING
+      x_filename            = 'tmp/my_zag_file.csv'
+      x_header              = 'X'
+      x_source              = zag_cl_csv_xlsx=>cc_file_source-server
+    IMPORTING
+      yt_sap_data           = lt_but000
+      yt_conversions_errors = lt_conversion_errors
+    EXCEPTIONS
+      input_error           = 1
+      not_supported_file    = 2
+      unable_open_path      = 3
+      empty_file            = 4
+      conversion_error      = 5
+      OTHERS                = 6
+  ).
+  IF sy-subrc <> 0.
   ENDIF.
 
 
