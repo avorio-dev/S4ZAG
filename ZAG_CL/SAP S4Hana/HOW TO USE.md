@@ -4,7 +4,7 @@
 ## 3. [ZAG_CL_SEND_MAIL](#zag_cl_send_mail)
 ## 4. [ZAG_CL_SALV_IDA](#zag_cl_salv_ida)
 
-
+***
 Below there are examples on how to use the library classes.
 The target of this classes is to USE THEM, not to adapt! 
 In this way, no time will be wasted!!!
@@ -17,6 +17,7 @@ you will need to comment the following line code at the beginning of the class d
   final
   create public .
 
+***
 
 ## 1. ZAG_CL_SALV <a name="zag_cl_salv"></a>
 
