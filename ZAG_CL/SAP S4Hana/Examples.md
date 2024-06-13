@@ -45,13 +45,7 @@
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
 
-  zag_cl_salv=>display_generic_alv(
-    EXPORTING
-      xt_output           = lt_mara
-    EXCEPTIONS
-      salv_creation_error = 1
-      OTHERS              = 2
-  ).
+  zag_cl_salv=>display_generic_alv( lt_mara ).
 
 
   "Example 2 -> Set colors for cells and / or rows
@@ -70,39 +64,34 @@
            t_col TYPE lvc_t_scol, "Use this if you want colors in output
          END OF ty_alv.
 
-  DATA: gt_alv       TYPE TABLE OF ty_alv,
-        lv_fieldname TYPE fieldname.
+  DATA: gt_alv       TYPE TABLE OF ty_alv.
 
 
   LOOP AT lt_mara ASSIGNING FIELD-SYMBOL(<mara>).
 
     "Set Data
-    "-------------------------------------------------
     APPEND INITIAL LINE TO gt_alv ASSIGNING FIELD-SYMBOL(<alv>).
     MOVE-CORRESPONDING <mara> TO <alv>.
 
 
     "Set Icon
-    "-------------------------------------------------
     DATA(lv_diff) = sy-datum - <mara>-ersda.
-    IF lv_diff MOD 2 EQ 0.
-      <alv>-icon = zag_cl_salv=>c_icon_green.
-    ELSE.
-      <alv>-icon = zag_cl_salv=>c_icon_red.
-    ENDIF.
-
+    <alv>-icon = COND #(
+      WHEN lv_diff MOD 2 EQ 0 THEN zag_cl_salv=>cc_icon-green
+      ELSE zag_cl_salv=>cc_icon-red
+    ).
 
 
     lv_diff = sy-datum - <mara>-ersda.
     IF lv_diff MOD 2 EQ 0.
 
       "Set Single Cell Color
-      "-------------------------------------------------
-      lv_fieldname = 'ERSDA'.
       zag_cl_salv=>set_color_cell(
         EXPORTING
-          x_color             = zag_cl_salv=>c_cell_col_green
-          x_fieldname         = lv_fieldname
+          xs_color            = VALUE #( col = zag_cl_salv=>cc_cell_col-green
+                                         int = 1
+                                         inv = 1 )
+          xt_fieldname        = VALUE #( ( 'MATNR' ) )
         CHANGING
           y_row               = <alv>
         EXCEPTIONS
@@ -110,26 +99,22 @@
           fieldname_not_found = 2
           OTHERS              = 3
       ).
-      IF sy-subrc <> 0.
-        "Handle exceptions
-      ENDIF.
 
     ELSE.
 
       "Set Row Color
-      "-------------------------------------------------
       zag_cl_salv=>set_color_row(
         EXPORTING
-          x_color           = zag_cl_salv=>c_cell_col_red
+          xs_color          = VALUE #( col = zag_cl_salv=>cc_cell_col-red
+                                       int = 0
+                                       inv = 0 )
         CHANGING
-          y_row             = <alv>
+          ys_row            = <alv>
         EXCEPTIONS
           col_tab_not_found = 1
-          OTHERS            = 2
+          fcat_not_found    = 2
+          OTHERS            = 3
       ).
-      IF sy-subrc <> 0.
-        "Handle exceptions
-      ENDIF.
 
     ENDIF.
   ENDLOOP.
@@ -152,12 +137,13 @@
 
   zag_cl_salv=>display_generic_alv(
     EXPORTING
-      x_popup         = abap_true
-      xt_col_settings = lt_col_settings[]
-      xt_output       = gt_alv[]
+      xv_popup            = abap_true
+      xt_col_settings     = lt_col_settings
+      xt_output           = gt_alv
+    EXCEPTIONS
+      salv_creation_error = 1
+      others              = 2
   ).
-
-
 ```
 
 
