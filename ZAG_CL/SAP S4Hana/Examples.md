@@ -247,13 +247,13 @@
   " WHY USE IT?
 
   " - SEND_MAIL_BCS
-  "     Apart from the classic parameters such as Recipient / Email Subject / Email body,
-  "     it allows to attach files like CSV, XLSX and PDF.
-  "     Also, you will be able to use a Standard Text created by Trx SO10 as Email Body.
-  "     It will be enough to provide the name of Standard Text and, if you need,
-  "     you wil be able to specify a variable name in the Standard Text
-  "     ( For Example &LIFNR& ) and the corresponding value. The class will automatically
-  "     perform the substitutions
+  "     In addition to the classic parameters such as Recipient / Email Subject / Email Body,
+  "     it allows attaching files like CSV, XLSX, and PDF.
+  "     Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
+  "     It will be sufficient to provide the name of the Standard Text and, if necessary,
+  "     you will be able to specify a variable name in the Standard Text
+  "     (for example &LIFNR&) and the corresponding value. The class will automatically
+  "     perform the substitutions.
 
   "    NB: If you not provide any mail body, the class will automatically put the subject mail as body
   "        because it is a mandatory parameter.
