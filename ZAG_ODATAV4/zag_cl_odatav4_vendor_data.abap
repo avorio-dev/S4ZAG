@@ -8,15 +8,14 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
     INTERFACES zag_if_odatav4_vendor.
 
     METHODS:
-      /iwbep/if_v4_dp_basic~read_entity REDEFINITION,
       /iwbep/if_v4_dp_basic~read_entity_list REDEFINITION,
+      /iwbep/if_v4_dp_basic~read_entity REDEFINITION,
       /iwbep/if_v4_dp_basic~read_ref_target_key_data_list REDEFINITION,
       /iwbep/if_v4_dp_basic~create_entity REDEFINITION,
+      /iwbep/if_v4_dp_advanced~create_entity REDEFINITION,
       /iwbep/if_v4_dp_basic~update_entity REDEFINITION,
       /iwbep/if_v4_dp_basic~delete_entity REDEFINITION.
 
-    METHODS:
-      /iwbep/if_v4_dp_advanced~create_entity REDEFINITION.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -66,6 +65,13 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
         RAISING
           /iwbep/cx_gateway,
 
+      create_entity_vendor_deep
+        IMPORTING
+          io_request  TYPE REF TO /iwbep/if_v4_requ_adv_create
+          io_response TYPE REF TO /iwbep/if_v4_resp_adv_create
+        RAISING
+          /iwbep/cx_gateway,
+
       update_entity_vendor
         IMPORTING
           io_request  TYPE REF TO /iwbep/if_v4_requ_basic_update
@@ -77,13 +83,6 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
         IMPORTING
           io_request  TYPE REF TO /iwbep/if_v4_requ_basic_delete
           io_response TYPE REF TO /iwbep/if_v4_resp_basic_delete
-        RAISING
-          /iwbep/cx_gateway,
-
-      create_deep_vendor
-        IMPORTING
-          io_request  TYPE REF TO /iwbep/if_v4_requ_adv_create
-          io_response TYPE REF TO /iwbep/if_v4_resp_adv_create
         RAISING
           /iwbep/cx_gateway.
 
@@ -138,7 +137,115 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
 ENDCLASS.
 
 
+
 CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
+
+
+  METHOD /iwbep/if_v4_dp_advanced~create_entity.
+
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list VALUE IS INITIAL.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+
+    IF ls_todo_list-process-deep_busi_data = abap_true.
+
+      io_request->get_entity_type(
+        IMPORTING
+          ev_entity_type_name = DATA(lv_entity_type_name)
+      ).
+
+
+      CASE lv_entity_type_name.
+
+        WHEN cc_entity_type_names-internal-vendor.
+          create_entity_vendor_deep(
+            io_request  = io_request
+            io_response = io_response
+          ).
+
+        WHEN OTHERS.
+
+      ENDCASE.
+
+    ELSE.
+
+      super->/iwbep/if_v4_dp_advanced~create_entity(
+            io_request  = io_request
+            io_response = io_response
+      ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD /iwbep/if_v4_dp_basic~create_entity.
+
+    io_request->get_entity_type(
+        IMPORTING
+            ev_entity_type_name = DATA(lv_source_entity_name)
+    ).
+
+
+    CASE lv_source_entity_name.
+
+      WHEN cc_entity_type_names-internal-vendor.
+
+        create_entity_vendor(
+            io_request  = io_request
+            io_response = io_response
+        ).
+
+      WHEN cc_entity_type_names-internal-company.
+
+      WHEN cc_entity_type_names-internal-purchorg.
+
+      WHEN OTHERS.
+
+        super->/iwbep/if_v4_dp_basic~create_entity(
+                io_request  = io_request
+                io_response = io_response
+        ).
+
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+  METHOD /iwbep/if_v4_dp_basic~delete_entity.
+
+    io_request->get_entity_type(
+        IMPORTING
+            ev_entity_type_name = DATA(lv_source_entity_name)
+    ).
+
+
+    CASE lv_source_entity_name.
+
+      WHEN cc_entity_type_names-internal-vendor.
+
+        delete_entity_vendor(
+            io_request  = io_request
+            io_response = io_response
+        ).
+
+      WHEN cc_entity_type_names-internal-company.
+
+      WHEN cc_entity_type_names-internal-purchorg.
+
+      WHEN OTHERS.
+
+        super->/iwbep/if_v4_dp_basic~delete_entity(
+            io_request  = io_request
+            io_response = io_response
+        ).
+
+    ENDCASE.
+
+
+  ENDMETHOD.
+
 
   METHOD /iwbep/if_v4_dp_basic~read_entity.
 
@@ -147,11 +254,12 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ev_entity_set_name = DATA(lv_entityset_name)
     ).
 
+
     CASE lv_entityset_name.
+
       WHEN cc_entity_set_names-internal-vendor.
 
         read_entity_vendor(
-          EXPORTING
             io_request  = io_request
             io_response = io_response
         ).
@@ -160,7 +268,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_set_names-internal-company.
 
         read_entity_company(
-          EXPORTING
             io_request  = io_request
             io_response = io_response
         ).
@@ -169,7 +276,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_set_names-internal-purchorg.
 
         read_entity_purchorg(
-          EXPORTING
             io_request  = io_request
             io_response = io_response
         ).
@@ -178,21 +284,20 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD /iwbep/if_v4_dp_basic~read_entity_list.
 
-    DATA: ls_done_list      TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list,
-          lv_orderby_string TYPE string,
+    DATA: lv_orderby_string TYPE string,
           lv_skip           TYPE i,
           lv_top            TYPE i,
           lv_select_string  TYPE string,
           lv_where_clause   TYPE string.
 
 
-    CLEAR ls_done_list.
-    io_request->get_todos(
-      IMPORTING
-        es_todo_list = DATA(ls_todo_list)
-    ).
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list VALUE IS INITIAL.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
 
 
     "Sort settings
@@ -200,8 +305,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     lv_orderby_string = 'PRIMARY KEY'.
 
     IF ls_todo_list-process-orderby = abap_true.
-
-      ls_done_list-orderby = abap_true.
 
       io_request->get_orderby(
         IMPORTING
@@ -214,11 +317,14 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         lv_orderby_string = COND #(
             WHEN <ls_orderby_property>-descending EQ abap_false
                 THEN |{ lv_orderby_string } { <ls_orderby_property>-name } ASCENDING|
+
             WHEN <ls_orderby_property>-descending EQ abap_true
                 THEN |{ lv_orderby_string } { <ls_orderby_property>-name } DESCENDING|
         ).
 
       ENDLOOP.
+
+      ls_done_list-orderby = abap_true.
 
     ENDIF.
 
@@ -229,21 +335,15 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     IF ls_todo_list-process-skip = abap_true.
 
+      io_request->get_skip( IMPORTING ev_skip = lv_skip ).
       ls_done_list-skip = abap_true.
-      io_request->get_skip(
-        IMPORTING
-            ev_skip = lv_skip
-      ).
 
     ENDIF.
 
     IF ls_todo_list-process-top = abap_true.
 
+      io_request->get_top( IMPORTING ev_top = lv_top ).
       ls_done_list-top = abap_true.
-      io_request->get_top(
-        IMPORTING
-            ev_top = lv_top
-      ).
 
     ENDIF.
 
@@ -254,13 +354,14 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     IF ls_todo_list-process-select = abap_true.
 
-      ls_done_list-select = abap_true.
       io_request->get_selected_properties(
         IMPORTING
             et_selected_property = DATA(lt_selected_property)
       ).
 
       CONCATENATE LINES OF lt_selected_property INTO lv_select_string SEPARATED BY ','.
+
+      ls_done_list-select = abap_true.
 
     ENDIF.
 
@@ -271,11 +372,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     IF ls_todo_list-process-filter = abap_true.
 
-      ls_done_list-filter = abap_true.
       io_request->get_filter_osql_where_clause(
         IMPORTING
             ev_osql_where_clause = lv_where_clause
       ).
+      ls_done_list-filter = abap_true.
 
     ENDIF.
 
@@ -291,7 +392,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_set_names-internal-vendor.
 
         read_list_vendor(
-          EXPORTING
             io_request        = io_request
             io_response       = io_response
             iv_orderby_string = lv_orderby_string
@@ -306,7 +406,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_set_names-internal-company.
 
         read_list_company(
-          EXPORTING
             io_request        = io_request
             io_response       = io_response
             iv_orderby_string = lv_orderby_string
@@ -321,7 +420,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_set_names-internal-purchorg.
 
         read_list_purchorg(
-          EXPORTING
             io_request        = io_request
             io_response       = io_response
             iv_orderby_string = lv_orderby_string
@@ -334,13 +432,16 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
       WHEN OTHERS.
 
-        super->/iwbep/if_v4_dp_basic~read_entity_list( io_request  = io_request
-                                                       io_response = io_response ).
+        super->/iwbep/if_v4_dp_basic~read_entity_list(
+            io_request  = io_request
+            io_response = io_response
+        ).
 
     ENDCASE.
 
 
   ENDMETHOD.
+
 
   METHOD /iwbep/if_v4_dp_basic~read_ref_target_key_data_list.
 
@@ -350,99 +451,30 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ).
 
     CASE lv_source_entity_name.
-
       WHEN cc_entity_type_names-internal-vendor.
 
         read_ref_key_list_vendor(
-           EXPORTING
             io_request  = io_request
-            io_response = io_response ).
-
+            io_response = io_response
+        ).
 
       WHEN OTHERS.
 
         super->/iwbep/if_v4_dp_basic~read_ref_target_key_data_list(
-          EXPORTING
-            io_request  = io_request
-            io_response = io_response ).
-
-    ENDCASE.
-
-  ENDMETHOD.
-
-  METHOD /iwbep/if_v4_dp_basic~create_entity.
-
-    io_request->get_entity_type(
-            IMPORTING
-                ev_entity_type_name = DATA(lv_source_entity_name)
-    ).
-
-
-    CASE lv_source_entity_name.
-
-      WHEN cc_entity_type_names-internal-vendor.
-
-        create_entity_vendor(
-          EXPORTING
             io_request  = io_request
             io_response = io_response
         ).
 
-      WHEN cc_entity_type_names-internal-company.
-
-      WHEN cc_entity_type_names-internal-purchorg.
-
-      WHEN OTHERS.
-
-        super->/iwbep/if_v4_dp_basic~create_entity(
-            EXPORTING
-                io_request  = io_request
-                io_response = io_response
-        ).
-
     ENDCASE.
 
   ENDMETHOD.
 
-  METHOD /iwbep/if_v4_dp_basic~delete_entity.
-
-    io_request->get_entity_type(
-            IMPORTING
-                ev_entity_type_name = DATA(lv_source_entity_name)
-    ).
-
-    CASE lv_source_entity_name.
-
-      WHEN cc_entity_type_names-internal-vendor.
-
-        delete_entity_vendor(
-          EXPORTING
-            io_request  = io_request
-            io_response = io_response
-        ).
-
-      WHEN cc_entity_type_names-internal-company.
-
-      WHEN cc_entity_type_names-internal-purchorg.
-
-      WHEN OTHERS.
-
-        super->/iwbep/if_v4_dp_basic~delete_entity(
-            EXPORTING
-                io_request  = io_request
-                io_response = io_response
-        ).
-
-    ENDCASE.
-
-
-  ENDMETHOD.
 
   METHOD /iwbep/if_v4_dp_basic~update_entity.
 
     io_request->get_entity_type(
-            IMPORTING
-                ev_entity_type_name = DATA(lv_source_entity_name)
+        IMPORTING
+            ev_entity_type_name = DATA(lv_source_entity_name)
     ).
 
     CASE lv_source_entity_name.
@@ -450,7 +482,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN cc_entity_type_names-internal-vendor.
 
         update_entity_vendor(
-          EXPORTING
             io_request  = io_request
             io_response = io_response
         ).
@@ -462,9 +493,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       WHEN OTHERS.
 
         super->/iwbep/if_v4_dp_basic~update_entity(
-            EXPORTING
-                io_request  = io_request
-                io_response = io_response
+            io_request  = io_request
+            io_response = io_response
         ).
 
     ENDCASE.
@@ -472,16 +502,167 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD create_entity_vendor.
+
+    DATA: ls_cds_lfa1  TYPE ts_cds_views-vendor,
+          lv_new_lifnr TYPE ts_cds_views-vendor-lifnr.
+
+
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_create=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_create=>ty_s_todo_process_list VALUE IS INITIAL.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+
+    IF ls_todo_list-process-busi_data = abap_true.
+      io_request->get_busi_data(
+        IMPORTING
+            es_busi_data = ls_cds_lfa1
+      ).
+      ls_done_list-busi_data = abap_true. "business data processed
+    ENDIF.
+
+    IF ls_todo_list-process-partial_busi_data = abap_true.
+      " Check if the mandatory properties have been provided
+
+
+      "If all mandatory data have been provided
+      ls_done_list-partial_busi_data = abap_true.
+    ENDIF.
+
+
+
+    "CREATE YOUR ENTITY HERE
+
+
+
+    IF ls_todo_list-return-busi_data = abap_true.
+
+      " Read data again and set the response.
+      CLEAR ls_cds_lfa1.
+      SELECT SINGLE * FROM zag_cds_lfa1
+        INTO CORRESPONDING FIELDS OF @ls_cds_lfa1
+        WHERE lifnr = @lv_new_lifnr.
+
+      io_response->set_busi_data( ls_cds_lfa1 ).
+
+    ENDIF.
+
+
+    io_response->set_is_done( ls_done_list ).
+
+  ENDMETHOD.
+
+
+  METHOD create_entity_vendor_deep.
+
+    DATA:
+      ls_deep_vendor       TYPE ts_deep_vendor,
+      ls_todo_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list,
+      ls_done_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list.
+
+
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_process_list VALUE IS INITIAL.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+
+    IF 1 = 2.
+
+      io_request->get_data_description_express(
+        IMPORTING
+          ev_data_description_express = DATA(ls_data_description_express)
+      ).
+
+
+      CHECK ls_data_description_express CS cc_nav_prop_names-internal-vendor_to_company
+         OR ls_data_description_express CS cc_nav_prop_names-internal-vendor_to_purchorg.
+
+    ENDIF.
+
+    ls_done_list-deep_busi_data    = abap_true.
+    ls_done_list-partial_busi_data = abap_true.
+
+    io_request->get_busi_data(
+      IMPORTING
+        es_busi_data = ls_deep_vendor
+    ).
+
+
+    " Partial busi data for subnodes
+    io_request->get_data_description_tree_list(
+        IMPORTING
+            et_data_desc_root_node = DATA(lt_data_descr_tree)
+    ).
+
+
+    LOOP AT lt_data_descr_tree ASSIGNING FIELD-SYMBOL(<lo_data_descr_tree>).
+
+      CLEAR ls_todo_list_subnode.
+      <lo_data_descr_tree>->get_todos( IMPORTING es_todo_list = ls_todo_list_subnode ).
+
+      CLEAR ls_done_list_subnode.
+      IF ls_todo_list_subnode-partial_busi_data = abap_true.
+
+        ls_done_list_subnode-partial_busi_data = abap_true.
+
+        " Process tree to know what for properties where provided
+
+      ENDIF.
+
+      <lo_data_descr_tree>->set_is_done( ls_done_list_subnode ).
+
+    ENDLOOP.
+
+
+    IF ls_todo_list-return-busi_data = abap_true.
+      ls_done_list-busi_data = abap_true.
+      io_response->set_busi_data( is_busi_data = ls_deep_vendor ).
+    ENDIF.
+
+
+    io_response->set_is_done( is_todo_list = ls_done_list ).
+
+
+  ENDMETHOD.
+
+
+  METHOD delete_entity_vendor.
+
+    DATA: ls_key_data TYPE ts_cds_views-vendor.
+
+
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_process_list VALUE IS INITIAL.
+
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
+
+    io_request->get_key_data(
+      IMPORTING
+        es_key_data = ls_key_data
+    ).
+    ls_done_list-key_data = abap_true.
+
+
+    "DELETE YOUR ENTITY HERE
+
+
+    io_response->set_is_done( ls_done_list ).
+
+  ENDMETHOD.
+
+
   METHOD read_entity_company.
 
     DATA: ls_key_data TYPE ts_cds_views-company,
           ls_cds_lfb1 TYPE ts_cds_views-company.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
 
@@ -510,10 +691,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     ENDIF.
 
+
     io_response->set_is_done( ls_done_list ).
 
-
   ENDMETHOD.
+
 
   METHOD read_entity_purchorg.
 
@@ -521,12 +703,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           ls_cds_lfm1 TYPE ts_cds_views-purchorg.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
 
     " Read the key data
     "---------------------------------------------------------------
@@ -552,9 +733,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     ENDIF.
 
+
     io_response->set_is_done( ls_done_list ).
 
   ENDMETHOD.
+
 
   METHOD read_entity_vendor.
 
@@ -562,20 +745,15 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           ls_cds_lfa1 TYPE ts_cds_views-vendor.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_read=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
 
 
     " Read the key data
     "---------------------------------------------------------------
-    io_request->get_key_data(
-        IMPORTING
-            es_key_data = ls_key_data
-    ).
+    io_request->get_key_data( IMPORTING es_key_data = ls_key_data ).
     ls_done_list-key_data = abap_true.
 
 
@@ -593,9 +771,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     ENDIF.
 
+
     io_response->set_is_done( ls_done_list ).
 
   ENDMETHOD.
+
 
   METHOD read_list_company.
 
@@ -606,12 +786,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           lt_company     TYPE STANDARD TABLE OF ts_cds_views-company.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
 
     " Get the request options the application has already handled
     ls_done_list = is_done_list.
@@ -694,12 +873,10 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ENDCASE.
 
 
-    " Report list of request options handled by application
-    "---------------------------------------------------------------
     io_response->set_is_done( ls_done_list ).
 
-
   ENDMETHOD.
+
 
   METHOD read_list_purchorg.
 
@@ -710,12 +887,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           lt_purchorg     TYPE STANDARD TABLE OF ts_cds_views-purchorg.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
 
     " Get the request options the application has already handled
     ls_done_list = is_done_list.
@@ -798,12 +974,10 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ENDCASE.
 
 
-    " Report list of request options handled by application
-    "---------------------------------------------------------------
     io_response->set_is_done( ls_done_list ).
 
-
   ENDMETHOD.
+
 
   METHOD read_list_vendor.
 
@@ -813,12 +987,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           lt_vendor     TYPE STANDARD TABLE OF ts_cds_views-vendor.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_list=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
 
     " Get the request options the application has already handled
     ls_done_list = is_done_list.
@@ -887,12 +1060,10 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ENDCASE.
 
 
-    " Report list of request options handled by application
-    "---------------------------------------------------------------
     io_response->set_is_done( ls_done_list ).
 
-
   ENDMETHOD.
+
 
   METHOD read_ref_key_list_vendor.
 
@@ -902,15 +1073,11 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
           lv_nav_property_name TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name.
 
 
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_ref_l=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_ref_l=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_ref_l=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_ref_l=>ty_s_todo_process_list VALUE IS INITIAL.
 
-    io_request->get_todos(
-        IMPORTING
-            es_todo_list = ls_todo_list
-    ).
+    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
+
 
     IF ls_todo_list-process-source_key_data = abap_true.
       io_request->get_source_key_data(
@@ -954,87 +1121,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     io_response->set_is_done( ls_done_list ).
 
-
   ENDMETHOD.
 
-  METHOD create_entity_vendor.
-
-    DATA: ls_cds_lfa1  TYPE ts_cds_views-vendor,
-          lv_new_lifnr TYPE ts_cds_views-vendor-lifnr.
-
-
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_create=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_create=>ty_s_todo_process_list.
-
-    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
-
-
-    IF ls_todo_list-process-busi_data = abap_true.
-      io_request->get_busi_data(
-        IMPORTING
-            es_busi_data = ls_cds_lfa1
-      ).
-      ls_done_list-busi_data = abap_true. "business data processed
-    ENDIF.
-
-    IF ls_todo_list-process-partial_busi_data = abap_true.
-      " Check if the mandatory properties have been provided
-
-
-      "If all mandatory data have been provided
-      ls_done_list-partial_busi_data = abap_true.
-    ENDIF.
-
-
-
-    "CREATE YOUR ENTITY HERE
-
-
-
-    IF ls_todo_list-return-busi_data = abap_true.
-
-      " Read data again and set the response.
-      CLEAR ls_cds_lfa1.
-      SELECT SINGLE * FROM zag_cds_lfa1
-        INTO CORRESPONDING FIELDS OF @ls_cds_lfa1
-        WHERE lifnr = @lv_new_lifnr.
-      io_response->set_busi_data( ls_cds_lfa1 ).
-
-    ENDIF.
-
-
-    io_response->set_is_done( ls_done_list ).
-
-  ENDMETHOD.
-
-  METHOD delete_entity_vendor.
-
-    DATA: ls_key_data TYPE ts_cds_views-vendor.
-
-
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_delete=>ty_s_todo_process_list.
-
-    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
-
-    io_request->get_key_data(
-      IMPORTING
-        es_key_data = ls_key_data
-    ).
-    ls_done_list-key_data = abap_true.
-
-
-    "DELETE YOUR ENTITY HERE
-
-
-
-    io_response->set_is_done( ls_done_list ).
-
-  ENDMETHOD.
 
   METHOD update_entity_vendor.
 
@@ -1044,17 +1132,17 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     " Get the request options the application should/must handle
     "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_update=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_basic_update=>ty_s_todo_process_list.
+    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_basic_update=>ty_s_todo_list         VALUE IS INITIAL,
+          ls_done_list TYPE /iwbep/if_v4_requ_basic_update=>ty_s_todo_process_list VALUE IS INITIAL.
 
     io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
 
+
     IF ls_todo_list-process-key_data = abap_true.
-      io_request->get_key_data(
-            IMPORTING
-              es_key_data = ls_key_data
-          ).
+
+      io_request->get_key_data( IMPORTING es_key_data = ls_key_data ).
       ls_done_list-key_data = abap_true.
+
     ENDIF.
 
     IF ls_todo_list-process-busi_data = abap_true.
@@ -1075,107 +1163,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     ENDIF.
 
+
     io_response->set_is_done( ls_done_list ).
 
   ENDMETHOD.
-
-  METHOD /iwbep/if_v4_dp_advanced~create_entity.
-
-    DATA: lv_entity_type_name TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name,
-          ls_todo_list        TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list.
-
-
-    io_request->get_entity_type( IMPORTING ev_entity_type_name = lv_entity_type_name ).
-    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
-
-    IF lv_entity_type_name = cc_entity_type_names-internal-vendor
-        AND ls_todo_list-process-deep_busi_data = abap_false.
-
-      super->/iwbep/if_v4_dp_advanced~create_entity(
-        EXPORTING
-          io_request  = io_request
-          io_response = io_response ).
-
-    ELSE.
-
-      create_deep_vendor(
-        io_request  = io_request
-        io_response = io_response
-      ).
-
-    ENDIF.
-
-  ENDMETHOD.
-
-  METHOD create_deep_vendor.
-
-    DATA:
-      ls_deep_vendor       TYPE ts_deep_vendor,
-      ls_todo_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list,
-      ls_done_list_subnode TYPE /iwbep/if_v4_data_desc_node=>ty_s_todo_list.
-
-
-    " Get the request options the application should/must handle
-    "---------------------------------------------------------------
-    DATA: ls_todo_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_list,
-          ls_done_list TYPE /iwbep/if_v4_requ_adv_create=>ty_s_todo_process_list.
-
-    io_request->get_todos( IMPORTING es_todo_list = ls_todo_list ).
-
-
-    io_request->get_data_description_express(
-      IMPORTING
-        ev_data_description_express = DATA(ls_data_description_express)
-    ).
-
-
-    CHECK ls_data_description_express EQ cc_nav_prop_names-internal-vendor_to_company
-       OR ls_data_description_express EQ cc_nav_prop_names-internal-vendor_to_purchorg.
-
-    ls_done_list-deep_busi_data    = abap_true.
-    ls_done_list-partial_busi_data = abap_true.
-
-    io_request->get_busi_data(
-      IMPORTING
-        es_busi_data = ls_deep_vendor ).
-
-
-    " Partial busi data for subnodes
-    io_request->get_data_description_tree_list(
-        IMPORTING
-            et_data_desc_root_node = DATA(lt_data_descr_tree)
-    ).
-
-    LOOP AT lt_data_descr_tree ASSIGNING FIELD-SYMBOL(<lo_data_descr_tree>).
-
-      <lo_data_descr_tree>->get_todos(
-        IMPORTING
-            es_todo_list = ls_todo_list_subnode
-      ).
-
-      IF ls_todo_list_subnode-partial_busi_data = abap_true.
-
-        ls_done_list_subnode-partial_busi_data = abap_true.
-
-        " Process tree to know what for properties where provided
-
-      ENDIF.
-
-      <lo_data_descr_tree>->set_is_done( ls_done_list_subnode ).
-
-    ENDLOOP.
-
-
-
-    IF ls_todo_list-return-busi_data = abap_true.
-      ls_done_list-busi_data = abap_true.
-      io_response->set_busi_data( is_busi_data = ls_deep_vendor ).
-    ENDIF.
-
-
-    io_response->set_is_done( is_todo_list = ls_done_list ).
-
-
-  ENDMETHOD.
-
 ENDCLASS.
