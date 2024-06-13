@@ -14,6 +14,8 @@
 - **Data Provider**
 	- [ZAG_CL_ODATAV4_VENDOR_DATA](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/zag_cl_odatav4_vendor_data.abap)
 
+- Check in Tcode **/IWFND/VIRUS_SCAN** if virus scan profile for V4 is disabled
+
 ---
 
 ## 2. How to configure the service?
