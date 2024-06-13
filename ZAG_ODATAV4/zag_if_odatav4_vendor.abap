@@ -21,6 +21,19 @@ INTERFACE zag_if_odatav4_vendor
     END OF ts_key_range.
 
 
+
+  TYPES:
+
+    " Deep Structure
+    "---------------------------------------------------------------
+    BEGIN OF ts_deep_struct.
+      INCLUDE TYPE ts_cds_views-vendor.
+    TYPES:
+      _company  TYPE TABLE OF ts_cds_views-company  WITH DEFAULT KEY,
+      _purchorg TYPE TABLE OF ts_cds_views-purchorg WITH DEFAULT KEY,
+    END OF ts_deep_struct.
+
+
   CONSTANTS:
 
     " Data Sources Names
