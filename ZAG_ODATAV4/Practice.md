@@ -8,6 +8,8 @@
 ---
 
 ## 1. System Prerequisites <a name="system_prerequisites"/>
+- OData V4 uses a virus scan profile /IWBEP/V4/ODATA_UPLOAD. You have to config it with transaction **VSCANPROFILE** ( Basis activity ). Otherwise you can disable it using Tcode **/IWBEP/V4/ODATA_UPLOAD**
+- Make sure thate the service group **/IWFND/CONFIG** is published. Otherwise, do it with Tcode **/IWBEP/V4_ADMIN**
 
 ## 2. What do you need to implement?<a name="implemented_objects"/>
 
