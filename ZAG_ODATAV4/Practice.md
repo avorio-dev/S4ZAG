@@ -1,16 +1,15 @@
 # [OData V4 Code-Based Implementation](https://community.sap.com/t5/technology-blogs-by-members/simple-odata-v4-service-using-code-based-implementation/ba-p/13519406)
 
-## 0. [System prerequisites](#system_prerequisites)
-## 1. [What will be implemented](#implemented_objects)
-## 2. [How to configure the service?](#service_config)
-## 3. [How to run the service](#service_run)
-## 4. [ZAG_CL_SALV_IDA](#zag_cl_salv_ida)
+## 1. [System prerequisites](#system_prerequisites)
+## 2. [What will be implemented](#implemented_objects)
+## 3. [How to configure the service?](#service_config)
+## 4. [How to run the service](#service_run)
 
 ---
 
-## 0. System Prerequisites <a name="system_prerequisites"/>
+## 1. System Prerequisites <a name="system_prerequisites"/>
 
-## 1. What do you need to implement?<a name="implemented_objects"/>
+## 2. What do you need to implement?<a name="implemented_objects"/>
 
 -  **CDS Databse**
 	- [ZAG_CDS_LFA1](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/ZAG_CDS_LFA1.abap)
@@ -32,7 +31,7 @@
 
 ---
 
-## 2. How to configure the service?<a name="service_config"/>
+## 3. How to configure the service?<a name="service_config"/>
 
 1. Run TCode **/iwbep/v4_admin**
 2. Register a service group **ZAG_SG_VENDOR** 
@@ -42,7 +41,7 @@
 
 ---
 
-## 3. How to run the service?<a name="service_run"/>
+## 4. How to run the service?<a name="service_run"/>
 
 >Each link listed below will need to be concatenated to your **<system_host>** if you are testing with Browser/Postman.
 >If you're using GW_CLIENT instead, it will be enough copy/paste it
