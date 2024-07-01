@@ -5,8 +5,15 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
   CREATE PUBLIC .
 
   PUBLIC SECTION.
-    INTERFACES zag_if_odatav4_vendor.
 
+    "Interfaces
+    "---------------------------------------------------------------
+    INTERFACES:
+      zag_if_odatav4_vendor.
+
+
+    "Methods
+    "---------------------------------------------------------------
     METHODS:
       /iwbep/if_v4_dp_basic~read_entity_list REDEFINITION,
       /iwbep/if_v4_dp_basic~read_entity REDEFINITION,
@@ -18,7 +25,11 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
 
 
   PROTECTED SECTION.
+
   PRIVATE SECTION.
+
+    "Aliases
+    "---------------------------------------------------------------
     ALIASES:
           ts_cds_views         FOR zag_if_odatav4_vendor~ts_cds_views,
           ts_deep_vendor       FOR zag_if_odatav4_vendor~ts_deep_struct,
@@ -28,7 +39,7 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
           cc_nav_prop_names    FOR zag_if_odatav4_vendor~cc_nav_prop_names.
 
 
-    " Vendor related methods
+    " Methods - Vendor
     "---------------------------------------------------------------
     METHODS:
       read_list_vendor
@@ -87,7 +98,7 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
           /iwbep/cx_gateway.
 
 
-    " Company related methods
+    " Methods - Company
     "---------------------------------------------------------------
     METHODS:
       read_list_company
@@ -111,7 +122,7 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
           /iwbep/cx_gateway.
 
 
-    " Purch. Org. related methods
+    " Methods - Purch. Org.
     "---------------------------------------------------------------
     METHODS:
       read_list_purchorg
@@ -136,10 +147,7 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
 
 ENDCLASS.
 
-
-
 CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
-
 
   METHOD /iwbep/if_v4_dp_advanced~create_entity.
 
@@ -498,7 +506,6 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ).
 
     ENDCASE.
-
 
   ENDMETHOD.
 
@@ -1167,4 +1174,5 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     io_response->set_is_done( ls_done_list ).
 
   ENDMETHOD.
+  
 ENDCLASS.
