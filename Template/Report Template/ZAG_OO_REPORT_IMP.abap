@@ -1,30 +1,6 @@
 *&---------------------------------------------------------------------*
 *& Include          ZAG_OO_REPORT_IMP
 *&---------------------------------------------------------------------*
-CLASS lcx_generic IMPLEMENTATION.
-
-  METHOD constructor.
-
-    super->constructor( previous = previous ).
-
-    CLEAR me->textid.
-    IF textid IS INITIAL AND me->if_t100_message~t100key IS INITIAL.
-      if_t100_message~t100key = if_t100_message=>default_textid.
-    ELSE.
-      if_t100_message~t100key = textid.
-    ENDIF.
-
-    me->gv_attr1 = xv_attr1.
-    me->gv_attr2 = xv_attr2.
-    me->gv_attr3 = xv_attr3.
-    me->gv_attr4 = xv_attr4.
-
-  ENDMETHOD.
-
-ENDCLASS.
-
-**********************************************************************
-
 CLASS lcx_selscreen IMPLEMENTATION.
 
   METHOD constructor.
@@ -74,19 +50,28 @@ ENDCLASS.
 **********************************************************************
 
 CLASS lcl_selection_screen IMPLEMENTATION.
-  METHOD set_params.
-
-    "Set Select Options / Parameters
-    me->gr_partner = xr_partner[].
-    me->gr_bukrs   = xr_bukrs[].
-
-  ENDMETHOD.
 
   METHOD get_params.
 
-    "Get Select Options / Parameters
-    yr_partner = me->gr_partner[].
-    yr_bukrs   = me->gr_bukrs[].
+    "Get Parameters / Select Options
+    ys_params = me->gs_params.
+    ys_selopt = me->gs_selopt.
+
+  ENDMETHOD.
+
+  METHOD set_params.
+
+    "Set Parameters / Select Options
+    me->gs_params = xs_params.
+    me->gs_selopt = xs_selopt.
+
+    TRY.
+        me->check_params( ).
+
+      CATCH lcx_selscreen INTO DATA(lx_selscreen).
+        RAISE EXCEPTION lx_selscreen.
+
+    ENDTRY.
 
   ENDMETHOD.
 
@@ -97,10 +82,11 @@ CLASS lcl_selection_screen IMPLEMENTATION.
       RAISE EXCEPTION TYPE lcx_selscreen
         EXPORTING
           textid   = lcx_selscreen=>missing_param
-          xv_attr1 = 'Partner'.
+          xv_attr1 = 'Vendor'.
     ENDIF.
 
   ENDMETHOD.
+
 ENDCLASS.
 
 **********************************************************************
@@ -112,46 +98,88 @@ CLASS lcl_data_processor IMPLEMENTATION.
     "Get Selection Screen Parameters
     xo_selection_screen->get_params(
       IMPORTING
-        yr_partner = me->gr_partner[]
-        yr_bukrs   = me->gr_bukrs[]
+        ys_params = me->gs_params
+        ys_selopt = me->gs_selopt
     ).
 
-    "Data extraction
-    me->select_data( ).
 
-    "Build Output Table
-    DATA(lt_output) = me->build_output( ).
+    TRY.
+        "Data extraction
+        me->select_data( ).
 
-    " Display data
-    DATA(lo_display) = NEW lcl_display( xt_output = lt_output ).
-    lo_display->display_data( ).
+        "Build Output Table
+        me->build_output( ).
+
+        " Display data
+        DATA(lo_display) = NEW lcl_display( me->get_output(  ) ).
+        lo_display->display_data( ).
+
+      CATCH lcx_processor INTO DATA(lx_processor).
+        RAISE EXCEPTION lx_processor.
+
+    ENDTRY.
 
   ENDMETHOD.
 
   METHOD select_data.
 
-    SELECT *
-      FROM but000
-      INTO TABLE @me->gt_partner
-      WHERE partner IN @me->gr_partner[].
+    CLEAR me->gt_lfa1[].
+    SELECT * UP TO 10 ROWS
+      FROM lfa1
+      INTO TABLE @me->gt_lfa1
+      WHERE lifnr IN @me->gs_selopt-lifnr[].
+    IF sy-subrc <> 0.
 
-    "Raise exception if no data found
-    IF me->gt_partner IS INITIAL.
+      "Raise exception if no data found
+      IF me->gt_lfa1 IS INITIAL.
 
-      RAISE EXCEPTION TYPE lcx_processor
-        EXPORTING
-          textid = lcx_processor=>no_rec_found.
+        RAISE EXCEPTION TYPE lcx_processor
+          EXPORTING
+            textid = lcx_processor=>no_rec_found.
+
+      ENDIF.
 
     ENDIF.
+
+    CLEAR me->gt_lfb1[].
+    SELECT * UP TO 10 ROWS
+      FROM lfb1
+      INTO TABLE @me->gt_lfb1
+      FOR ALL ENTRIES IN @me->gt_lfa1
+      WHERE lifnr EQ @me->gt_lfa1-lifnr
+        AND bukrs IN @me->gs_selopt-bukrs.
+
+
   ENDMETHOD.
 
   METHOD build_output.
 
-    me->gt_output = CORRESPONDING #( gt_partner ).
+    CLEAR me->gt_output[].
+    LOOP AT me->gt_lfa1 ASSIGNING FIELD-SYMBOL(<lfa1>).
+
+      LOOP AT me->gt_lfb1 ASSIGNING FIELD-SYMBOL(<lfb1>)
+          FROM line_index( me->gt_lfb1[ lifnr = <lfa1>-lifnr ] ).
+        IF <lfb1>-lifnr NE <lfa1>-lifnr.
+          EXIT.
+        ENDIF.
+
+        DATA(ls_output) = CORRESPONDING ts_output( <lfa1> ).
+        ls_output       = CORRESPONDING #( BASE ( ls_output ) <lfb1> ).
+
+        APPEND ls_output TO me->gt_output.
+
+      ENDLOOP.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD get_output.
 
     yt_output = me->gt_output[].
 
   ENDMETHOD.
+
 ENDCLASS.
 
 **********************************************************************
@@ -182,12 +210,12 @@ CLASS lcl_display IMPLEMENTATION.
 
       CATCH cx_salv_msg INTO DATA(lx_salv_msg).
 
-        RAISE EXCEPTION TYPE lcx_generic
+        RAISE EXCEPTION TYPE lcx_processor
           EXPORTING
-            textid = lcx_generic=>generic_fault.
+            textid = lcx_processor=>generic_fault.
 
     ENDTRY.
 
-
   ENDMETHOD.
+
 ENDCLASS.
