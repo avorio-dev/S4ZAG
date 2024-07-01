@@ -1,24 +1,29 @@
-class ZAG_CL_SALV definition
-  public
-  final
-  create public .
+CLASS zag_cl_salv DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ty_col_settings,
+    " Types
+    "---------------------------------------------------------------
+    TYPES:
+      BEGIN OF ts_col_settings,
         fieldname TYPE lvc_s_fcat-fieldname,
         label     TYPE string,
         no_out    TYPE flag,
         hotspot   TYPE flag,
-      END OF ty_col_settings .
-  types:
-    tt_col_settings TYPE TABLE OF ty_col_settings .
-  types:
-    tt_fieldname    TYPE TABLE OF lvc_s_fcat-fieldname WITH DEFAULT KEY .
+      END OF ts_col_settings .
 
-  constants:
-    BEGIN OF cc_icon,
+    TYPES:
+      tt_col_settings TYPE TABLE OF ts_col_settings WITH DEFAULT KEY,
+      tt_fieldname    TYPE TABLE OF lvc_s_fcat-fieldname WITH DEFAULT KEY.
+
+
+    " Constants
+    "---------------------------------------------------------------
+    CONSTANTS:
+      BEGIN OF cc_icon,
         green TYPE icon_d VALUE '@5B@' ##NO_TEXT,
         red   TYPE icon_d VALUE '@5C@' ##NO_TEXT,
         yell  TYPE icon_d VALUE '@5D@' ##NO_TEXT,
@@ -27,9 +32,9 @@ public section.
         exec  TYPE icon_d VALUE '@15@' ##NO_TEXT,
         refr  TYPE icon_d VALUE '@42@' ##NO_TEXT,
         save  TYPE icon_d VALUE '@2L@' ##NO_TEXT,
-      END OF cc_icon .
-  constants:
-    BEGIN OF cc_cell_col,
+      END OF cc_icon,
+
+      BEGIN OF cc_cell_col,
         cyan  TYPE lvc_col VALUE '1' ##NO_TEXT,
         grey  TYPE lvc_col VALUE '2' ##NO_TEXT,
         yell  TYPE lvc_col VALUE '3' ##NO_TEXT,
@@ -38,288 +43,198 @@ public section.
         red   TYPE lvc_col VALUE '6' ##NO_TEXT,
         oran  TYPE lvc_col VALUE '7' ##NO_TEXT,
       END OF cc_cell_col .
-  constants C_COL_FIELDNAME type LVC_FNAME value 'T_COL' ##NO_TEXT.
 
-  class-methods DISPLAY_GENERIC_ALV
-    importing
-      !XV_POPUP type BOOLEAN default ABAP_FALSE
-      !XT_COL_SETTINGS type TT_COL_SETTINGS optional
-      !XT_OUTPUT type STANDARD TABLE
-    exceptions
-      SALV_CREATION_ERROR .
-  class-methods DISPLAY_TRANSPOSED_ROW
-    importing
-      !XV_POPUP type FLAG default ABAP_TRUE
-      !XS_ROW type ANY
-    exporting
-      !YT_TRANSPOSED type STANDARD TABLE .
-  class-methods SET_COLOR_CELL
-    importing
-      !XS_COLOR type LVC_S_COLO
-      !XT_FIELDNAME type TT_FIELDNAME
-    changing
-      !Y_ROW type ANY
-    exceptions
-      COL_TAB_NOT_FOUND
-      FIELDNAME_NOT_FOUND .
-  class-methods SET_COLOR_ROW
-    importing
-      !XS_COLOR type LVC_S_COLO
-    changing
-      !YS_ROW type ANY
-    exceptions
-      COL_TAB_NOT_FOUND
-      FCAT_NOT_FOUND .
-  class-methods GET_FIELDCAT_FROM_DATA
-    importing
-      !XS_SAP_LINE type ANY optional
-      !XT_SAP_TABLE type TABLE optional
-    exporting
-      value(YO_STRUCTDESCR) type ref to CL_ABAP_STRUCTDESCR
-      !YT_FCAT type LVC_T_FCAT
-    exceptions
-      UNABLE_DEFINE_STRUCTDESCR .
+    CONSTANTS:
+      c_col_fieldname TYPE lvc_fname VALUE 'T_COL' ##NO_TEXT,
+      c_cls_evnt_hand TYPE string    VALUE 'LCL_SALV_EVENT_HANDLER' ##NO_TEXT.
+
+
+    " Methods
+    "---------------------------------------------------------------
+    CLASS-METHODS:
+      display_generic_alv
+        IMPORTING
+          !xt_output        TYPE STANDARD TABLE
+          !xt_col_settings  TYPE tt_col_settings OPTIONAL
+          !xv_popup         TYPE boolean DEFAULT abap_false
+        CHANGING
+          !yo_event_handler TYPE REF TO object OPTIONAL
+        RAISING
+          cx_salv_msg,
+
+      display_transposed_row
+        IMPORTING
+          !xv_popup      TYPE flag DEFAULT abap_true
+          !xs_row        TYPE any
+        EXPORTING
+          !yt_transposed TYPE STANDARD TABLE,
+
+      set_color_cell
+        IMPORTING
+          !xs_color     TYPE lvc_s_colo
+          !xt_fieldname TYPE tt_fieldname
+        CHANGING
+          !y_row        TYPE any
+        EXCEPTIONS
+          col_tab_not_found
+          fieldname_not_found,
+
+      set_color_row
+        IMPORTING
+          !xs_color TYPE lvc_s_colo
+        CHANGING
+          !ys_row   TYPE any
+        EXCEPTIONS
+          col_tab_not_found
+          fcat_not_found,
+
+      get_fieldcat_from_data
+        IMPORTING
+          !xs_sap_line          TYPE any OPTIONAL
+          !xt_sap_table         TYPE table OPTIONAL
+        EXPORTING
+          VALUE(yo_structdescr) TYPE REF TO cl_abap_structdescr
+          !yt_fcat              TYPE lvc_t_fcat
+        EXCEPTIONS
+          unable_define_structdescr .
+
+
   PRIVATE SECTION.
 
-    DATA gt_fcat TYPE lvc_t_fcat .
+    " Types
+    "---------------------------------------------------------------
+    TYPES:
+      tt_sorted_col_settings TYPE SORTED TABLE OF ts_col_settings WITH NON-UNIQUE KEY fieldname.
 
-    CLASS-METHODS set_salv_text_column
-      IMPORTING
-        !xv_fieldname TYPE fieldname
-        !xv_label     TYPE string
-      CHANGING
-        !yo_column    TYPE REF TO cl_salv_column_table .
+
+    " Data
+    "---------------------------------------------------------------
+    DATA:
+      gt_fcat TYPE lvc_t_fcat .
+
+
+    " Methods
+    "---------------------------------------------------------------
+    CLASS-METHODS:
+      set_salv_text_column
+        IMPORTING
+          !xv_fieldname TYPE fieldname
+          !xv_label     TYPE string
+        CHANGING
+          !yo_column    TYPE REF TO cl_salv_column_table ,
+
+      set_display_settings
+        IMPORTING
+          !xo_salv   TYPE REF TO cl_salv_table
+          !xt_output TYPE table,
+
+      set_layout_settings
+        IMPORTING
+          !xo_salv TYPE REF TO cl_salv_table,
+
+      set_column_settings
+        IMPORTING
+          !xo_salv         TYPE REF TO cl_salv_table
+          !xt_col_settings TYPE tt_col_settings OPTIONAL,
+
+      set_handler_settings
+        IMPORTING
+          !xo_salv          TYPE REF TO cl_salv_table
+        CHANGING
+          !yo_event_handler TYPE REF TO object.
+
 ENDCLASS.
 
 
 
-CLASS ZAG_CL_SALV IMPLEMENTATION.
+CLASS zag_cl_salv IMPLEMENTATION.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SALV=>DISPLAY_GENERIC_ALV
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XV_POPUP                       TYPE        BOOLEAN (default =ABAP_FALSE)
-* | [--->] XT_COL_SETTINGS                TYPE        TT_COL_SETTINGS(optional)
-* | [--->] XT_OUTPUT                      TYPE        STANDARD TABLE
-* | [EXC!] SALV_CREATION_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD display_generic_alv.
 
-    DATA: lref_output     TYPE REF TO data,
-          lr_column       TYPE REF TO cl_salv_column_table,
-          ls_key          TYPE salv_s_layout_key,
-          lt_col_settings TYPE tt_col_settings.
+    DATA: lref_output     TYPE REF TO data.
 
     DATA: lv_excep_msg TYPE string VALUE IS INITIAL,
           lx_root      TYPE REF TO cx_root.
 
     FIELD-SYMBOLS: <t_output> TYPE STANDARD TABLE.
 
-    "-------------------------------------------------
 
-    CREATE DATA lref_output LIKE xt_output.
-
-    ASSIGN lref_output->* TO <t_output>.
-    <t_output> = xt_output.
-
-    "-------------------------------------------------
-
-*    "TEMPLATE
-*    APPEND INITIAL LINE TO lt_col_settings ASSIGNING FIELD-SYMBOL(<col_sett>).
-*    <col_sett>-fieldname = 'FIELD'.
-*    <col_sett>-label     = 'Column Label'.
-*    <col_sett>-no_out    = 'X'.
-*    <col_sett>-hotspot   = 'X'.
-
-    lt_col_settings = xt_col_settings.
-    SORT lt_col_settings BY fieldname.
-
-
-
-    "Init Alv Object
+    "Init. SALV Object
     "-------------------------------------------------
     TRY.
+
+        CREATE DATA lref_output LIKE xt_output.
+        ASSIGN lref_output->* TO <t_output>.
+
+        <t_output> = xt_output.
+
         cl_salv_table=>factory(
           IMPORTING
-            r_salv_table = DATA(lcl_alv)
+            r_salv_table = DATA(lcl_salv)
           CHANGING
             t_table      = <t_output>[] ).
 
       CATCH cx_salv_msg INTO DATA(lx_salv_msg).
-        lv_excep_msg = lx_salv_msg->get_text( ).
-        RAISE salv_creation_error.
+        RAISE EXCEPTION lx_salv_msg.
     ENDTRY.
 
 
     "Set Display settings
     "-------------------------------------------------
-    DATA(lv_lines)   = lines( <t_output>[] ).
-    DATA(lv_title)   = CONV lvc_title( |{ sy-title } ( { lv_lines } Record )| ) ##NO_TEXT.
-    DATA(lr_display) = lcl_alv->get_display_settings( ).
-    lr_display->set_list_header( lv_title ).
-    lr_display->set_striped_pattern( cl_salv_display_settings=>true ).
+    set_display_settings(
+        xo_salv   = lcl_salv
+        xt_output = <t_output>[]
+    ).
 
 
     "Set layout settings
     "-------------------------------------------------
-    ls_key-report   = sy-repid.
-    DATA(lr_layout) = lcl_alv->get_layout( ).
-    lr_layout->set_key( ls_key ).
-    lr_layout->set_save_restriction( if_salv_c_layout=>restrict_none ).
-
-    DATA(lr_selections) = lcl_alv->get_selections( ).
-    lr_selections->set_selection_mode( if_salv_c_selection_mode=>row_column ).
+    set_layout_settings(
+        xo_salv = lcl_salv
+    ).
 
 
     "Set Columns Settings
     "-------------------------------------------------
-    DATA(lr_columns) = lcl_alv->get_columns( ).
-    lr_columns->set_optimize( 'X' ). "--> Optimise all columns
-
-    TRY. "If T_COL column exists in your table, it will be set as color column reference
-        lr_columns->set_color_column( c_col_fieldname ).
-      CATCH cx_salv_data_error INTO DATA(lx_salv_data_err).
-        lv_excep_msg = lx_salv_data_err->get_text( ).
-    ENDTRY.
-
-
-    LOOP AT lr_columns->get( ) ASSIGNING FIELD-SYMBOL(<column>).
-      lr_column ?= <column>-r_column.
-
-      "Default settings "-------------------------------------------------
-      DATA(lv_rollname) = <column>-r_column->get_ddic_rollname( ).
-      CASE lv_rollname.
-        WHEN 'MANDT'.
-          lr_column->set_visible( value  = if_salv_c_bool_sap=>false ).
-
-        WHEN 'ICON_D'.
-          lr_column->set_icon( value = if_salv_c_bool_sap=>true ).
-
-      ENDCASE.
-
-
-      "User settings "-------------------------------------------------
-      ASSIGN lt_col_settings[ line_index( lt_col_settings[
-        fieldname = <column>-columnname ] ) ] TO FIELD-SYMBOL(<col_settings>).
-      IF sy-subrc EQ 0.
-
-        "Labels
-        IF <col_settings>-label IS NOT INITIAL.
-          set_salv_text_column( EXPORTING
-                                  xv_fieldname = <col_settings>-fieldname
-                                  xv_label     = <col_settings>-label
-                                CHANGING
-                                  yo_column   = lr_column ).
-        ENDIF.
-
-        "Hide columns
-        IF <col_settings>-no_out EQ 'X'.
-          lr_column->set_visible(
-              value = if_salv_c_bool_sap=>false
-          ).
-        ENDIF.
-
-        "Set Hotspot
-        IF <col_settings>-hotspot EQ 'X'.
-          lr_column->set_cell_type(
-              value = if_salv_c_cell_type=>hotspot
-          ).
-
-          "TODO create class for event handling
-        ENDIF.
-
-      ENDIF.
-
-    ENDLOOP.
+    set_column_settings(
+        xo_salv         = lcl_salv
+        xt_col_settings = xt_col_settings
+    ).
 
 
     "Set handler and functions based on sy-tcode
     "-------------------------------------------------
-    DATA(lr_functions) = lcl_alv->get_functions( ).
-    lr_functions->set_all( 'X' ).
-
-*    TRY.
-*        DATA(lo_events) = lcl_alv->get_event( ).
-*
-*        CREATE OBJECT gr_event_handler. "type ref to lcl_events.
-*        SET HANDLER gr_event_handler->on_link_click FOR lo_events.
-*
-*      CATCH cx_salv_not_found INTO DATA(lx_salv_not_found).
-*        lv_excep_msg = lx_salv_not_found->get_text( ).
-*        RAISE general_fault.
-*    ENDTRY.
+    set_handler_settings(
+        EXPORTING
+            xo_salv          = lcl_salv
+        CHANGING
+            yo_event_handler = yo_event_handler
+    ).
 
 
-    "Print as popup
+    "Print as PopUp
     "-------------------------------------------------
     IF xv_popup EQ abap_true.
 
-      lcl_alv->set_screen_popup(
+      lcl_salv->set_screen_popup(
         start_column = 1
-        end_column  = 100
-        start_line  = 1
-        end_line    = 15 ).
+        end_column   = 100
+        start_line   = 1
+        end_line     = 15
+      ).
 
     ENDIF.
 
 
     "PRINT ALV
     "-------------------------------------------------
-    lcl_alv->display( ).
-
-
-*"Class
-*"-------------------------------------------------
-**----------------------------------------------------------------------*
-** SALV Event Handler Definition                                        *
-**----------------------------------------------------------------------*
-*CLASS lcl_events DEFINITION.
-*  PUBLIC SECTION.
-*
-*    METHODS:
-*          on_link_click FOR EVENT link_click OF cl_salv_events_table
-*                          IMPORTING row column.
-*
-*ENDCLASS.                    "lcl_events DEFINITION
-**----------------------------------------------------------------------*
-**       CLASS lcl_events IMPLEMENTATION
-**----------------------------------------------------------------------*
-**  SAL Event Handler Methods                                           *
-**----------------------------------------------------------------------*
-*CLASS lcl_events IMPLEMENTATION.
-*
-*  METHOD on_link_click.
-*
-*    FIELD-SYMBOLS: <alv_0100> LIKE LINE OF gt_alv_0100.
-*
-*    READ TABLE gt_alv_0100 ASSIGNING <alv_0100> INDEX row.
-*    CHECK sy-subrc EQ 0.
-*
-*    CASE column.
-*      WHEN 'ANLAGE'.
-*        SET PARAMETER ID 'ANL' FIELD <alv_0100>-anlage.
-*        CALL TRANSACTION 'ES32' AND SKIP FIRST SCREEN.
-*
-*      WHEN OTHERS.
-*    ENDCASE.
-*
-*  ENDMETHOD.                    "on_link_click
-*
-*ENDCLASS.                    "lcl_events IMPLEMENTATION
-*DATA: gr_event_handler TYPE REF TO lcl_events.
+    lcl_salv->display( ).
 
 
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SALV=>DISPLAY_TRANSPOSED_ROW
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XV_POPUP                       TYPE        FLAG (default =ABAP_TRUE)
-* | [--->] XS_ROW                         TYPE        ANY
-* | [<---] YT_TRANSPOSED                  TYPE        STANDARD TABLE
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD display_transposed_row.
 
     DATA: lref_t_row      TYPE REF TO data.
@@ -424,16 +339,7 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SALV=>GET_FIELDCAT_FROM_DATA
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XS_SAP_LINE                    TYPE        ANY(optional)
-* | [--->] XT_SAP_TABLE                   TYPE        TABLE(optional)
-* | [<---] YO_STRUCTDESCR                 TYPE REF TO CL_ABAP_STRUCTDESCR
-* | [<---] YT_FCAT                        TYPE        LVC_T_FCAT
-* | [EXC!] UNABLE_DEFINE_STRUCTDESCR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD GET_FIELDCAT_FROM_DATA.
+  METHOD get_fieldcat_from_data.
 
     DATA: lref_sap_data  TYPE REF TO data,
           lref_sap_table TYPE REF TO data.
@@ -491,54 +397,9 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
 
     ENDTRY.
 
-*    DATA: lref_table TYPE REF TO data.
-*
-*    DATA: lv_except_msg TYPE string.
-*
-*    "-------------------------------------------------
-*
-*    IF xs_row IS SUPPLIED.
-*      CREATE DATA lref_table LIKE TABLE OF xs_row.
-*    ELSEIF xt_table IS SUPPLIED.
-*      CREATE DATA lref_table LIKE xt_table.
-*    ELSE.
-*      EXIT.
-*    ENDIF.
-*
-*
-*    ASSIGN lref_table->* TO FIELD-SYMBOL(<table>).
-*    TRY.
-*        cl_salv_table=>factory( IMPORTING
-*                                  r_salv_table   = DATA(lt_salv_table)
-*                                CHANGING
-*                                  t_table        = <table>  ).
-*
-*        yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog( r_columns = lt_salv_table->get_columns( ) " ALV Filter
-*                                                                     r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
-*                                                                     ).
-*
-*        DELETE yt_fcat WHERE fieldname EQ 'MANDT'.
-*
-*      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-*        lv_except_msg = lx_ai_system_fault->get_text( ).
-*        RAISE fcat_not_found.
-*      CATCH cx_salv_msg INTO DATA(lx_salv_msg).
-*        lv_except_msg = lx_salv_msg->get_text( ).
-*        RAISE fcat_not_found.
-*    ENDTRY.
-
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SALV=>SET_COLOR_CELL
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XS_COLOR                       TYPE        LVC_S_COLO
-* | [--->] XT_FIELDNAME                   TYPE        TT_FIELDNAME
-* | [<-->] Y_ROW                          TYPE        ANY
-* | [EXC!] COL_TAB_NOT_FOUND
-* | [EXC!] FIELDNAME_NOT_FOUND
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_color_cell.
 
     DATA: ls_scol TYPE lvc_s_scol.
@@ -572,14 +433,6 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_SALV=>SET_COLOR_ROW
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XS_COLOR                       TYPE        LVC_S_COLO
-* | [<-->] YS_ROW                         TYPE        ANY
-* | [EXC!] COL_TAB_NOT_FOUND
-* | [EXC!] FCAT_NOT_FOUND
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_color_row.
 
     DATA: ls_scol TYPE lvc_s_scol.
@@ -628,13 +481,6 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Private Method ZAG_CL_SALV=>SET_SALV_TEXT_COLUMN
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] XV_FIELDNAME                   TYPE        FIELDNAME
-* | [--->] XV_LABEL                       TYPE        STRING
-* | [<-->] YO_COLUMN                      TYPE REF TO CL_SALV_COLUMN_TABLE
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD set_salv_text_column.
 
     DATA: lv_outlen    TYPE lvc_outlen,
@@ -647,9 +493,7 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
 
     "-------------------------------------------------
 
-    lv_scrtext_s = ''.
-    lv_scrtext_m = ''.
-    lv_scrtext_l = xv_label.
+    lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = xv_label.
     lv_text_col  = xv_fieldname.
 
     lv_outlen = strlen( xv_label ).
@@ -667,4 +511,160 @@ CLASS ZAG_CL_SALV IMPLEMENTATION.
     ENDTRY.
 
   ENDMETHOD.
+
+
+  METHOD set_display_settings.
+
+    DATA(lv_lines)   = lines( xt_output[] ).
+    DATA(lv_title)   = CONV lvc_title( |{ sy-title } ( { lv_lines } Record )| ) ##NO_TEXT.
+    DATA(lr_display) = xo_salv->get_display_settings( ).
+    lr_display->set_list_header( lv_title ).
+    lr_display->set_striped_pattern( cl_salv_display_settings=>true ).
+
+  ENDMETHOD.
+
+
+  METHOD set_layout_settings.
+
+    DATA:
+      ls_key TYPE salv_s_layout_key.
+
+    ls_key-report   = sy-repid.
+    DATA(lr_layout) = xo_salv->get_layout( ).
+    lr_layout->set_key( ls_key ).
+    lr_layout->set_save_restriction( if_salv_c_layout=>restrict_none ).
+
+    DATA(lr_selections) = xo_salv->get_selections( ).
+    lr_selections->set_selection_mode( if_salv_c_selection_mode=>row_column ).
+
+  ENDMETHOD.
+
+
+  METHOD set_column_settings.
+
+    DATA:
+      lr_column       TYPE REF TO cl_salv_column_table,
+      lt_col_settings TYPE tt_sorted_col_settings.
+
+
+    "--> Optimize all columns
+    "---------------------------------------------------------------
+    DATA(lr_columns) = xo_salv->get_columns( ).
+    lr_columns->set_optimize( 'X' ).
+
+
+    "If T_COL column exists in your table, it will be set as color column reference
+    "---------------------------------------------------------------
+    TRY.
+        lr_columns->set_color_column( c_col_fieldname ).
+
+      CATCH cx_salv_data_error INTO DATA(lx_salv_data_err).
+        DATA(lv_excep_msg) = lx_salv_data_err->get_text( ).
+
+    ENDTRY.
+
+
+    LOOP AT lr_columns->get( ) ASSIGNING FIELD-SYMBOL(<column>).
+      lr_column ?= <column>-r_column.
+
+      "Default settings "-------------------------------------------------
+      DATA(lv_rollname) = <column>-r_column->get_ddic_rollname( ).
+      CASE lv_rollname.
+        WHEN 'MANDT'.
+          lr_column->set_visible( value  = if_salv_c_bool_sap=>false ).
+
+        WHEN 'ICON_D'.
+          lr_column->set_icon( value = if_salv_c_bool_sap=>true ).
+
+      ENDCASE.
+
+
+      "User settings
+      "---------------------------------------------------------------
+      lt_col_settings = xt_col_settings.
+
+      ASSIGN lt_col_settings[ fieldname = <column>-columnname ] TO FIELD-SYMBOL(<col_settings>).
+      IF sy-subrc EQ 0.
+
+        "Labels
+        IF <col_settings>-label IS NOT INITIAL.
+          set_salv_text_column( EXPORTING
+                                  xv_fieldname = <col_settings>-fieldname
+                                  xv_label     = <col_settings>-label
+                                CHANGING
+                                  yo_column   = lr_column ).
+        ENDIF.
+
+
+        "Hide columns
+        IF <col_settings>-no_out EQ 'X'.
+          lr_column->set_visible(
+              value = if_salv_c_bool_sap=>false
+          ).
+        ENDIF.
+
+
+        "Set Hotspot
+        IF <col_settings>-hotspot EQ 'X'.
+          lr_column->set_cell_type(
+              value = if_salv_c_cell_type=>hotspot
+          ).
+
+          "TODO create class for event handling
+
+        ENDIF.
+
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD set_handler_settings.
+
+    DATA: lo_descr    TYPE REF TO cl_abap_classdescr.
+
+    CHECK yo_event_handler IS BOUND.
+
+    DATA(lr_functions) = xo_salv->get_functions( ).
+    lr_functions->set_all( 'X' ).
+    DATA(lo_events) = xo_salv->get_event( ).
+
+*    CREATE OBJECT yo_event_handler TYPE (c_cls_evnt_hand).
+*    SET HANDLER yo_event_handler->on_link_click FOR lo_events.
+
+*CLASS lcl_salv_events DEFINITION.
+*  PUBLIC SECTION.
+*
+*    METHODS:
+*          on_link_click FOR EVENT link_click OF cl_salv_events_table
+*                          IMPORTING row column.
+*
+*ENDCLASS.
+
+*CLASS lcl_salv_events IMPLEMENTATION.
+*
+*  METHOD on_link_click.
+*
+*    FIELD-SYMBOLS: <output> LIKE LINE OF gt_output.
+*
+*    READ TABLE gt_alv_0100 ASSIGNING <alv_0100> INDEX row.
+*    CHECK sy-subrc EQ 0.
+*
+*    CASE column.
+*      WHEN 'ANLAGE'.
+*        SET PARAMETER ID 'ANL' FIELD <alv_0100>-anlage.
+*        CALL TRANSACTION 'ES32' AND SKIP FIRST SCREEN.
+*
+*      WHEN OTHERS.
+*    ENDCASE.
+*
+*  ENDMETHOD.                    "on_link_click
+*
+*ENDCLASS.                    "lcl_events IMPLEMENTATION
+*DATA: go_event_handler TYPE REF TO lcl_salv_events.
+
+  ENDMETHOD.
+
 ENDCLASS.
