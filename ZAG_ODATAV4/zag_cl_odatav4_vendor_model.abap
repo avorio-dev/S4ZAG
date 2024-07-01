@@ -5,17 +5,31 @@ CLASS zag_cl_odatav4_vendor_model DEFINITION
   CREATE PUBLIC .
 
   PUBLIC SECTION.
-    INTERFACES zag_if_odatav4_vendor.
-    METHODS /iwbep/if_v4_mp_basic~define REDEFINITION.
+
+    "Interfaces
+    "---------------------------------------------------------------
+    INTERFACES:
+      zag_if_odatav4_vendor.
+
+    "Methods - Redefinitions
+    METHODS:
+      /iwbep/if_v4_mp_basic~define REDEFINITION.
 
   PROTECTED SECTION.
+
   PRIVATE SECTION.
+
+    "Aliases
+    "---------------------------------------------------------------
     ALIASES:
         ts_cds_views         FOR zag_if_odatav4_vendor~ts_cds_views,
         cc_entity_set_names  FOR zag_if_odatav4_vendor~cc_entity_set_names,
         cc_entity_type_names FOR zag_if_odatav4_vendor~cc_entity_type_names,
         cc_nav_prop_names    FOR zag_if_odatav4_vendor~cc_nav_prop_names.
 
+
+    "Methods
+    "---------------------------------------------------------------
     METHODS:
       define_vendor
         IMPORTING
@@ -39,7 +53,7 @@ ENDCLASS.
 
 
 
-CLASS ZAG_CL_ODATAV4_VENDOR_MODEL IMPLEMENTATION.
+CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
 
 
   METHOD /iwbep/if_v4_mp_basic~define.
