@@ -45,7 +45,8 @@
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
 
-  zag_cl_salv=>display_generic_alv( lt_mara ).
+  DATA(lo_salv) = NEW zag_cl_salv( ).
+  lo_salv->display_generic_alv( lt_mara ).
 
 
   "Example 2 -> Set colors for cells and / or rows
@@ -121,7 +122,6 @@
 
 
   DATA: lt_col_settings TYPE zag_cl_salv=>tt_col_settings.
-
   lt_col_settings = VALUE #(
     ( fieldname = 'MATNR'
       label     = 'My Material'
@@ -135,15 +135,64 @@
 
    ).
 
-  zag_cl_salv=>display_generic_alv(
+  FREE lo_salv.
+  lo_salv = NEW zag_cl_salv( ).
+  lo_salv->display_generic_alv(
     EXPORTING
       xv_popup            = abap_true
       xt_col_settings     = lt_col_settings
-      xt_output           = gt_alv
-    EXCEPTIONS
-      salv_creation_error = 1
-      others              = 2
+      xt_output           = gt_alv[]
   ).
+
+
+  "Example 3 -> Set Event Handler
+  "-------------------------------------------------
+  SELECT * FROM mara UP TO 10 ROWS INTO TABLE @lt_mara.
+
+  lt_col_settings = VALUE #(
+    ( fieldname = 'MATNR'
+      hotspot   = 'X' )
+  ).
+
+  FREE lo_salv.
+  lo_salv = NEW zag_cl_salv( ).
+  lo_salv->display_generic_alv(
+    EXPORTING
+      xt_output        = lt_mara[]
+      xt_col_settings  = lt_col_settings[]
+      xo_event_handler = NEW lcl_event_handler( )
+      xv_popup         = abap_true
+  ).
+```
+```abap
+"Class Event Hanlder
+CLASS lcl_event_handler DEFINITION.
+
+  PUBLIC SECTION.
+    METHODS:
+      on_link_click
+        IMPORTING
+          VALUE(xv_row)    TYPE salv_de_row
+          VALUE(xv_column) TYPE salv_de_column,
+
+      on_double_click
+        IMPORTING
+          VALUE(xv_row)    TYPE salv_de_row
+          VALUE(xv_column) TYPE salv_de_column.
+
+ENDCLASS.
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_link_click.
+
+    MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
+
+  ENDMETHOD.
+  METHOD on_double_click.
+
+    MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
+
+  ENDMETHOD.
+ENDCLASS.
 ```
 
 
