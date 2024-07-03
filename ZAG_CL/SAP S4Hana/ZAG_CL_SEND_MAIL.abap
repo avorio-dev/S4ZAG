@@ -8,49 +8,41 @@ CLASS zag_cl_send_mail DEFINITION
     " Types
     "-------------------------------------------------
     TYPES:
-      BEGIN OF ts_bcs_attch,
-        subject   TYPE string,
-        data_csv  TYPE string_table,
-        data_xlsx TYPE xstring,
-        data_pdf  TYPE xstring,
-      END OF ts_bcs_attch,
-
-      BEGIN OF ts_coltxt,
-        fieldname TYPE lvc_s_fcat-fieldname,
-        coltext   TYPE string,
-      END OF ts_coltxt ,
-
-      BEGIN OF ts_stdtxt_subs,
-        varname TYPE string,
-        value   TYPE string,
-      END OF ts_stdtxt_subs,
-
       BEGIN OF ts_recipients,
         smtp_addr TYPE adr6-smtp_addr,
         copy      TYPE flag,
       END OF ts_recipients,
 
+      BEGIN OF ts_attachments,
+        subject   TYPE string,
+        data_csv  TYPE string_table,
+        data_xlsx TYPE xstring,
+        data_pdf  TYPE xstring,
+      END OF ts_attachments,
+
+      BEGIN OF ts_stdtxt_replace,
+        varname TYPE string,
+        value   TYPE string,
+      END OF ts_stdtxt_replace,
+
       BEGIN OF ts_standard_text,
-        std_txt_name  TYPE thead-tdname,
-        substitutions TYPE TABLE OF ts_stdtxt_subs WITH NON-UNIQUE KEY varname,
+        std_txt_name TYPE thead-tdname,
+        replacement  TYPE TABLE OF ts_stdtxt_replace WITH NON-UNIQUE KEY varname,
       END OF ts_standard_text .
 
     TYPES:
-      tt_hrrange     TYPE TABLE OF hrrange        WITH DEFAULT KEY,
-      tt_bcs_attch   TYPE TABLE OF ts_bcs_attch   WITH DEFAULT KEY,
-      tt_recipients  TYPE TABLE OF ts_recipients  WITH NON-UNIQUE KEY smtp_addr copy,
-      tt_coltxt      TYPE TABLE OF ts_coltxt      WITH DEFAULT KEY,
-      tt_stdtxt_subs TYPE TABLE OF ts_stdtxt_subs WITH NON-UNIQUE KEY varname,
-      tt_string      TYPE TABLE OF string.
+      tt_recipients  TYPE TABLE OF ts_recipients     WITH NON-UNIQUE KEY smtp_addr copy,
+      tt_attachments TYPE TABLE OF ts_attachments    WITH DEFAULT KEY,
+      tt_stdtxt_subs TYPE TABLE OF ts_stdtxt_replace WITH NON-UNIQUE KEY varname.
 
     TYPES:
       BEGIN OF ts_mail_params,
-        sender             TYPE syst_uname,
-        recipients         TYPE tt_recipients,
-        object             TYPE so_obj_des,
-        body               TYPE string,
+        sender      TYPE syst_uname,
+        recipients  TYPE tt_recipients,
+        object      TYPE so_obj_des,
+        body        TYPE string,
         body_stdtxt TYPE ts_standard_text,
-        attachments        TYPE tt_bcs_attch,
+        attachments TYPE tt_attachments,
       END OF ts_mail_params.
 
 
@@ -416,8 +408,8 @@ CLASS zag_cl_send_mail IMPLEMENTATION.
 
     LOOP AT lt_lines ASSIGNING FIELD-SYMBOL(<lines>).
 
-      LOOP AT me->gs_mail_params-body_stdtxt-substitutions ASSIGNING FIELD-SYMBOL(<subs>).
-        REPLACE ALL OCCURRENCES OF <subs>-varname IN <lines>-tdline WITH <subs>-value.
+      LOOP AT me->gs_mail_params-body_stdtxt-replacement ASSIGNING FIELD-SYMBOL(<replace>).
+        REPLACE ALL OCCURRENCES OF <replace>-varname IN <lines>-tdline WITH <replace>-value.
       ENDLOOP.
 
       APPEND <lines>-tdline TO yt_lines.
