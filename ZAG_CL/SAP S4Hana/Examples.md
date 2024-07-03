@@ -309,8 +309,7 @@ ENDCLASS.
 
 **********************************************************************
 
-
-  DATA: lt_recipients TYPE zag_cl_send_mail=>tt_recipients.
+  DATA: lt_recipients TYPE zag_cl_send_mail=>ts_mail_params-recipients.
 
   SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_data).
 
@@ -319,48 +318,67 @@ ENDCLASS.
   "-------------------------------------------------
 
   lt_recipients = VALUE #(
-    ( smtp_addr = 'yourmail@domain.com'
-      copy      = space                 )
+    (
+      smtp_addr = 'yourmail@domain.com'
+      copy      = space
+    )
+    (
+      smtp_addr = 'yourmailcopy@domain.com'
+      copy      = 'X'
+    )
   ).
 
-  zag_cl_send_mail=>send_mail(
+  DATA(lo_send_mail) = NEW zag_cl_send_mail( ).
+  lo_send_mail->send_mail(
     EXPORTING
-      x_sender                  = sy-uname
-      xt_recipients             = lt_recipients
-      x_mail_obj                = 'Mail Object'
-      x_mail_body_str           = 'Mail Body'
-*      x_mail_body_standard_text =
-*      xt_attachments            =
-      x_commit                  = abap_true
+      xs_mail_params   = VALUE #(
+                            sender     = sy-uname
+                            recipients = lt_recipients[]
+                            object    = 'Mail Object'
+                            body      = 'Mail Body'
+                         )
+      xv_commit        = abap_true
     IMPORTING
-      y_mail_sent               = DATA(lv_mail_sent)
-      y_error_msg               = DATA(lv_error_msg)
+      y_mail_sent      = DATA(lv_mail_sent)
+      y_error_msg      = DATA(lv_error_msg)
     EXCEPTIONS
-      request_error             = 1
-      sender_error              = 2
-      recipient_error           = 3
-      body_error                = 4
-      attachment_error          = 5
-      OTHERS                    = 6
+      missing_param    = 1
+      request_error    = 2
+      sender_error     = 3
+      recipient_error  = 4
+      body_error       = 5
+      attachment_error = 6
+      OTHERS           = 7
   ).
+  IF sy-subrc <> 0
+    OR lv_mail_sent NE abap_true.
+    WRITE lv_error_msg.
+  ENDIF.
 
 
 
   "Example 2 -> Mail with attach. and Standard Text as Mail Body
   "-------------------------------------------------
 
-  DATA: ls_mail_body_stdtxt TYPE zag_cl_send_mail=>ty_standard_text,
-        lt_attch            TYPE zag_cl_send_mail=>tt_bcs_attch.
+  DATA:
+    ls_mail_body_stdtxt TYPE zag_cl_send_mail=>ts_mail_params-body_stdtxt,
+    lt_attch            TYPE zag_cl_send_mail=>ts_mail_params-attachments.
 
 
   lt_recipients = VALUE #(
-      ( smtp_addr = 'yourmail@domain.com'
-        copy      = space                 )
-    ).
+    (
+      smtp_addr = 'yourmail@domain.com'
+      copy      = space
+    )
+    (
+      smtp_addr = 'yourmailcopy@domain.com'
+      copy      = 'X'
+    )
+  ).
+
 
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
-
 
   DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx( xt_sap_table = lt_data ).
   lo_csv_xlsx->get_fieldcat_from_data(
@@ -395,31 +413,43 @@ ENDCLASS.
 
 
   ls_mail_body_stdtxt-std_txt_name = 'ZAG_SEND_MAIL_BCS_STDTXT'.
-  ls_mail_body_stdtxt-substitutions = VALUE #(
-    ( varname  = '&SUBSTITUTION&'
-      value    = sy-datum         )
+  ls_mail_body_stdtxt-replacement  = VALUE #(
+    (
+      varname = '&REPLACE_VAR&'
+      value   = sy-datum
+    )
   ).
 
-  zag_cl_send_mail=>send_mail(
+
+  CLEAR lo_send_mail.
+  lo_send_mail = NEW zag_cl_send_mail( ).
+  lo_send_mail->send_mail(
     EXPORTING
-      x_sender                  = sy-uname
-      xt_recipients             = lt_recipients
-      x_mail_obj                = 'Mail Object'
-      x_mail_body_str           = 'Mail Body'
-      x_mail_body_standard_text = ls_mail_body_stdtxt
-      xt_attachments            = lt_attch
-      x_commit                  = abap_true
+      xs_mail_params   = VALUE #(
+                            sender      = sy-uname
+                            recipients  = lt_recipients[]
+                            object      = 'Mail Object'
+                            body        = 'Mail Body'
+                            body_stdtxt = ls_mail_body_stdtxt
+                            attachments = lt_attch[]
+                         )
+      xv_commit        = abap_true
     IMPORTING
-      y_mail_sent               = lv_mail_sent
-      y_error_msg               = lv_error_msg
+      y_mail_sent      = lv_mail_sent
+      y_error_msg      = lv_error_msg
     EXCEPTIONS
-      request_error             = 1
-      sender_error              = 2
-      recipient_error           = 3
-      body_error                = 4
-      attachment_error          = 5
-      OTHERS                    = 6
+      missing_param    = 1
+      request_error    = 2
+      sender_error     = 3
+      recipient_error  = 4
+      body_error       = 5
+      attachment_error = 6
+      OTHERS           = 7
   ).
+  IF sy-subrc <> 0
+    OR lv_mail_sent NE abap_true.
+    WRITE lv_error_msg.
+  ENDIF.
 ```
 
 ## 4. ZAG_CL_ALV_IDA <a name="zag_cl_salv_ida"></a>
