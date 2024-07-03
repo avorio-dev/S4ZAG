@@ -72,11 +72,11 @@ CLASS zag_cl_salv DEFINITION
 
       get_fieldcat_from_data
         IMPORTING
-          !xs_sap_line          TYPE any OPTIONAL
-          !xt_sap_table         TYPE table OPTIONAL
+          !xs_sap_line    TYPE any OPTIONAL
+          !xt_sap_table   TYPE table OPTIONAL
         EXPORTING
-          VALUE(yo_structdescr) TYPE REF TO cl_abap_structdescr
-          !yt_fcat              TYPE lvc_t_fcat
+          !yo_structdescr TYPE REF TO cl_abap_structdescr
+          !yt_fcat        TYPE lvc_t_fcat
         EXCEPTIONS
           unable_define_structdescr .
 
@@ -124,6 +124,7 @@ CLASS zag_cl_salv DEFINITION
       go_salv          TYPE REF TO cl_salv_table,
       gref_output      TYPE REF TO data,
       gt_fcat          TYPE lvc_t_fcat,
+      go_structdescr   TYPE REF TO cl_abap_structdescr,
       gt_col_settings  TYPE tt_sorted_col_settings,
       go_event_handler TYPE REF TO object.
 
@@ -168,6 +169,20 @@ CLASS zag_cl_salv IMPLEMENTATION.
             r_salv_table = me->go_salv
           CHANGING
             t_table      = <t_output>[] ).
+
+
+        get_fieldcat_from_data(
+          EXPORTING
+            xt_sap_table              = <t_output>
+          IMPORTING
+            yo_structdescr            = me->go_structdescr
+            yt_fcat                   = me->gt_fcat[]
+          EXCEPTIONS
+            unable_define_structdescr = 1
+            OTHERS                    = 2
+        ).
+        IF sy-subrc <> 0.
+        ENDIF.
 
 
         "Set Display settings
@@ -372,6 +387,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
             r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
         ) .
 
+
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
         lv_except_msg = lx_ai_system_fault->get_text( ).
         RAISE unable_define_structdescr.
@@ -504,6 +520,9 @@ CLASS zag_cl_salv IMPLEMENTATION.
     DATA:
       lr_column TYPE REF TO cl_salv_column_table.
 
+    FIELD-SYMBOLS:
+      <t_output> TYPE STANDARD TABLE.
+
 
     "--> Optimize all columns
     "---------------------------------------------------------------
@@ -522,6 +541,9 @@ CLASS zag_cl_salv IMPLEMENTATION.
     ENDTRY.
 
 
+
+    " Set Fieldcat settings
+    "---------------------------------------------------------------
     LOOP AT lr_columns->get( ) ASSIGNING FIELD-SYMBOL(<column>).
       lr_column ?= <column>-r_column.
 
@@ -536,6 +558,16 @@ CLASS zag_cl_salv IMPLEMENTATION.
           lr_column->set_alignment( if_salv_c_alignment=>centered ).
 
       ENDCASE.
+
+      ASSIGN me->gt_fcat[ fieldname = <column>-columnname ] TO FIELD-SYMBOL(<fcat>).
+      IF sy-subrc EQ 0.
+        lr_column->set_ddic_reference(
+          VALUE #(
+            table =  <fcat>-ref_table
+            field =  <fcat>-ref_field
+          )
+        ).
+      ENDIF.
 
 
       "User settings
