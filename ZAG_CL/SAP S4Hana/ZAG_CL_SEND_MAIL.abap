@@ -1,343 +1,376 @@
-class ZAG_CL_SEND_MAIL definition
-  public
-  final
-  create public .
+CLASS zag_cl_send_mail DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ty_bcs_attch,
+    " Types
+    "-------------------------------------------------
+    TYPES:
+      BEGIN OF ts_bcs_attch,
         subject   TYPE string,
         data_csv  TYPE string_table,
         data_xlsx TYPE xstring,
         data_pdf  TYPE xstring,
-      END OF ty_bcs_attch .
-  types:
-    tt_bcs_attch TYPE TABLE OF ty_bcs_attch .
-  types:
-    BEGIN OF ty_coltxt,
+      END OF ts_bcs_attch,
+
+      BEGIN OF ts_coltxt,
         fieldname TYPE lvc_s_fcat-fieldname,
         coltext   TYPE string,
-      END OF ty_coltxt .
-  types:
-    BEGIN OF ty_stdtxt_subs,
+      END OF ts_coltxt ,
+
+      BEGIN OF ts_stdtxt_subs,
         varname TYPE string,
         value   TYPE string,
-      END OF ty_stdtxt_subs .
-  types:
-    BEGIN OF ty_recipients,
+      END OF ts_stdtxt_subs,
+
+      BEGIN OF ts_recipients,
         smtp_addr TYPE adr6-smtp_addr,
         copy      TYPE flag,
-      END OF ty_recipients .
-  types:
-    tt_hrrange    TYPE TABLE OF hrrange .
-  types:
-    tt_recipients  TYPE TABLE OF ty_recipients .
-  types:
-    tt_coltxt  TYPE TABLE OF ty_coltxt .
-  types:
-    tt_stdtxt_subs TYPE STANDARD TABLE OF ty_stdtxt_subs WITH NON-UNIQUE KEY varname .
-  types:
-    tt_string TYPE TABLE OF string .
-  types:
-    BEGIN OF ty_standard_text,
+      END OF ts_recipients,
+
+      BEGIN OF ts_standard_text,
         std_txt_name  TYPE thead-tdname,
-        substitutions TYPE tt_stdtxt_subs,
-      END OF ty_standard_text .
+        substitutions TYPE TABLE OF ts_stdtxt_subs WITH NON-UNIQUE KEY varname,
+      END OF ts_standard_text .
 
-  constants C_LOCAL type CHAR4 value 'LOCL' ##NO_TEXT.
-  constants C_SERVER type CHAR4 value 'SERV' ##NO_TEXT.
-  constants C_ATTCH_CSV type SOODK-OBJTP value 'CSV' ##NO_TEXT.
-  constants C_ATTCH_RAW type SOODK-OBJTP value 'RAW' ##NO_TEXT.
-  constants C_ATTCH_PDF type CHAR3 value 'PDF' ##NO_TEXT.
-  constants C_ATTCH_BIN type SOODK-OBJTP value 'BIN' ##NO_TEXT.
-  constants C_ATTCH_XLSX type CHAR4 value 'XLSX' ##NO_TEXT.
-  constants C_MAIL_TYPE_HTM type CHAR3 value 'HTM' ##NO_TEXT.
-  constants C_MAIL_TYPE_RAW type CHAR3 value 'RAW' ##NO_TEXT.
+    TYPES:
+      tt_hrrange     TYPE TABLE OF hrrange        WITH DEFAULT KEY,
+      tt_bcs_attch   TYPE TABLE OF ts_bcs_attch   WITH DEFAULT KEY,
+      tt_recipients  TYPE TABLE OF ts_recipients  WITH NON-UNIQUE KEY smtp_addr copy,
+      tt_coltxt      TYPE TABLE OF ts_coltxt      WITH DEFAULT KEY,
+      tt_stdtxt_subs TYPE TABLE OF ts_stdtxt_subs WITH NON-UNIQUE KEY varname,
+      tt_string      TYPE TABLE OF string.
 
-  class-methods SEND_MAIL_BCS
-    importing
-      !X_SENDER type SYST_UNAME default SY-UNAME
-      !XT_RECIPIENTS type TT_RECIPIENTS
-      !X_MAIL_OBJ type SO_OBJ_DES
-      !X_MAIL_BODY_STR type STRING optional
-      !X_MAIL_BODY_STANDARD_TEXT type TY_STANDARD_TEXT optional
-      !XT_ATTACHMENTS type TT_BCS_ATTCH optional
-      !X_COMMIT type OS_BOOLEAN default ABAP_TRUE
-    exporting
-      !Y_MAIL_SENT type OS_BOOLEAN
-      !Y_ERROR_MSG type STRING
-    exceptions
-      REQUEST_ERROR
-      SENDER_ERROR
-      RECIPIENT_ERROR
-      BODY_ERROR
-      ATTACHMENT_ERROR .
+    TYPES:
+      BEGIN OF ts_mail_params,
+        sender             TYPE syst_uname,
+        recipients         TYPE tt_recipients,
+        object             TYPE so_obj_des,
+        body               TYPE string,
+        body_stdtxt TYPE ts_standard_text,
+        attachments        TYPE tt_bcs_attch,
+      END OF ts_mail_params.
+
+
+    " Constants
+    "-------------------------------------------------
+    CONSTANTS:
+      BEGIN OF cc_attch_type,
+        csv  TYPE soodk-objtp VALUE 'CSV' ##NO_TEXT,
+        raw  TYPE soodk-objtp VALUE 'RAW' ##NO_TEXT,
+        pdf  TYPE char3       VALUE 'PDF' ##NO_TEXT,
+        bin  TYPE soodk-objtp VALUE 'BIN' ##NO_TEXT,
+        xlsx TYPE char4       VALUE 'XLSX' ##NO_TEXT,
+      END OF cc_attch_type,
+
+      BEGIN OF cc_mail_type,
+        htm TYPE char3 VALUE 'HTM' ##NO_TEXT,
+        raw TYPE char3 VALUE 'RAW' ##NO_TEXT,
+      END OF cc_mail_type.
+
+
+    " Methods
+    "-------------------------------------------------
+    METHODS:
+      send_mail
+        IMPORTING
+          !xs_mail_params TYPE ts_mail_params
+          !xv_commit      TYPE os_boolean DEFAULT abap_true
+        EXPORTING
+          !y_mail_sent    TYPE os_boolean
+          !y_error_msg    TYPE string
+        EXCEPTIONS
+          missing_param
+          request_error
+          sender_error
+          recipient_error
+          body_error
+          attachment_error.
+
   PROTECTED SECTION.
-private section.
 
-  class-methods FILL_FROM_SO10
-    importing
-      !X_STDTXT_NAME type THEAD-TDNAME
-      !XT_STDTXT_SUBS type TT_STDTXT_SUBS optional
-    exporting
-      !YT_LINES type BCSY_TEXT
-      !Y_ERROR_MSG type STRING
-    exceptions
-      SO10_READING_FAULT .
-  class-methods BCS_FILL_ATTACHMENT
-    importing
-      !XT_ATTACHMENTS type TT_BCS_ATTCH optional
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
-    exceptions
-      ATTACHMENT_ERROR .
-  class-methods BCS_FILL_BODY
-    importing
-      !X_MAIL_OBJ type SO_OBJ_DES
-      !X_MAIL_BODY_STR type STRING optional
-      !X_MAIL_BODY_STANDARD_TEXT type TY_STANDARD_TEXT optional
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-      !YO_DOCUMENT type ref to CL_DOCUMENT_BCS
-    exceptions
-      BODY_ERROR .
-  class-methods BCS_SET_RECIPIENT
-    importing
-      !XT_RECIPIENTS type TT_RECIPIENTS
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-    exceptions
-      RECIPIENT_ERROR .
-  class-methods BCS_SET_SENDER
-    importing
-      !X_SENDER type SY-UNAME
-    exporting
-      !Y_ERROR_MSG type STRING
-    changing
-      !YO_SEND_REQUEST type ref to CL_BCS
-    exceptions
-      SENDER_ERROR .
+  PRIVATE SECTION.
+
+    "Data
+    "---------------------------------------------------------------
+    DATA:
+      gs_mail_params  TYPE ts_mail_params,
+      go_send_request TYPE REF TO cl_bcs,
+      go_document     TYPE REF TO cl_document_bcs.
+
+
+    "Methods
+    "---------------------------------------------------------------
+    METHODS:
+      check_mandatory_fields
+        EXCEPTIONS
+          missing_param,
+
+      fill_sender
+        RAISING
+          cx_address_bcs
+          cx_send_req_bcs,
+
+      fill_recipient
+        RAISING
+          cx_address_bcs
+          cx_send_req_bcs,
+
+      fill_body
+        RAISING
+          cx_document_bcs,
+
+      fill_attachment
+        RAISING
+          cx_document_bcs,
+
+      get_standard_text_lines
+        RETURNING VALUE(yt_lines) TYPE bcsy_text
+        RAISING
+                  cx_document_bcs.
+
 ENDCLASS.
 
 
 
-CLASS ZAG_CL_SEND_MAIL IMPLEMENTATION.
+CLASS zag_cl_send_mail IMPLEMENTATION.
 
 
-  METHOD BCS_FILL_ATTACHMENT.
+  METHOD send_mail.
 
-    DATA: lt_soli_tab      TYPE soli_tab,
-          lt_solix_tab     TYPE solix_tab,
-          lv_csv_string    TYPE string.
-
-    DATA: lx_document_bcs  TYPE REF TO cx_document_bcs.
-
-    "-------------------------------------------------
-
-    LOOP AT xt_attachments ASSIGNING FIELD-SYMBOL(<attch>).
-
-      DATA(lv_attch_subject) = CONV sood-objdes( <attch>-subject ).
-
-      "CSV Attachment
-      "-------------------------------------------------
-      IF <attch>-data_csv[] IS NOT INITIAL.
-
-        "CSV need to be included in one single string,
-        "Conversion will be applied, separating each orignal row by CR_LF
-        lv_csv_string = ''.
-        LOOP AT <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv>).
-          IF lv_csv_string IS INITIAL.
-            lv_csv_string = <csv>.
-          ELSE.
-            lv_csv_string = |{ lv_csv_string }{ cl_abap_char_utilities=>cr_lf }{ <csv> }|.
-          ENDIF.
-        ENDLOOP.
-
-        REFRESH lt_soli_tab[].
-        lt_soli_tab[] = cl_bcs_convert=>string_to_soli( iv_string = lv_csv_string ).
-
-        lv_attch_subject = |{ lv_attch_subject }.{ c_attch_csv }|.
-
-        TRY.
-            CALL METHOD yo_document->add_attachment
-              EXPORTING
-                i_attachment_type    = c_attch_csv   "For CSV file Extension
-                i_attachment_subject = lv_attch_subject
-                i_att_content_text   = lt_soli_tab[].
-
-          CATCH cx_document_bcs INTO lx_document_bcs.
-            y_error_msg = lx_document_bcs->get_text( ).
-            RAISE attachment_error.
-        ENDTRY.
-      ENDIF.
+    y_mail_sent = abap_false.
+    y_error_msg = ''.
 
 
-      "EXCEL Attachment
-      "-------------------------------------------------
-      IF <attch>-data_xlsx IS NOT INITIAL.
+    CLEAR me->gs_mail_params.
+    me->gs_mail_params = xs_mail_params.
 
-        REFRESH lt_solix_tab[].
-        lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_xlsx ).
-
-        lv_attch_subject = |{ lv_attch_subject }.{ c_attch_xlsx }|.
-
-        TRY.
-            CALL METHOD yo_document->add_attachment
-              EXPORTING
-                i_attachment_type    = c_attch_bin   "For CSV file Extension
-                i_attachment_subject = lv_attch_subject
-                i_attachment_size    = CONV sood-objlen( xstrlen( <attch>-data_xlsx ) )
-                i_att_content_hex    = lt_solix_tab[].
-
-          CATCH cx_document_bcs INTO lx_document_bcs.
-            y_error_msg = lx_document_bcs->get_text( ).
-            RAISE attachment_error.
-        ENDTRY.
-
-      ENDIF.
-
-
-      "PDF Attachment
-      "-------------------------------------------------
-      IF <attch>-data_pdf IS NOT INITIAL.
-
-        REFRESH lt_solix_tab[].
-        lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_pdf ).
-
-        lv_attch_subject = |{ lv_attch_subject }.{ c_attch_pdf }|.
-
-        TRY.
-            CALL METHOD yo_document->add_attachment
-              EXPORTING
-                i_attachment_type    = c_attch_raw   "For CSV file Extension
-                i_attachment_subject = lv_attch_subject
-                i_att_content_hex    = lt_solix_tab[].
-
-          CATCH cx_document_bcs INTO lx_document_bcs.
-            y_error_msg = lx_document_bcs->get_text( ).
-            RAISE attachment_error.
-        ENDTRY.
-
-      ENDIF.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-
-  METHOD BCS_FILL_BODY.
-
-    DATA: lv_subject TYPE so_obj_des,
-          lt_lines   TYPE bcsy_text.
-
-    "-------------------------------------------------
-
-    REFRESH lt_lines[].
-
-
-    "Set body with input string if provided
-    "-------------------------------------------------
-    IF x_mail_body_str IS NOT INITIAL.
-
-      lt_lines[] = cl_bcs_convert=>string_to_soli( iv_string = x_mail_body_str ).
-
+    me->check_mandatory_fields(
+      EXCEPTIONS
+        missing_param = 1
+        OTHERS        = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE missing_param.
     ENDIF.
 
 
-    "Set body with standard SO10 text with substitution if provided
+    "Create send request
     "-------------------------------------------------
-    IF x_mail_body_standard_text IS NOT INITIAL.
-
-      fill_from_so10(
-        EXPORTING
-          x_stdtxt_name      = x_mail_body_standard_text-std_txt_name
-          xt_stdtxt_subs     = x_mail_body_standard_text-substitutions
-        IMPORTING
-          yt_lines           = lt_lines[]
-          y_error_msg        = y_error_msg
-        EXCEPTIONS
-          so10_reading_fault = 1
-          OTHERS             = 2
-      ).
-      IF sy-subrc <> 0.
-        RAISE body_error.
-      ENDIF.
-
-    ENDIF.
-
-
-    "Set as body the mail object if nothing is provided
-    "-------------------------------------------------
-    IF lt_lines[] IS INITIAL.
-      APPEND INITIAL LINE TO lt_lines ASSIGNING FIELD-SYMBOL(<line>).
-      <line>-line = x_mail_obj.
-    ENDIF.
-
     TRY.
-        yo_document = cl_document_bcs=>create_document( i_type    = c_mail_type_htm
-                                                        i_text    = lt_lines[]
-                                                        i_subject = x_mail_obj ).
+        CLEAR me->go_send_request.
+        me->go_send_request = cl_bcs=>create_persistent( ).
+
+
+        "Exception handling
+      CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
+        y_error_msg = lx_send_req_bcs->get_text( ).
+        RAISE request_error.
+    ENDTRY.
+
+
+    "Set Sender of email
+    "-------------------------------------------------
+    TRY.
+        me->fill_sender( ).
+
+
+      CATCH cx_address_bcs INTO DATA(lx_address_bcs).
+        y_error_msg = lx_address_bcs->get_text( ).
+        RAISE sender_error.
+
+      CATCH cx_send_req_bcs INTO lx_send_req_bcs.
+        y_error_msg = lx_send_req_bcs->get_text( ).
+        RAISE sender_error.
+    ENDTRY.
+
+
+    "Set list of recipients
+    "-------------------------------------------------
+    TRY.
+        me->fill_recipient( ).
+
+
+      CATCH cx_address_bcs INTO lx_address_bcs.
+        y_error_msg = lx_address_bcs->get_text( ).
+        RAISE recipient_error.
+
+      CATCH cx_send_req_bcs INTO lx_send_req_bcs.
+        y_error_msg = lx_send_req_bcs->get_text( ).
+        RAISE recipient_error.
+    ENDTRY.
+
+
+
+    "Set body with an input string or an SO10 standard text
+    "-------------------------------------------------
+    TRY.
+        fill_body( ).
+
+
       CATCH cx_document_bcs INTO DATA(lx_document_bcs).
         y_error_msg = lx_document_bcs->get_text( ).
         RAISE body_error.
     ENDTRY.
 
+
+    "Set attachments CSV or PDF
+    "-------------------------------------------------
+    TRY.
+        fill_attachment( ).
+
+
+      CATCH cx_document_bcs INTO lx_document_bcs.
+        y_error_msg = lx_document_bcs->get_text( ).
+        RAISE attachment_error.
+    ENDTRY.
+
+
+    "Send email
+    "-------------------------------------------------
+    TRY.
+
+        "Add document to send request
+        me->go_send_request->set_document( me->go_document ).
+
+        "Send email
+        me->go_send_request->set_send_immediately( i_send_immediately = 'X' ).
+        y_mail_sent = me->go_send_request->send( i_with_error_screen = 'X' ).
+
+        IF y_mail_sent EQ abap_true.
+          IF xv_commit EQ abap_true.
+            COMMIT WORK.
+          ENDIF.
+        ENDIF.
+
+
+      CATCH cx_send_req_bcs INTO DATA(lx_send_request_bcs).
+        y_error_msg = lx_send_request_bcs->get_text( ).
+        RAISE request_error.
+    ENDTRY.
+
+
   ENDMETHOD.
 
 
-  METHOD BCS_SET_RECIPIENT.
+  METHOD check_mandatory_fields.
 
-    LOOP AT xt_recipients ASSIGNING FIELD-SYMBOL(<recipient>).
+    IF me->gs_mail_params-recipients[] IS INITIAL.
+      RAISE missing_param.
+    ENDIF.
 
-      TRY.
-          DATA(lo_recipient) = cl_cam_address_bcs=>create_internet_address( <recipient>-smtp_addr ).
-
-          yo_send_request->add_recipient( i_recipient = lo_recipient
-                                          i_express   = 'X'
-                                          i_copy      = <recipient>-copy ).
-
-        CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
-          y_error_msg = lx_send_req_bcs->get_text( ).
-          RAISE recipient_error.
-        CATCH cx_address_bcs INTO DATA(lx_address_bcs).
-          y_error_msg = lx_address_bcs->get_text( ).
-          RAISE recipient_error.
-      ENDTRY.
-
-    ENDLOOP.
+    IF me->gs_mail_params-object IS INITIAL.
+      RAISE missing_param.
+    ENDIF.
 
   ENDMETHOD.
 
 
-  METHOD BCS_SET_SENDER.
+  METHOD fill_sender.
 
     TRY.
-        DATA(lo_sender) = cl_sapuser_bcs=>create( x_sender ).
+        IF me->gs_mail_params-sender IS INITIAL.
+          me->gs_mail_params-sender = sy-uname.
+        ENDIF.
 
-        yo_send_request->set_sender( i_sender = lo_sender ).
+        DATA(lo_sender) = cl_sapuser_bcs=>create( me->gs_mail_params-sender ).
+        me->go_send_request->set_sender( lo_sender ).
+
 
       CATCH cx_address_bcs INTO DATA(lx_address_bcs).
-        y_error_msg = lx_address_bcs->get_text( ).
-        RAISE sender_error.
+        RAISE EXCEPTION lx_address_bcs.
+
       CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
-        y_error_msg = lx_send_req_bcs->get_text( ).
-        RAISE sender_error.
+        RAISE EXCEPTION lx_send_req_bcs.
     ENDTRY.
 
   ENDMETHOD.
 
 
-  METHOD FILL_FROM_SO10.
+  METHOD fill_recipient.
 
-    DATA: lt_lines TYPE TABLE OF tline.
+    TRY.
+        LOOP AT me->gs_mail_params-recipients ASSIGNING FIELD-SYMBOL(<recipient>).
+
+          DATA(lo_recipient) = cl_cam_address_bcs=>create_internet_address( <recipient>-smtp_addr ).
+
+          me->go_send_request->add_recipient(
+            i_recipient = lo_recipient
+            i_express   = 'X'
+            i_copy      = <recipient>-copy
+          ).
+
+        ENDLOOP.
+
+
+      CATCH cx_address_bcs INTO DATA(lx_address_bcs).
+        RAISE EXCEPTION lx_address_bcs.
+
+      CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
+        RAISE EXCEPTION lx_send_req_bcs.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD fill_body.
+
+    DATA:
+      lt_lines   TYPE bcsy_text.
+
+    "-------------------------------------------------
+
+    TRY.
+        CLEAR lt_lines[].
+
+        "Set body with input string if provided
+        "-------------------------------------------------
+        IF me->gs_mail_params-body IS NOT INITIAL.
+
+          lt_lines[] = cl_bcs_convert=>string_to_soli( me->gs_mail_params-body ).
+
+        ENDIF.
+
+
+        "Set body with standard SO10 text with substitution if provided
+        "-------------------------------------------------
+        IF me->gs_mail_params-body_stdtxt IS NOT INITIAL.
+
+          lt_lines[] = get_standard_text_lines( ).
+
+        ENDIF.
+
+
+        "Set as body the mail object if nothing is provided
+        "-------------------------------------------------
+        IF lt_lines[] IS INITIAL.
+
+          lt_lines = VALUE #( ( line = me->gs_mail_params-object ) ).
+
+        ENDIF.
+
+        me->go_document = cl_document_bcs=>create_document(
+          i_type    = cc_mail_type-htm
+          i_text    = lt_lines[]
+          i_subject = me->gs_mail_params-object
+        ).
+
+
+      CATCH cx_document_bcs INTO DATA(lx_document_bcs).
+        RAISE EXCEPTION lx_document_bcs.
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_standard_text_lines.
+
+    DATA:
+      lt_lines     TYPE TABLE OF tline,
+      lv_error_msg TYPE string.
 
     "-------------------------------------------------
 
@@ -346,7 +379,7 @@ CLASS ZAG_CL_SEND_MAIL IMPLEMENTATION.
       EXPORTING
         id                      = 'ST'
         language                = sy-langu
-        name                    = x_stdtxt_name
+        name                    = me->gs_mail_params-body_stdtxt-std_txt_name
         object                  = 'TEXT'
       TABLES
         lines                   = lt_lines[]
@@ -364,156 +397,123 @@ CLASS ZAG_CL_SEND_MAIL IMPLEMENTATION.
 
       CALL FUNCTION 'FORMAT_MESSAGE'
         EXPORTING
-          id        = sy-msgid
-          lang      = '-D'
-          no        = sy-msgno
-          v1        = sy-msgv1
-          v2        = sy-msgv2
-          v3        = sy-msgv3
-          v4        = sy-msgv4
+          id   = sy-msgid
+          lang = '-D'
+          no   = sy-msgno
+          v1   = sy-msgv1
+          v2   = sy-msgv2
+          v3   = sy-msgv3
+          v4   = sy-msgv4
         IMPORTING
-          msg       = y_error_msg.
+          msg  = lv_error_msg.
 
-      RAISE so10_reading_fault.
+      RAISE EXCEPTION TYPE cx_document_bcs
+        EXPORTING
+          error_text = lv_error_msg.
 
     ENDIF.
 
+
     LOOP AT lt_lines ASSIGNING FIELD-SYMBOL(<lines>).
 
-      LOOP AT xt_stdtxt_subs ASSIGNING FIELD-SYMBOL(<subs>).
+      LOOP AT me->gs_mail_params-body_stdtxt-substitutions ASSIGNING FIELD-SYMBOL(<subs>).
         REPLACE ALL OCCURRENCES OF <subs>-varname IN <lines>-tdline WITH <subs>-value.
       ENDLOOP.
 
       APPEND <lines>-tdline TO yt_lines.
+
     ENDLOOP.
 
   ENDMETHOD.
 
 
-  METHOD SEND_MAIL_BCS.
+  METHOD fill_attachment.
 
-    DATA: lo_send_request TYPE REF TO cl_bcs,
-          lo_document     TYPE REF TO cl_document_bcs.
+    DATA:
+      lt_soli_tab   TYPE soli_tab,
+      lt_solix_tab  TYPE solix_tab,
+      lv_csv_string TYPE string.
 
     "-------------------------------------------------
 
-    y_mail_sent = abap_false.
-    y_error_msg = ''.
-
     TRY.
+        LOOP AT me->gs_mail_params-attachments ASSIGNING FIELD-SYMBOL(<attch>).
 
-        "Create send request
-        "-------------------------------------------------
-        TRY.
-            lo_send_request = cl_bcs=>create_persistent( ).
-          CATCH cx_send_req_bcs INTO DATA(lx_send_req_bcs).
-            y_error_msg = lx_send_req_bcs->get_text( ).
-            RAISE request_error.
-        ENDTRY.
+          DATA(lv_attch_subject) = CONV sood-objdes( <attch>-subject ).
 
 
-        "Set Sender of email
-        "-------------------------------------------------
-        bcs_set_sender(
-          EXPORTING
-            x_sender        = x_sender
-          IMPORTING
-            y_error_msg     = y_error_msg
-          CHANGING
-            yo_send_request = lo_send_request
-          EXCEPTIONS
-            sender_error    = 1
-            OTHERS          = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE sender_error.
-        ENDIF.
+          "CSV Attachment
+          "-------------------------------------------------
+          IF <attch>-data_csv[] IS NOT INITIAL.
 
+            "CSV need to be included in one single string,
+            "Conversion will be applied, separating each original row by CR_LF
+            lv_csv_string = ''.
+            LOOP AT <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv>).
+              IF lv_csv_string IS INITIAL.
+                lv_csv_string = <csv>.
+              ELSE.
+                lv_csv_string = |{ lv_csv_string }{ cl_abap_char_utilities=>cr_lf }{ <csv> }|.
+              ENDIF.
+            ENDLOOP.
 
-        "Set list of recipients
-        "-------------------------------------------------
-        bcs_set_recipient(
-          EXPORTING
-            xt_recipients   = xt_recipients[]
-          IMPORTING
-            y_error_msg     = y_error_msg
-          CHANGING
-            yo_send_request = lo_send_request
-          EXCEPTIONS
-            recipient_error = 1
-            OTHERS          = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE recipient_error.
-        ENDIF.
+            REFRESH lt_soli_tab[].
+            lt_soli_tab[] = cl_bcs_convert=>string_to_soli( iv_string = lv_csv_string ).
 
+            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-csv }|.
 
-        "Set body with an input string or an SO10 standard text
-        "-------------------------------------------------
-        bcs_fill_body(
-          EXPORTING
-            x_mail_obj                = x_mail_obj
-            x_mail_body_str           = x_mail_body_str
-            x_mail_body_standard_text = x_mail_body_standard_text
-          IMPORTING
-            y_error_msg      = y_error_msg
-          CHANGING
-            yo_send_request  = lo_send_request
-            yo_document      = lo_document
-          EXCEPTIONS
-            body_error         = 1
-            OTHERS             = 3
-        ).
-        IF sy-subrc <> 0.
-          RAISE body_error.
-        ENDIF.
+            me->go_document->add_attachment(
+                i_attachment_type     = cc_attch_type-csv
+                i_attachment_subject  = lv_attch_subject
+                i_att_content_text    = lt_soli_tab[]
+            ).
 
-
-        "Set attachments CSV or PDF
-        "-------------------------------------------------
-        bcs_fill_attachment(
-          EXPORTING
-            xt_attachments  = xt_attachments
-          IMPORTING
-            y_error_msg     = y_error_msg
-          CHANGING
-            yo_send_request = lo_send_request
-            yo_document     = lo_document
-          EXCEPTIONS
-            attachment_error  = 1
-            OTHERS            = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE attachment_error.
-        ENDIF.
-
-
-        "Add document to send request
-        "-------------------------------------------------
-        TRY.
-            lo_send_request->set_document( lo_document ).
-          CATCH cx_send_req_bcs INTO lx_send_req_bcs.
-            y_error_msg = lx_send_req_bcs->get_text( ).
-            RAISE request_error.
-        ENDTRY.
-
-
-        "Send email
-        "-------------------------------------------------
-        lo_send_request->set_send_immediately( i_send_immediately = 'X' ).
-        y_mail_sent = lo_send_request->send( i_with_error_screen = 'X' ).
-        IF y_mail_sent EQ abap_true.
-          IF x_commit EQ abap_true.
-            COMMIT WORK.
           ENDIF.
-        ENDIF.
 
 
-        "Exception handling
-      CATCH cx_bcs INTO DATA(lx_bcs).
-        y_error_msg = lx_bcs->get_text( ).
-        RAISE request_error.
+          "EXCEL Attachment
+          "-------------------------------------------------
+          IF <attch>-data_xlsx IS NOT INITIAL.
+
+            REFRESH lt_solix_tab[].
+            lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_xlsx ).
+
+            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-xlsx }|.
+
+            me->go_document->add_attachment(
+              i_attachment_type     = cc_attch_type-bin
+              i_attachment_subject  = lv_attch_subject
+              i_attachment_size    = CONV sood-objlen( xstrlen( <attch>-data_xlsx ) )
+              i_att_content_hex    = lt_solix_tab[]
+            ).
+
+          ENDIF.
+
+
+          "PDF Attachment
+          "-------------------------------------------------
+          IF <attch>-data_pdf IS NOT INITIAL.
+
+            REFRESH lt_solix_tab[].
+            lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_pdf ).
+
+            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-pdf }|.
+
+            me->go_document->add_attachment(
+                  i_attachment_type    = cc_attch_type-raw
+                  i_attachment_subject = lv_attch_subject
+                  i_att_content_hex    = lt_solix_tab[]
+            ).
+
+          ENDIF.
+
+        ENDLOOP.
+
+
+      CATCH cx_document_bcs INTO DATA(lx_document_bcs).
+        RAISE EXCEPTION lx_document_bcs.
     ENDTRY.
 
   ENDMETHOD.
+
 ENDCLASS.
