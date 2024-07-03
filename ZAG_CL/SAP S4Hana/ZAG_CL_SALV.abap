@@ -68,7 +68,7 @@ CLASS zag_cl_salv DEFINITION
           !ys_row   TYPE any
         EXCEPTIONS
           col_tab_not_found
-          fcat_not_found,
+          unable_define_structdescr,
 
       get_fieldcat_from_data
         IMPORTING
@@ -95,7 +95,9 @@ CLASS zag_cl_salv DEFINITION
           !xv_popup      TYPE flag DEFAULT abap_true
           !xs_row        TYPE any
         EXPORTING
-          !yt_transposed TYPE STANDARD TABLE,
+          !yt_transposed TYPE STANDARD TABLE
+        RAISING
+          cx_salv_msg,
 
       on_link_click FOR EVENT link_click OF cl_salv_events_table
         IMPORTING
@@ -143,10 +145,12 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
   METHOD display_generic_alv.
 
-    DATA: lv_excep_msg TYPE string VALUE IS INITIAL,
-          lx_root      TYPE REF TO cx_root.
+    DATA:
+      lv_excep_msg TYPE string VALUE IS INITIAL,
+      lx_root      TYPE REF TO cx_root.
 
-    FIELD-SYMBOLS: <t_output> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS:
+      <t_output> TYPE STANDARD TABLE.
 
 
     "Init. SALV Object
@@ -218,17 +222,18 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
   METHOD display_transposed_row.
 
-    DATA: lref_t_row      TYPE REF TO data.
+    DATA:
+      lref_t_row     TYPE REF TO data,
+      lt_fcat        TYPE lvc_t_fcat,
+      lref_transp    TYPE REF TO data,
 
-    DATA: lt_fcat        TYPE lvc_t_fcat,
-          lref_transp    TYPE REF TO data,
+      lo_data_transp TYPE  REF TO data,
+      lt_fcat_transp TYPE  lvc_t_fcat.
 
-          lo_data_transp TYPE  REF TO data,
-          lt_fcat_transp TYPE  lvc_t_fcat.
-
-    FIELD-SYMBOLS: <t_table>        TYPE STANDARD TABLE,
-                   <fcat>           TYPE lvc_s_fcat,
-                   <lt_transp_data> TYPE table.
+    FIELD-SYMBOLS:
+      <t_table>        TYPE STANDARD TABLE,
+      <fcat>           TYPE lvc_s_fcat,
+      <lt_transp_data> TYPE table.
 
 
     "-------------------------------------------------
@@ -269,52 +274,46 @@ CLASS zag_cl_salv IMPLEMENTATION.
           CHANGING
             t_table      = <t_table>[] ).
 
+
+        DATA(lr_columns)    = lo_salv->get_columns( ).
+        DATA(lt_column_ref) = lr_columns->get( ).
+
+
+        "-> Trasposizione campi da NxM a MxN
+        "------------------------------------------------
+
+        LOOP AT lt_column_ref ASSIGNING FIELD-SYMBOL(<column_ref>).
+
+          CHECK <column_ref>-columnname NE 'MANDT'.
+
+          ASSIGN COMPONENT <column_ref>-columnname OF STRUCTURE xs_row TO FIELD-SYMBOL(<original_value>).
+          CHECK sy-subrc EQ 0.
+
+          APPEND INITIAL LINE TO <lt_transp_data> ASSIGNING FIELD-SYMBOL(<transp_row>).
+
+          ASSIGN COMPONENT 'COLUMNTEXT' OF STRUCTURE <transp_row> TO FIELD-SYMBOL(<transp_coltxt>).
+          ASSIGN COMPONENT 'VALUE'      OF STRUCTURE <transp_row> TO FIELD-SYMBOL(<transp_value>).
+
+          <transp_coltxt> = <column_ref>-r_column->get_long_text( ).
+          <transp_value>  = <original_value>.
+
+        ENDLOOP.
+
+
+        "-> Esportazione tabella trasposta
+        "------------------------------------------------
+        yt_transposed = <lt_transp_data>.
+
+
+        "-> Stampa tabella
+        "-------------------------------------------------
+
+        display_generic_alv( <lt_transp_data>[] ).
+
       CATCH cx_salv_msg INTO DATA(lx_salv_msg).
         DATA(lv_except_msg) = lx_salv_msg->get_text( ).
-    ENDTRY.
+        RAISE EXCEPTION lx_salv_msg.
 
-    DATA(lr_columns)    = lo_salv->get_columns( ).
-    DATA(lt_column_ref) = lr_columns->get( ).
-
-
-    "-> Trasposizione campi da NxM a MxN
-    "------------------------------------------------
-
-    LOOP AT lt_column_ref ASSIGNING FIELD-SYMBOL(<column_ref>).
-
-      CHECK <column_ref>-columnname NE 'MANDT'.
-
-      ASSIGN COMPONENT <column_ref>-columnname OF STRUCTURE xs_row TO FIELD-SYMBOL(<original_value>).
-      CHECK sy-subrc EQ 0.
-
-      APPEND INITIAL LINE TO <lt_transp_data> ASSIGNING FIELD-SYMBOL(<transp_row>).
-
-      ASSIGN COMPONENT 'COLUMNTEXT' OF STRUCTURE <transp_row> TO FIELD-SYMBOL(<transp_coltxt>).
-      ASSIGN COMPONENT 'VALUE'      OF STRUCTURE <transp_row> TO FIELD-SYMBOL(<transp_value>).
-
-      <transp_coltxt> = <column_ref>-r_column->get_long_text( ).
-      <transp_value>  = <original_value>.
-
-    ENDLOOP.
-
-
-    "-> Esportazione tabella trasposta
-    "------------------------------------------------
-    yt_transposed = <lt_transp_data>.
-
-
-    "-> Stampa tabella
-    "-------------------------------------------------
-    TRY.
-        display_generic_alv(
-          EXPORTING
-*        x_popup         = abap_false
-*        xt_col_settings =
-            xt_output       = <lt_transp_data>
-        ).
-      CATCH cx_salv_msg.        " ALV: General Error Class with Message
-      CATCH cx_salv_data_error. " ALV: General Error Class (Checked During Syntax Check)
-      CATCH cx_salv_not_found.  " ALV: General Error Class (Checked During Syntax Check)
     ENDTRY.
 
   ENDMETHOD.
@@ -322,13 +321,14 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
   METHOD get_fieldcat_from_data.
 
-    DATA: lref_sap_data  TYPE REF TO data,
-          lref_sap_table TYPE REF TO data.
+    DATA:
+      lv_except_msg  TYPE string,
+      lref_sap_data  TYPE REF TO data,
+      lref_sap_table TYPE REF TO data.
 
-    DATA: lv_except_msg TYPE string.
-
-    FIELD-SYMBOLS: <sap_line>  TYPE any,
-                   <sap_table> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS:
+      <sap_line>  TYPE any,
+      <sap_table> TYPE STANDARD TABLE.
 
     "-------------------------------------------------
 
@@ -360,13 +360,17 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
 
     TRY.
-        cl_salv_table=>factory( IMPORTING
-                                  r_salv_table   = DATA(lt_salv_table)
-                                CHANGING
-                                  t_table        = <sap_table>  ).
-        yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog( r_columns      = lt_salv_table->get_columns( ) " ALV Filter
-                                                                     r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
-                                                                     ) .
+        cl_salv_table=>factory(
+            IMPORTING
+              r_salv_table   = DATA(lt_salv_table)
+            CHANGING
+              t_table        = <sap_table>
+        ).
+
+        yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog(
+            r_columns      = lt_salv_table->get_columns( ) " ALV Filter
+            r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
+        ) .
 
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
         lv_except_msg = lx_ai_system_fault->get_text( ).
@@ -383,9 +387,11 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
   METHOD set_color_cell.
 
-    DATA: ls_scol TYPE lvc_s_scol.
+    DATA:
+      ls_scol TYPE lvc_s_scol.
 
-    FIELD-SYMBOLS: <t_col> TYPE lvc_t_scol.
+    FIELD-SYMBOLS:
+      <t_col> TYPE lvc_t_scol.
 
     "-------------------------------------------------
 
@@ -416,9 +422,11 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
   METHOD set_color_row.
 
-    DATA: ls_scol TYPE lvc_s_scol.
+    DATA:
+      ls_scol TYPE lvc_s_scol.
 
-    FIELD-SYMBOLS: <t_col> TYPE lvc_t_scol.
+    FIELD-SYMBOLS:
+      <t_col> TYPE lvc_t_scol.
 
     "-------------------------------------------------
 
@@ -427,37 +435,31 @@ CLASS zag_cl_salv IMPLEMENTATION.
       RAISE col_tab_not_found.
     ENDIF.
 
-    TRY.
-        get_fieldcat_from_data(
-          EXPORTING
-            xs_sap_line = ys_row
-          IMPORTING
-            yt_fcat     = DATA(lt_fcat)
-          EXCEPTIONS
-            unable_define_structdescr = 1
-            OTHERS                    = 2
-        ).
-        IF sy-subrc <> 0.
-          RAISE fcat_not_found.
-        ENDIF.
+    get_fieldcat_from_data(
+      EXPORTING
+        xs_sap_line = ys_row
+      IMPORTING
+        yt_fcat     = DATA(lt_fcat)
+      EXCEPTIONS
+        unable_define_structdescr = 1
+        OTHERS                    = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE unable_define_structdescr.
+    ENDIF.
 
-        LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+    LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
 
-          DELETE <t_col> WHERE fname EQ <fcat>-fieldname.
+      DELETE <t_col> WHERE fname EQ <fcat>-fieldname.
 
-          INSERT VALUE #(
-            fname     = <fcat>-fieldname
-            color-col = xs_color-col
-            color-int = xs_color-int
-            color-inv = xs_color-inv
-          ) INTO TABLE <t_col>.
+      INSERT VALUE #(
+        fname     = <fcat>-fieldname
+        color-col = xs_color-col
+        color-int = xs_color-int
+        color-inv = xs_color-inv
+      ) INTO TABLE <t_col>.
 
-        ENDLOOP.
-
-      CATCH cx_root INTO DATA(lx_root).
-        DATA(lv_excep_msg) = lx_root->get_text( ).
-        RAISE fcat_not_found.
-    ENDTRY.
+    ENDLOOP.
 
   ENDMETHOD.
 
@@ -465,7 +467,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD set_display_settings.
 
     FIELD-SYMBOLS:
-        <t_output> TYPE STANDARD TABLE.
+      <t_output> TYPE STANDARD TABLE.
 
 
     ASSIGN me->gref_output->* TO <t_output>.
