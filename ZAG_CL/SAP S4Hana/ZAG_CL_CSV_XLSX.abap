@@ -5,6 +5,8 @@ CLASS zag_cl_csv_xlsx DEFINITION
 
   PUBLIC SECTION.
 
+    " Types
+    "-------------------------------------------------
     TYPES:
       BEGIN OF ts_conversions_errors,
         row_num     TYPE i,
@@ -12,10 +14,8 @@ CLASS zag_cl_csv_xlsx DEFINITION
         field_descr TYPE string,
         value       TYPE string,
         error       TYPE string,
-      END OF ts_conversions_errors .
-    TYPES:
-      tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
-    TYPES:
+      END OF ts_conversions_errors ,
+
       BEGIN OF ts_exit_config,
         repid                    TYPE sy-repid,
         exit_sap_to_str          TYPE string,
@@ -23,219 +23,266 @@ CLASS zag_cl_csv_xlsx DEFINITION
         exit_str_to_sap_postconv TYPE string,
       END OF ts_exit_config .
 
+    TYPES:
+      tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
+
+
+    " Constants
+    "-------------------------------------------------
     CONSTANTS:
       BEGIN OF cc_file_source,
         local  TYPE char1 VALUE 'L' ##NO_TEXT,
         server TYPE char1 VALUE 'S' ##NO_TEXT,
-      END OF cc_file_source.
+      END OF cc_file_source,
 
-    CONSTANTS c_cr_lf TYPE abap_cr_lf VALUE %_cr_lf ##NO_TEXT.
-    CONSTANTS c_filetype_csv TYPE char3 VALUE 'CSV' ##NO_TEXT.
-    CONSTANTS c_filetype_xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT.
-    CONSTANTS c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT.
-    CONSTANTS c_initial_time TYPE time VALUE 000000 ##NO_TEXT.
-    CONSTANTS c_max_data TYPE datum VALUE '99991231' ##NO_TEXT.
-    CONSTANTS c_separator_horizontal_tab TYPE abap_char1 VALUE %_horizontal_tab ##NO_TEXT.
-    CONSTANTS c_separator_semicolon TYPE char1 VALUE ';' ##NO_TEXT.
+      BEGIN OF cc_filetype,
+        csv  TYPE char3 VALUE 'CSV' ##NO_TEXT,
+        xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT,
+      END OF cc_filetype,
 
-    CLASS-METHODS conv_data_to_ext
-      IMPORTING
-        !x_data_int       TYPE dats
-        !x_separator      TYPE c DEFAULT '/'
-      RETURNING
-        VALUE(y_data_ext) TYPE string .
-    CLASS-METHODS conv_data_to_int
-      IMPORTING
-        !x_data_ext       TYPE string
-      RETURNING
-        VALUE(y_data_int) TYPE dats
-      EXCEPTIONS
-        format_error
-        plausibility_error .
-    CLASS-METHODS conv_numb_to_ext
-      IMPORTING
-        !x_numb_int       TYPE string
-      RETURNING
-        VALUE(y_numb_ext) TYPE string .
-    CLASS-METHODS conv_numb_to_int
-      IMPORTING
-        !x_numb_ext       TYPE string
-      RETURNING
-        VALUE(y_numb_int) TYPE string
-      EXCEPTIONS
-        format_error
-        plausibility_error .
-    CLASS-METHODS conv_sap_to_string
-      IMPORTING
-        !x_sap_data     TYPE any
-        !x_separator    TYPE char1 DEFAULT c_separator_semicolon
-        !xt_fcat        TYPE lvc_t_fcat
-        !xo_structdescr TYPE REF TO cl_abap_structdescr
-        !xs_exit_config TYPE ts_exit_config OPTIONAL
-      EXPORTING
-        !y_str_data     TYPE string .
-    CLASS-METHODS conv_string_to_sap
-      IMPORTING
-        !x_str_data           TYPE string
-        !xt_fcat              TYPE lvc_t_fcat
-        !xo_structdescr       TYPE REF TO cl_abap_structdescr
-        !xs_exit_config       TYPE ts_exit_config OPTIONAL
-        !x_separator          TYPE abap_char1 DEFAULT c_separator_semicolon
-      EXPORTING
-        !y_sap_data           TYPE any
-        !y_conversions_errors TYPE ts_conversions_errors
-      EXCEPTIONS
-        conversion_error
-        plausibility_error .
-    CLASS-METHODS conv_time_to_ext
-      IMPORTING
-        !x_time       TYPE uzeit
-      RETURNING
-        VALUE(y_time) TYPE string .
-    CLASS-METHODS conv_time_to_int
-      IMPORTING
-        !x_time       TYPE string
-      RETURNING
-        VALUE(y_time) TYPE uzeit
-      EXCEPTIONS
-        format_error
-        plausibility_error .
-    CLASS-METHODS f4_help_dir_input
-      IMPORTING
-        !x_source     TYPE char4 DEFAULT 'LOCL'
-      EXPORTING
-        !y_path_input TYPE string .
-    CLASS-METHODS f4_help_dir_output
-      IMPORTING
-        !x_source      TYPE char4 DEFAULT 'LOCL'
-      EXPORTING
-        !y_path_output TYPE string .
-    CLASS-METHODS get_desktop_directory
-      RETURNING
-        VALUE(y_desktop_dir) TYPE string .
-    CLASS-METHODS get_fieldcat_from_data
-      IMPORTING
-        !xs_sap_line    TYPE any OPTIONAL
-        !xt_sap_table   TYPE table OPTIONAL
-      EXPORTING
-        !yo_structdescr TYPE REF TO cl_abap_structdescr
-        !yt_fcat        TYPE lvc_t_fcat
-      EXCEPTIONS
-        unable_define_structdescr .
-    CLASS-METHODS remove_special_char
-      CHANGING
-        !y_text TYPE string .
-    METHODS constructor
-      IMPORTING
-        !xs_sap_line    TYPE any OPTIONAL
-        !xt_sap_table   TYPE table OPTIONAL
-        !xs_exit_config TYPE ts_exit_config OPTIONAL
-      EXCEPTIONS
-        input_error
-        unable_define_structdescr .
-    METHODS conv_tab_to_ext
-      IMPORTING
-        !x_header          TYPE os_boolean DEFAULT 'X'
-      RETURNING
-        VALUE(yt_str_data) TYPE string_table .
-    METHODS conv_tab_to_int
-      IMPORTING
-        !x_header              TYPE xfeld DEFAULT 'X'
-        !xt_str_data           TYPE string_table
-      EXPORTING
-        !yt_sap_data           TYPE table
-        !yt_conversions_errors TYPE tt_conversions_errors
-      EXCEPTIONS
-        conversion_error .
-    METHODS file_download
-      IMPORTING
-        !x_filename TYPE string
-        !x_header   TYPE os_boolean DEFAULT 'X'
-        !x_source   TYPE char1 DEFAULT 'L'
-      EXCEPTIONS
-        not_supported_file
-        unable_open_path .
-    METHODS file_upload
-      IMPORTING
-        !x_filename            TYPE string
-        !x_header              TYPE xfeld DEFAULT 'X'
-        !x_source              TYPE char1 DEFAULT 'L'
-      EXPORTING
-        !yt_sap_data           TYPE table
-        !yt_conversions_errors TYPE tt_conversions_errors
-      EXCEPTIONS
-        input_error
-        not_supported_file
-        unable_open_path
-        empty_file
-        conversion_error .
-    METHODS get_header_from_data
-      RETURNING
-        VALUE(y_str_header) TYPE string .
+      BEGIN OF cc_separator,
+        horizontal_tab TYPE abap_char1 VALUE %_horizontal_tab ##NO_TEXT,
+        semicolon      TYPE char1      VALUE ';',
+        cr_lf          TYPE abap_cr_lf VALUE %_cr_lf ##NO_TEXT,
+        slash          TYPE char1      VALUE '/' ##NO_TEXT,
+      END OF cc_separator.
+
+    CONSTANTS:
+      c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT,
+      c_initial_time TYPE time  VALUE 000000 ##NO_TEXT,
+      c_max_data     TYPE datum VALUE '99991231' ##NO_TEXT.
+
+
+    " Methods
+    "-------------------------------------------------
+    CLASS-METHODS:
+      conv_data_to_ext
+        IMPORTING
+                  !xv_data_int       TYPE dats
+                  !xv_separator      TYPE abap_char1 DEFAULT cc_separator-slash
+        RETURNING VALUE(yv_data_ext) TYPE string,
+
+      conv_data_to_int
+        IMPORTING
+                   !xv_data_ext       TYPE string
+        RETURNING  VALUE(yv_data_int) TYPE dats
+        EXCEPTIONS
+                   format_error
+                   plausibility_error,
+
+      conv_numb_to_ext
+        IMPORTING
+                  !xv_numb_int       TYPE string
+        RETURNING VALUE(yv_numb_ext) TYPE string,
+
+      conv_numb_to_int
+        IMPORTING
+                   !xv_numb_ext       TYPE string
+        RETURNING  VALUE(yv_numb_int) TYPE string
+        EXCEPTIONS
+                   format_error
+                   plausibility_error,
+
+      conv_time_to_ext
+        IMPORTING
+                  !xv_time_int       TYPE uzeit
+        RETURNING VALUE(yv_time_ext) TYPE string,
+
+      conv_time_to_int
+        IMPORTING
+                   !xv_time_ext       TYPE string
+        RETURNING  VALUE(yv_time_int) TYPE uzeit
+        EXCEPTIONS
+                   format_error
+                   plausibility_error,
+
+      conv_sap_to_string
+        IMPORTING
+          !xs_sap_data    TYPE any
+          !xv_separator   TYPE char1 DEFAULT cc_separator-semicolon
+          !xt_fcat        TYPE lvc_t_fcat
+          !xo_structdescr TYPE REF TO cl_abap_structdescr
+          !xs_exit_config TYPE ts_exit_config OPTIONAL
+        EXPORTING
+          !y_str_data     TYPE string,
+
+      conv_string_to_sap
+        IMPORTING
+          !xv_str_data           TYPE string
+          !xt_fcat               TYPE lvc_t_fcat
+          !xo_structdescr        TYPE REF TO cl_abap_structdescr
+          !xs_exit_config        TYPE ts_exit_config OPTIONAL
+          !xv_separator          TYPE abap_char1 DEFAULT cc_separator-semicolon
+        EXPORTING
+          !ys_sap_data           TYPE any
+          !ys_conversions_errors TYPE ts_conversions_errors
+        EXCEPTIONS
+          conversion_error
+          plausibility_error,
+
+      remove_special_char
+        CHANGING
+          !yv_text TYPE string,
+
+      get_fieldcat_from_data
+        IMPORTING
+          !xs_sap_line    TYPE any OPTIONAL
+          !xt_sap_table   TYPE table OPTIONAL
+        EXPORTING
+          !yo_structdescr TYPE REF TO cl_abap_structdescr
+          !yt_fcat        TYPE lvc_t_fcat
+        RAISING
+          cx_ai_system_fault.
+
+    CLASS-METHODS:
+      f4_help_dir_input
+        IMPORTING
+          !xv_source     TYPE abap_char1 DEFAULT cc_file_source-local
+        EXPORTING
+          !yv_path_input TYPE string,
+
+      f4_help_dir_output
+        IMPORTING
+          !xv_source      TYPE abap_char1 DEFAULT cc_file_source-local
+        EXPORTING
+          !yv_path_output TYPE string,
+
+      get_desktop_directory
+        RETURNING VALUE(yv_desktop_dir) TYPE string.
+
+    METHODS:
+      init_instance
+        IMPORTING
+          !xt_sap_table   TYPE table
+          !xv_filename    TYPE string
+          !xv_header      TYPE abap_char1     DEFAULT abap_true
+          !xs_exit_config TYPE ts_exit_config OPTIONAL
+        EXCEPTIONS
+          unable_define_structdescr,
+
+      file_download
+        IMPORTING
+          !xv_filename    TYPE string
+          !xt_sap_table   TYPE table
+          !xv_source      TYPE char1          DEFAULT cc_file_source-local
+          !xv_header      TYPE os_boolean     DEFAULT abap_true
+          !xs_exit_config TYPE ts_exit_config OPTIONAL
+        EXCEPTIONS
+          not_supported_file
+          unable_define_structdescr
+          unable_open_path,
+
+      file_upload
+        IMPORTING
+          !xv_filename           TYPE string
+          !xt_sap_table          TYPE table
+          !xv_source             TYPE char1          DEFAULT cc_file_source-local
+          !xv_header             TYPE os_boolean     DEFAULT abap_true
+          !xs_exit_config        TYPE ts_exit_config OPTIONAL
+        EXPORTING
+          !yt_sap_data           TYPE table
+          !yt_conversions_errors TYPE tt_conversions_errors
+        EXCEPTIONS
+          not_supported_file
+          unable_define_structdescr
+          input_error
+          unable_open_path
+          empty_file,
+
+      get_header_from_data
+        RETURNING VALUE(yv_str_header) TYPE string,
+
+      conv_tab_to_ext
+        RETURNING VALUE(yt_str_data) TYPE string_table,
+
+      conv_tab_to_int
+        EXPORTING
+          !yt_sap_data           TYPE table
+          !yt_conversions_errors TYPE tt_conversions_errors.
+
   PROTECTED SECTION.
+
+
   PRIVATE SECTION.
 
-    CONSTANTS c_mandt TYPE fieldname VALUE 'MANDT' ##NO_TEXT.
-    CLASS-DATA:
-      gr_typekind_charlike TYPE RANGE OF abap_typekind .
-    CLASS-DATA:
-      gr_typekind_date TYPE RANGE OF abap_typekind .
-    CLASS-DATA:
-      gr_typekind_numbers TYPE RANGE OF abap_typekind .
-    CLASS-DATA:
-      gr_typekind_time TYPE RANGE OF abap_typekind .
-    DATA go_structdescr TYPE REF TO cl_abap_structdescr .
-    DATA gref_sap_data TYPE REF TO data .
-    DATA gs_exit_config TYPE ts_exit_config .
-    DATA gt_fcat TYPE lvc_t_fcat .
-    DATA gv_separator TYPE abap_char1 .
+    " Constants
+    "-------------------------------------------------
+    CONSTANTS:
+      BEGIN OF cc_symbols,
+        lect_upper   TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'   ##NO_TEXT,
+        lect_lower   TYPE string VALUE 'abcdefghijklmnopqrstuvwxyz'   ##NO_TEXT,
+        digit        TYPE string VALUE '0123456789'                   ##NO_TEXT,
+        symb         TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£'  ##NO_TEXT,
+        lect_acc     TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'             ##NO_TEXT,
+        exp_notation TYPE string VALUE '0123456789.,+-E'              ##NO_TEXT,
+      END OF cc_symbols,
 
-    METHODS download_csv_local
-      IMPORTING
-        !x_filename  TYPE string
-      CHANGING
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS download_csv_server
-      IMPORTING
-        !x_filename  TYPE string
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS download_excel_local
-      IMPORTING
-        !x_filename  TYPE string
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS download_excel_server
-      IMPORTING
-        !x_filename  TYPE string
-        !xt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS upload_csv_local
-      IMPORTING
-        !x_filename  TYPE string
-      EXPORTING
-        !yt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS upload_csv_server
-      IMPORTING
-        !x_filename  TYPE string
-      EXPORTING
-        !yt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
-    METHODS upload_excel_local
-      IMPORTING
-        !x_filename  TYPE string
-      EXPORTING
-        !yt_str_data TYPE string_table
-      EXCEPTIONS
-        unable_open_path .
+      BEGIN OF cc_msg,
+        unable_read_file  TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
+        unable_def_struct TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
+        input_error       TYPE string VALUE 'Input Error'                        ##NO_TEXT,
+        internal_error    TYPE string VALUE 'Internal Error occurred'            ##NO_TEXT,
+      END OF cc_msg.
+
+    CONSTANTS:
+      c_mandt TYPE fieldname VALUE 'MANDT' ##NO_TEXT.
+
+
+    " Data
+    "-------------------------------------------------
+    CLASS-DATA:
+      gr_typekind_charlike TYPE RANGE OF abap_typekind,
+      gr_typekind_date     TYPE RANGE OF abap_typekind,
+      gr_typekind_numbers  TYPE RANGE OF abap_typekind,
+      gr_typekind_time     TYPE RANGE OF abap_typekind.
+
+    DATA:
+      gref_sap_data  TYPE REF TO data,
+      gv_filename    TYPE string,
+      gv_header      TYPE abap_char1,
+      gs_exit_config TYPE ts_exit_config,
+
+      go_structdescr TYPE REF TO cl_abap_structdescr,
+      gt_fcat        TYPE lvc_t_fcat,
+      gv_separator   TYPE abap_char1,
+
+      gt_str_data    TYPE string_table.
+
+
+    " Methods
+    "-------------------------------------------------
+    CLASS-METHODS:
+      init_managed_ranges.
+
+    METHODS:
+      download_csv_local
+        EXCEPTIONS
+          unable_open_path,
+
+      download_csv_server
+        EXCEPTIONS
+          unable_open_path,
+
+      download_excel_local
+        RAISING
+          cx_ai_system_fault,
+
+      download_excel_server
+        RAISING
+          cx_ai_system_fault,
+
+      upload_csv_local
+        RAISING
+          cx_ai_system_fault,
+
+      upload_csv_server
+        RAISING
+          cx_ai_system_fault,
+
+      upload_excel_local
+        RAISING
+          cx_ai_system_fault.
+
 ENDCLASS.
 
 
@@ -243,110 +290,22 @@ ENDCLASS.
 CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
 
-  METHOD constructor.
-
-    FIELD-SYMBOLS: <sap_data> TYPE STANDARD TABLE.
-
-    IF xs_sap_line IS NOT SUPPLIED
-      AND xt_sap_table IS NOT SUPPLIED.
-      RAISE input_error.
-    ENDIF.
-
-
-    "Set Attributes
-    "---------------------------------------------------------------
-    IF xs_sap_line IS SUPPLIED.
-      CREATE DATA me->gref_sap_data LIKE TABLE OF xs_sap_line.
-      ASSIGN me->gref_sap_data->* TO <sap_data>.
-
-      APPEND xs_sap_line TO <sap_data>.
-
-    ELSEIF xt_sap_table IS SUPPLIED.
-      CREATE DATA me->gref_sap_data LIKE xt_sap_table.
-      ASSIGN me->gref_sap_data->* TO <sap_data>.
-
-      APPEND LINES OF xt_sap_table TO <sap_data>.
-
-    ENDIF.
-
-
-    me->gs_exit_config = xs_exit_config.
-    me->gv_separator   = c_separator_semicolon.
-
-
-    "Set Fieldcat and Fields Descriptor
-    "---------------------------------------------------------------
-    me->get_fieldcat_from_data(
-      EXPORTING
-        xt_sap_table              = <sap_data>
-      IMPORTING
-        yo_structdescr            = me->go_structdescr
-        yt_fcat                   = me->gt_fcat
-      EXCEPTIONS
-        unable_define_structdescr = 1
-        OTHERS                    = 2
-    ).
-    IF sy-subrc <> 0.
-      RAISE unable_define_structdescr.
-    ENDIF.
-    DELETE me->gt_fcat WHERE fieldname EQ c_mandt.
-
-
-    "Init range for managed abap typekind
-    "---------------------------------------------------------------
-
-    gr_typekind_numbers = VALUE #(
-      sign = 'I' option = 'EQ'
-      ( low = cl_abap_typedescr=>typekind_float )
-      ( low = cl_abap_typedescr=>typekind_decfloat )
-      ( low = cl_abap_typedescr=>typekind_decfloat16 )
-      ( low = cl_abap_typedescr=>typekind_decfloat34 )
-      ( low = cl_abap_typedescr=>typekind_int )
-      ( low = cl_abap_typedescr=>typekind_int1 )
-      ( low = cl_abap_typedescr=>typekind_int2 )
-      ( low = cl_abap_typedescr=>typekind_int8 )
-      ( low = cl_abap_typedescr=>typekind_intf )
-      ( low = cl_abap_typedescr=>typekind_num )
-      ( low = cl_abap_typedescr=>typekind_numeric )
-      ( low = cl_abap_typedescr=>typekind_packed )
-    ).
-
-    gr_typekind_date = VALUE #(
-      sign = 'I' option = 'EQ'
-      ( low = cl_abap_typedescr=>typekind_date )
-    ).
-
-    gr_typekind_time = VALUE #(
-      sign = 'I' option = 'EQ'
-      ( low = cl_abap_typedescr=>typekind_time )
-    ).
-
-    gr_typekind_charlike = VALUE #(
-      sign = 'I' option = 'EQ'
-      ( low = cl_abap_typedescr=>typekind_char )
-      ( low = cl_abap_typedescr=>typekind_clike )
-      ( low = cl_abap_typedescr=>typekind_csequence )
-      ( low = cl_abap_typedescr=>typekind_string )
-    ).
-
-
-  ENDMETHOD.
-
-
   METHOD conv_data_to_ext.
 
-*    Data conversion exit from SAP to External
+*    Data conversion from SAP to External
 *    From
 *        -> 20241231
 *    To
 *        -> 31/12/2024
 
-    y_data_ext = COND #(
-      WHEN x_data_int EQ c_initial_data THEN ''
-      ELSE |{ x_data_int+6(2) }{ x_separator }{ x_data_int+4(2) }{ x_separator }{ x_data_int(4) }|
+    DATA(lv_data_int) = xv_data_int.
+
+    yv_data_ext = COND #(
+      WHEN lv_data_int EQ c_initial_data THEN ''
+      ELSE |{ lv_data_int+6(2) }{ xv_separator }{ lv_data_int+4(2) }{ xv_separator }{ lv_data_int(4) }|
     ).
 
-    CONDENSE y_data_ext NO-GAPS.
+    CONDENSE yv_data_ext NO-GAPS.
 
   ENDMETHOD.
 
@@ -361,56 +320,54 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 *    To
 *        -> 20241231
 
-    y_data_int = c_initial_data.
+    yv_data_int = c_initial_data.
 
-    DATA(lv_data_ext) = x_data_ext.
+    DATA(lv_data_ext) = xv_data_ext.
+    DATA(lv_data_int) = c_initial_data.
     CONDENSE lv_data_ext NO-GAPS.
 
-    IF lv_data_ext IS INITIAL.
-      EXIT.
-    ENDIF.
 
-    IF strlen( lv_data_ext ) NE 10
-      AND strlen( lv_data_ext ) NE 8.
-      RAISE format_error.
-    ENDIF.
+    CASE strlen( lv_data_ext ).
+      WHEN 8.
+        "Format like 20231225
+        lv_data_int = lv_data_ext.
 
+      WHEN 10.
 
-    IF strlen( lv_data_ext ) EQ 10.
+        "Data format managed
+        "25-12-2023
+        "2023-12-25
 
-      "Data format managed
-      "25-12-2023
-      "2023-12-25
+        IF lv_data_ext+2(1) CA cc_symbols-digit.
+          "Format like 2023-12-25
+          lv_data_int = |{ lv_data_ext(4) }{ lv_data_ext+5(2) }{ lv_data_ext+8(2) }|.
 
-      IF lv_data_ext+2(1) CA '0123456789'.                  "#EC NOTEXT
-        "Format like 25-12-2023
-        y_data_int = |{ lv_data_ext(4) }{ lv_data_ext+5(2) }{ lv_data_ext+8(2) }|.
+        ELSEIF lv_data_ext+2(1) NA cc_symbols-digit.
+          "Format like 25-12-2023
+          lv_data_int = |{ lv_data_ext+6(4) }{ lv_data_ext+3(2) }{ lv_data_ext(2) }|.
 
-      ELSEIF x_data_ext+2(1) NA '0123456789'.              "#EC NOTEXT.
-        "Format like 2023-12-25
-        y_data_int = |{ lv_data_ext+6(4) }{ lv_data_ext+3(2) }{ lv_data_ext(2) }|.
+        ELSE.
+          RAISE format_error.
 
-      ELSE.
+        ENDIF.
+
+      WHEN OTHERS.
         RAISE format_error.
 
-      ENDIF.
-
-    ELSEIF strlen( lv_data_ext ) EQ 8.
-      "Format like 20231225
-      y_data_int = lv_data_ext.
-
-    ENDIF.
+    ENDCASE.
 
 
     CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
       EXPORTING
-        date                      = y_data_int
+        date                      = lv_data_int
       EXCEPTIONS
         plausibility_check_failed = 1
         OTHERS                    = 2.
     IF sy-subrc <> 0.
       RAISE plausibility_error.
     ENDIF.
+
+    yv_data_int = lv_data_int.
 
   ENDMETHOD.
 
@@ -425,20 +382,22 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 *        -> 1000,25
 *        -> -1000,25
 
-    DATA(lv_numb) = x_numb_int.
+    yv_numb_ext        = 0.
+    DATA(lv_numb_int) = xv_numb_int.
 
-    y_numb_ext  = 0.
 
-    REPLACE '.' IN lv_numb WITH ','.
-    FIND '-' IN lv_numb.
+    REPLACE '.' IN lv_numb_int WITH ','.
+
+    FIND '-' IN lv_numb_int.
     IF sy-subrc EQ 0.
-      REPLACE '-' IN lv_numb WITH ''.
-      lv_numb = |-{ lv_numb }|.
+      REPLACE '-' IN lv_numb_int WITH ''.
+      lv_numb_int = |-{ lv_numb_int }|.
     ENDIF.
 
-    CONDENSE lv_numb NO-GAPS.
+    CONDENSE lv_numb_int NO-GAPS.
 
-    y_numb_ext = lv_numb.
+
+    yv_numb_ext = lv_numb_int.
 
   ENDMETHOD.
 
@@ -462,104 +421,94 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     DATA: lv_count TYPE i,
           lv_sign.
 
-    DATA(lv_numb) = x_numb_ext.
+    "---------------------------------------------------------------
 
-    y_numb_int = 0.
 
-    "-------------------------------------------------
+    yv_numb_int       = 0.
+    DATA(lv_numb_int) = xv_numb_ext.
 
-    CONDENSE lv_numb NO-GAPS.
-    TRANSLATE lv_numb TO UPPER CASE.
-    IF lv_numb CN '0123456789.,+-E'.                        "#EC NOTEXT
-      RAISE plausibility_error.
-    ENDIF.
+    CONDENSE lv_numb_int NO-GAPS.
+    TRANSLATE lv_numb_int TO UPPER CASE.
+
 
     "Find special chars occurrences
     "-------------------------------------------------
-
     DATA(lv_counter_dot) = 0.
-    FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_counter_dot.
+    FIND ALL OCCURRENCES OF '.' IN lv_numb_int MATCH COUNT lv_counter_dot.
 
     DATA(lv_counter_comma) = 0.
-    FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_counter_comma.
+    FIND ALL OCCURRENCES OF ',' IN lv_numb_int MATCH COUNT lv_counter_comma.
 
     DATA(lv_counter_plus) = 0.
-    FIND ALL OCCURRENCES OF '+' IN lv_numb MATCH COUNT lv_counter_plus.
+    FIND ALL OCCURRENCES OF '+' IN lv_numb_int MATCH COUNT lv_counter_plus.
 
     DATA(lv_counter_minus) = 0.
-    FIND ALL OCCURRENCES OF '-' IN lv_numb MATCH COUNT lv_counter_minus.
+    FIND ALL OCCURRENCES OF '-' IN lv_numb_int MATCH COUNT lv_counter_minus.
 
     DATA(lv_counter_exp) = 0.
-    FIND ALL OCCURRENCES OF 'E' IN lv_numb MATCH COUNT lv_counter_exp.
+    FIND ALL OCCURRENCES OF 'E' IN lv_numb_int MATCH COUNT lv_counter_exp.
+
+
+    "Plausibility Pre-Check
+    "---------------------------------------------------------------
+    IF lv_numb_int CN cc_symbols-exp_notation.
+      RAISE plausibility_error.
+    ENDIF.
+
+    IF lv_counter_plus    GT 1
+      OR lv_counter_minus GT 2 "Allowed double '-' in Exp notation
+      OR lv_counter_exp   GT 1.
+      RAISE plausibility_error.
+    ENDIF.
 
 
     "Exponential notation management
     "-------------------------------------------------
     CASE lv_counter_exp.
 
-      WHEN 0. "-------------------------------------------------
+      WHEN 0. "Normal Notation detected
 
-        IF lv_counter_plus GT 0.
-          RAISE format_error.
-        ENDIF.
-
-        IF lv_counter_minus GT 1.
-          RAISE format_error.
+        IF lv_counter_plus EQ 1.
+          REPLACE '+' IN lv_numb_int WITH ''.
         ENDIF.
 
         IF lv_counter_minus EQ 1.
-          REPLACE ALL OCCURRENCES OF '-' IN lv_numb WITH ''.
-          lv_numb = |{ lv_numb }-|.
+          REPLACE ALL OCCURRENCES OF '-' IN lv_numb_int WITH ''.
+          lv_numb_int = |{ lv_numb_int }-|.
         ENDIF.
 
-      WHEN 1. "-------------------------------------------------
+      WHEN 1. "Exponential Notation Detected
 
-        CASE lv_counter_plus.
-          WHEN 0.
+        "Mandatory '+' or '-' with exp notation
+        IF lv_counter_plus     EQ 0
+          AND lv_counter_minus EQ 0.
+          RAISE format_error.
+        ENDIF.
 
-            CASE lv_counter_minus.
-              WHEN 0.
-                RAISE format_error.
 
-              WHEN OTHERS.
-                IF lv_numb NS 'E-'.
-                  RAISE format_error.
-                ENDIF.
+        "Mandatory 'E+' if positive
+        IF lv_counter_plus EQ 1.
 
-            ENDCASE.
-
-          WHEN 1.
-
-            IF lv_numb NS 'E+'.
-              RAISE format_error.
-            ENDIF.
-
-          WHEN OTHERS.
+          IF lv_numb_int NS 'E+'.
             RAISE format_error.
+          ENDIF.
 
-        ENDCASE.
+        ENDIF.
 
 
+        "Mandatory 'E-' if negative
         CASE lv_counter_minus.
           WHEN 1.
-            IF lv_numb NS 'E-'.
+            IF lv_numb_int NS 'E-'.
               RAISE format_error.
             ENDIF.
 
           WHEN 2.
-            IF lv_numb NS 'E-' OR lv_numb(1) NE '-'.
-              RAISE format_error.
-            ENDIF.
-
-          WHEN OTHERS.
-            IF lv_counter_minus GT 2.
+            IF lv_numb_int NS 'E-' OR lv_numb_int(1) NE '-'.
               RAISE format_error.
             ENDIF.
 
         ENDCASE.
-
-      WHEN OTHERS.
-        RAISE format_error.
 
     ENDCASE.
 
@@ -576,12 +525,12 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
         "WARNING
         "Unable to define if comma is the separator of decimal values or integer parts of number
-        "So ->
-        REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH '.'.
+        "So -> It will be use like decimal separator
+        REPLACE ',' IN lv_numb_int WITH '.'.
 
       ELSE.
         "1,000,000,000
-        REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH ''.
+        REPLACE ALL OCCURRENCES OF ',' IN lv_numb_int WITH ''.
 
       ENDIF.
 
@@ -595,33 +544,33 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
         "WARNING
         "Unable to define if comma is the separator of decimal values or integer parts of number
-        "So ->
+        "So -> It will be use like decimal separator
         "Nothing to do
 
       ELSE.
         "1.000.000.000
-        REPLACE ALL OCCURRENCES OF '.' IN lv_numb WITH ''.
+        REPLACE ALL OCCURRENCES OF '.' IN lv_numb_int WITH ''.
 
       ENDIF.
 
     ELSEIF lv_counter_comma GT 0
-      AND lv_counter_dot GT 0.
+       AND lv_counter_dot   GT 0.
 
       IF lv_counter_comma EQ lv_counter_dot.
-        "ex. 1,000.25 / 1.000,25
+        "1,000.25 / 1.000,25
 
         DATA(lv_offset_comma) = 0.
-        FIND FIRST OCCURRENCE OF ',' IN lv_numb MATCH OFFSET lv_offset_comma.
+        FIND FIRST OCCURRENCE OF ',' IN lv_numb_int MATCH OFFSET lv_offset_comma.
 
         DATA(lv_offset_dot) = 0.
-        FIND FIRST OCCURRENCE OF '.' IN lv_numb MATCH OFFSET lv_offset_dot.
+        FIND FIRST OCCURRENCE OF '.' IN lv_numb_int MATCH OFFSET lv_offset_dot.
 
         IF lv_offset_comma LT lv_offset_dot.
           "1,000.25
 
-          REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH ''.
+          REPLACE ALL OCCURRENCES OF ',' IN lv_numb_int WITH ''.
 
-          FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_count.
+          FIND ALL OCCURRENCES OF '.' IN lv_numb_int MATCH COUNT lv_count.
           IF lv_count GT 1.
             RAISE format_error.
           ENDIF.
@@ -629,36 +578,38 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         ELSEIF lv_offset_dot LT lv_offset_comma.
           "1.000,25
 
-          REPLACE ALL OCCURRENCES OF '.' IN lv_numb WITH ''.
-          REPLACE ',' IN lv_numb WITH '.'.
+          REPLACE ALL OCCURRENCES OF '.' IN lv_numb_int WITH ''.
 
-          FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_count.
+          FIND ALL OCCURRENCES OF ',' IN lv_numb_int MATCH COUNT lv_count.
           IF lv_count GT 1.
             RAISE format_error.
           ENDIF.
 
+          REPLACE ',' IN lv_numb_int WITH '.'.
+
         ENDIF.
 
       ELSEIF lv_counter_comma GT lv_counter_dot.
-        "ex. 1,000,000.25
+        "1,000,000.25
 
-        REPLACE ALL OCCURRENCES OF ',' IN lv_numb WITH ''.
+        REPLACE ALL OCCURRENCES OF ',' IN lv_numb_int WITH ''.
 
-        FIND ALL OCCURRENCES OF '.' IN lv_numb MATCH COUNT lv_count.
+        FIND ALL OCCURRENCES OF '.' IN lv_numb_int MATCH COUNT lv_count.
         IF lv_count GT 1.
           RAISE format_error.
         ENDIF.
 
       ELSEIF lv_counter_dot GT lv_counter_comma.
-        "ex. 1.000.000,25
+        "1.000.000,25
 
-        REPLACE ALL OCCURRENCES OF '.' IN lv_numb WITH ''.
-        REPLACE ',' IN lv_numb WITH '.'.
+        REPLACE ALL OCCURRENCES OF '.' IN lv_numb_int WITH ''.
 
-        FIND ALL OCCURRENCES OF ',' IN lv_numb MATCH COUNT lv_count.
+        FIND ALL OCCURRENCES OF ',' IN lv_numb_int MATCH COUNT lv_count.
         IF lv_count GT 1.
           RAISE format_error.
         ENDIF.
+
+        REPLACE ',' IN lv_numb_int WITH '.'.
 
       ENDIF.
 
@@ -666,16 +617,80 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     "-------------------------------------------------
 
-    CONDENSE lv_numb NO-GAPS.
+    CONDENSE lv_numb_int NO-GAPS.
 
-    y_numb_int = lv_numb.
+    yv_numb_int = lv_numb_int.
+
+  ENDMETHOD.
+
+
+  METHOD conv_time_to_ext.
+
+*    Time conversion exit from SAP to External
+*    From
+*        -> 235959
+*    To
+*        -> 23:59:59
+
+    yv_time_ext        = ''.
+    DATA(lv_time_int) = xv_time_int.
+
+    lv_time_int = COND #(
+      WHEN xv_time_int EQ c_initial_time THEN ''
+      ELSE |{ lv_time_int(2) }:{ lv_time_int+2(2) }:{ lv_time_int+4(2) }|
+    ).
+
+    CONDENSE lv_time_int NO-GAPS.
+    yv_time_ext = lv_time_int.
+
+  ENDMETHOD.
+
+
+  METHOD conv_time_to_int.
+
+*    Time conversion exit from External to SAP
+*    From
+*        -> 23:59:59
+*        -> 235959
+*    To
+*        -> 235959
+
+    yv_time_int = c_initial_time.
+
+    DATA(lv_time_ext) = xv_time_ext.
+    CONDENSE lv_time_ext NO-GAPS.
+
+    CHECK lv_time_ext IS NOT INITIAL.
+
+
+    IF strlen( lv_time_ext ) NE 8
+      AND strlen( lv_time_ext ) NE 6.
+      RAISE format_error.
+    ENDIF.
+
+    yv_time_int = COND #(
+        WHEN strlen( lv_time_ext ) EQ 6 THEN lv_time_ext
+        WHEN strlen( lv_time_ext ) EQ 8 THEN |{ lv_time_ext(2) }{ lv_time_ext+3(2) }{ lv_time_ext+6(2) }|
+   ).
+
+    CALL FUNCTION 'TIME_CHECK_PLAUSIBILITY'
+      EXPORTING
+        time                      = yv_time_int
+      EXCEPTIONS
+        plausibility_check_failed = 1
+        OTHERS                    = 2.
+    IF sy-subrc <> 0.
+      RAISE plausibility_error.
+    ENDIF.
 
   ENDMETHOD.
 
 
   METHOD conv_sap_to_string.
 
-    y_str_data  = ''.
+    y_str_data = ''.
+
+    init_managed_ranges( ).
 
     LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
       CHECK <fcat>-fieldname NE c_mandt.
@@ -689,14 +704,14 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             OR <component>-type_kind IN gr_typekind_charlike[] ).
 
         y_str_data = COND #(
-            WHEN y_str_data EQ '' THEN x_separator
-            WHEN y_str_data NE '' THEN |{ y_str_data }{ x_separator }|
+            WHEN y_str_data EQ '' THEN xv_separator
+            WHEN y_str_data NE '' THEN |{ y_str_data }{ xv_separator }|
         ).
 
         CONTINUE.
       ENDIF.
 
-      ASSIGN COMPONENT <component>-name OF STRUCTURE x_sap_data TO FIELD-SYMBOL(<value>).
+      ASSIGN COMPONENT <component>-name OF STRUCTURE xs_sap_data TO FIELD-SYMBOL(<value>).
       DATA(lv_tmp_data) = CONV string( <value> ).
 
 
@@ -724,7 +739,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
           ENDIF.
 
-          lv_tmp_data = conv_numb_to_ext( x_numb_int = lv_tmp_data ).
+          lv_tmp_data = conv_numb_to_ext( lv_tmp_data ).
 
         ENDIF.
       ENDIF.
@@ -734,8 +749,8 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       "---------------------------------------------------------------
       IF <component>-type_kind IN gr_typekind_date[].
 
-        lv_tmp_data = conv_data_to_ext( x_data_int  = CONV sy-datum( lv_tmp_data )
-                                        x_separator = '/' ).
+        lv_tmp_data = conv_data_to_ext( xv_data_int  = CONV sy-datum( lv_tmp_data )
+                                        xv_separator = '/' ).
 
       ENDIF.
 
@@ -744,7 +759,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       "---------------------------------------------------------------
       IF <component>-type_kind IN gr_typekind_time[].
 
-        lv_tmp_data = conv_time_to_ext( x_time = CONV sy-uzeit( lv_tmp_data ) ).
+        lv_tmp_data = conv_time_to_ext( CONV sy-uzeit( lv_tmp_data ) ).
 
       ENDIF.
 
@@ -811,7 +826,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         PERFORM (xs_exit_config-exit_sap_to_str) IN PROGRAM (xs_exit_config-repid) IF FOUND
                                                         USING
                                                             <fcat>
-                                                            x_sap_data
+                                                            xs_sap_data
                                                             <value>
                                                         CHANGING
                                                             lv_tmp_data.
@@ -820,7 +835,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
       y_str_data = COND #(
         WHEN y_str_data EQ '' THEN lv_tmp_data
-        WHEN y_str_data NE '' THEN |{ y_str_data }{ x_separator }{ lv_tmp_data }|
+        WHEN y_str_data NE '' THEN |{ y_str_data }{ xv_separator }{ lv_tmp_data }|
       ).
 
 
@@ -831,20 +846,24 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
   METHOD conv_string_to_sap.
 
-    DATA: lv_sap_ref     TYPE REF TO data.
+    DATA:
+      lv_sap_ref     TYPE REF TO data.
 
-    FIELD-SYMBOLS: <sap_data> TYPE any.
+    FIELD-SYMBOLS:
+      <sap_data> TYPE any.
 
     "-------------------------------------------------
 
-    CLEAR: y_sap_data, y_conversions_errors.
+    CLEAR: ys_sap_data, ys_conversions_errors.
 
-    CREATE DATA lv_sap_ref LIKE y_sap_data.
+    CREATE DATA lv_sap_ref LIKE ys_sap_data.
     ASSIGN lv_sap_ref->* TO <sap_data>.
 
+    init_managed_ranges( ).
+
     "-------------------------------------------------
 
-    DATA(lv_tmp_string) = x_str_data.
+    DATA(lv_tmp_string) = xv_str_data.
 
     LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
       CHECK <fcat>-fieldname NE c_mandt.
@@ -855,8 +874,8 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       ENDIF.
 
       ASSIGN COMPONENT <component>-name OF STRUCTURE <sap_data> TO FIELD-SYMBOL(<value>).
-      y_conversions_errors-field       = <fcat>-fieldname.
-      y_conversions_errors-field_descr = <fcat>-reptext.
+      ys_conversions_errors-field       = <fcat>-fieldname.
+      ys_conversions_errors-field_descr = <fcat>-reptext.
 
       IF <component>-type_kind NOT IN gr_typekind_numbers[]
         AND <component>-type_kind NOT IN gr_typekind_date[]
@@ -870,7 +889,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       ENDIF.
 
 
-      SPLIT lv_tmp_string AT x_separator
+      SPLIT lv_tmp_string AT xv_separator
         INTO DATA(lv_current_str)
              DATA(lv_next_str).
 
@@ -893,7 +912,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       IF 1 = 2.
         remove_special_char(
           CHANGING
-            y_text = lv_current_str
+            yv_text = lv_current_str
         ).
       ENDIF.
 
@@ -950,9 +969,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
         conv_numb_to_int(
           EXPORTING
-            x_numb_ext         = lv_current_str
+            xv_numb_ext         = lv_current_str
           RECEIVING
-            y_numb_int         = DATA(lv_tmp_num)
+            yv_numb_int         = DATA(lv_tmp_num)
           EXCEPTIONS
             format_error       = 1
             plausibility_error = 2
@@ -964,13 +983,13 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             CONDENSE lv_current_str NO-GAPS.
 
           WHEN 1.
-            y_conversions_errors-error = 'Unmanaged number format'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Unmanaged number format'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE conversion_error.
 
           WHEN 2.
-            y_conversions_errors-error = 'Implausible number, chars detected'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Implausible number, chars detected'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE plausibility_error.
 
         ENDCASE.
@@ -1000,9 +1019,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
         conv_data_to_int(
           EXPORTING
-            x_data_ext         = lv_current_str
+            xv_data_ext         = lv_current_str
           RECEIVING
-            y_data_int         = DATA(lv_tmp_dats)
+            yv_data_int         = DATA(lv_tmp_dats)
           EXCEPTIONS
             format_error       = 1
             plausibility_error = 2
@@ -1014,13 +1033,13 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             CONDENSE lv_current_str NO-GAPS.
 
           WHEN 1.
-            y_conversions_errors-error = 'Unmanaged data format'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Unmanaged data format'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE conversion_error.
 
           WHEN 2.
-            y_conversions_errors-error = 'Implausible date'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Implausible date'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE plausibility_error.
 
         ENDCASE.
@@ -1034,9 +1053,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
         conv_time_to_int(
           EXPORTING
-            x_time             = lv_current_str
+            xv_time_ext         = lv_current_str
           RECEIVING
-            y_time             = DATA(lv_tmp_time)
+            yv_time_int         = DATA(lv_tmp_time)
           EXCEPTIONS
             format_error       = 1
             plausibility_error = 2
@@ -1048,13 +1067,13 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             CONDENSE lv_current_str NO-GAPS.
 
           WHEN 1.
-            y_conversions_errors-error = 'Unmanaged time format'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Unmanaged time format'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE conversion_error.
 
           WHEN 2.
-            y_conversions_errors-error = 'Implausible time'. "#EC NOTEXT
-            y_conversions_errors-value = lv_current_str.
+            ys_conversions_errors-error = 'Implausible time'. "#EC NOTEXT
+            ys_conversions_errors-value = lv_current_str.
             RAISE plausibility_error.
 
         ENDCASE.
@@ -1087,22 +1106,521 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     ENDLOOP.
 
-    y_sap_data = <sap_data>.
+    ys_sap_data = <sap_data>.
+
+  ENDMETHOD.
+
+
+  METHOD remove_special_char.
+
+    DATA:
+      lv_text    TYPE string,
+      lv_new_str TYPE string VALUE IS INITIAL.
+
+    "Old version - Check Char by Char
+    DATA(lv_length) = strlen( yv_text ).
+    lv_text = yv_text.
+
+    DO lv_length TIMES.
+      DATA(lv_index)     = sy-index - 1.
+      DATA(lv_curr_char) = lv_text+lv_index(1).
+
+      CHECK lv_curr_char CA cc_symbols-lect_upper
+         OR lv_curr_char CA cc_symbols-lect_lower
+         OR lv_curr_char CA cc_symbols-digit
+         OR lv_curr_char CA cc_symbols-symb
+         OR lv_curr_char CA cc_symbols-lect_acc
+         OR lv_curr_char EQ space.
+
+      IF lv_new_str IS INITIAL.
+        lv_new_str = lv_curr_char.
+      ELSE.
+        lv_new_str = |{ lv_new_str }{ lv_curr_char }|.
+      ENDIF.
+
+    ENDDO.
+
+    yv_text = lv_new_str.
+
+
+    "New Version - Check with regex - TODO Work in Progress Regex
+
+*    CONSTANTS: c_regex_lect_upper TYPE string VALUE 'A-Z',
+*               c_regex_lect_lower TYPE string VALUE 'a-z',
+*               c_regex_digit      TYPE string VALUE '0-9',
+*               c_regex_symb       TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£',
+*               c_regex_lect_acc   TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'.
+*
+*    lv_new_str = y_text.
+*
+*    lv_regex = ''.
+*    lv_regex = |{ lv_regex }[{ c_regex_lect_upper }][{ c_regex_lect_lower }]|.
+*    lv_regex = |{ lv_regex }[{ c_regex_digit }]|.
+*    lv_regex = |{ lv_regex }[{ c_regex_symb }][{ c_regex_lect_acc }]|.
+*
+*    lv_regex = |[^{ lv_regex }]|.
+*
+*    REPLACE ALL OCCURRENCES OF REGEX lv_regex IN lv_new_str WITH ''.
+
+  ENDMETHOD.
+
+
+  METHOD get_fieldcat_from_data.
+
+    DATA:
+      lref_sap_struct TYPE REF TO data,
+      lref_sap_table  TYPE REF TO data,
+
+      lv_except_msg   TYPE string.
+
+    FIELD-SYMBOLS:
+      <sap_struct> TYPE any,
+      <sap_table>  TYPE STANDARD TABLE.
+
+    "-------------------------------------------------
+
+    FREE yo_structdescr.
+    CLEAR yt_fcat[].
+
+    IF xs_sap_line IS SUPPLIED.
+      CREATE DATA lref_sap_struct LIKE xs_sap_line.
+      ASSIGN lref_sap_struct->* TO <sap_struct>.
+
+      CREATE DATA lref_sap_table LIKE TABLE OF xs_sap_line.
+      ASSIGN lref_sap_table->* TO <sap_table>.
+
+    ELSEIF xt_sap_table IS SUPPLIED.
+      CREATE DATA lref_sap_struct LIKE LINE OF xt_sap_table.
+      ASSIGN lref_sap_struct->* TO <sap_struct>.
+
+      CREATE DATA lref_sap_table LIKE xt_sap_table.
+      ASSIGN lref_sap_table->* TO <sap_table>.
+
+    ELSE.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-input_error.
+
+    ENDIF.
+
+    "-------------------------------------------------
+
+    yo_structdescr ?= cl_abap_typedescr=>describe_by_data( <sap_struct> ).
+
+
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table = DATA(lt_salv_table)
+          CHANGING
+            t_table      = <sap_table>
+        ).
+
+        yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog(
+          r_columns      = lt_salv_table->get_columns( ) " ALV Filter
+          r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
+        ).
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        lv_except_msg = lx_ai_system_fault->get_text( ).
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = cc_msg-unable_def_struct.
+
+      CATCH cx_salv_msg  INTO DATA(lx_salv_msg).
+        lv_except_msg = lx_salv_msg->get_text( ).
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = cc_msg-unable_def_struct.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD f4_help_dir_input.
+
+    DATA:
+      lv_path           TYPE string VALUE IS INITIAL,
+
+      lv_server         TYPE msxxlist-name,
+      lv_path_tmp       TYPE dxfields-longpath,
+      lv_instancenumber TYPE instanz-systemnr VALUE IS INITIAL,
+
+      lt_filetable      TYPE filetable,
+      lcl_ref_itab      TYPE REF TO file_table,
+      lv_rc             TYPE i.
+
+    "-------------------------------------------------
+
+    CASE xv_source.
+
+      WHEN cc_file_source-server.
+
+        CALL FUNCTION 'GET_SYSTEM_NUMBER'
+          IMPORTING
+            instancenumber = lv_instancenumber.
+
+        lv_server = |{ sy-host }_{ sy-sysid }_{ lv_instancenumber }|.
+        CONDENSE lv_server NO-GAPS.
+
+        lv_path_tmp = ''.
+        CALL FUNCTION 'F4_DXFILENAME_TOPRECURSION'
+          EXPORTING
+            i_location_flag = 'A'
+            i_server        = lv_server
+            filemask        = '*.*'
+            fileoperation   = 'R'
+          IMPORTING
+            o_path          = lv_path_tmp
+          EXCEPTIONS
+            rfc_error       = 1
+            error_with_gui  = 2
+            OTHERS          = 3.
+        CHECK sy-subrc EQ 0.
+        lv_path = lv_path_tmp.
+
+      WHEN cc_file_source-local.
+
+        lv_path = get_desktop_directory( ).
+
+        CALL METHOD cl_gui_frontend_services=>file_open_dialog
+          EXPORTING
+            initial_directory = lv_path
+          CHANGING
+            file_table        = lt_filetable
+            rc                = lv_rc.
+        ASSIGN lt_filetable[ 1 ] TO FIELD-SYMBOL(<filetable>).
+        CHECK sy-subrc EQ 0.
+        lv_path = <filetable>-filename.
+
+    ENDCASE.
+
+    yv_path_input = lv_path.
+
+  ENDMETHOD.
+
+
+  METHOD f4_help_dir_output.
+
+    DATA:
+      lv_path TYPE string VALUE IS INITIAL.
+
+    "------------------------------------------------
+
+    CASE xv_source.
+
+      WHEN cc_file_source-server.
+
+        CALL FUNCTION '/SAPDMC/LSM_F4_SERVER_FILE'
+          EXPORTING
+*           directory        = ''
+            filemask         = '.dummysap'
+          IMPORTING
+            serverfile       = lv_path
+          EXCEPTIONS
+            canceled_by_user = 1
+            OTHERS           = 2.
+        CHECK sy-subrc EQ 0.
+
+      WHEN cc_file_source-local.
+
+        lv_path = get_desktop_directory( ).
+
+        CALL METHOD cl_gui_frontend_services=>directory_browse
+          EXPORTING
+            window_title         = ''
+            initial_folder       = lv_path
+          CHANGING
+            selected_folder      = lv_path
+          EXCEPTIONS
+            cntl_error           = 1
+            error_no_gui         = 2
+            not_supported_by_gui = 3
+            OTHERS               = 4.
+        CHECK sy-subrc EQ 0.
+
+    ENDCASE.
+
+    yv_path_output = lv_path.
+
+  ENDMETHOD.
+
+
+  METHOD get_desktop_directory.
+
+    yv_desktop_dir = ''.
+    CALL METHOD cl_gui_frontend_services=>get_desktop_directory
+      CHANGING
+        desktop_directory = yv_desktop_dir
+      EXCEPTIONS
+        cntl_error        = 1.
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+                 WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+
+    CALL METHOD cl_gui_cfw=>update_view.
+
+  ENDMETHOD.
+
+
+  METHOD init_instance.
+
+    FIELD-SYMBOLS:
+     <sap_table> TYPE STANDARD TABLE.
+
+
+    "Set Data Table
+    "---------------------------------------------------------------
+    CREATE DATA me->gref_sap_data LIKE xt_sap_table.
+    me->gv_filename    = xv_filename.
+    me->gv_header      = xv_header.
+    me->gs_exit_config = xs_exit_config.
+
+    ASSIGN me->gref_sap_data->* TO <sap_table>.
+    APPEND LINES OF xt_sap_table TO <sap_table>.
+
+
+
+    "Set Fieldcat and Fields Descriptor
+    "---------------------------------------------------------------
+    TRY.
+        me->get_fieldcat_from_data(
+          EXPORTING
+            xt_sap_table              = <sap_table>
+          IMPORTING
+            yo_structdescr            = me->go_structdescr
+            yt_fcat                   = me->gt_fcat
+        ).
+
+        DELETE me->gt_fcat WHERE fieldname EQ c_mandt.
+
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_excp_msg) = lx_ai_system_fault->get_text( ).
+        RAISE unable_define_structdescr.
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD file_download.
+
+    DATA:
+      lv_filetype TYPE char10 VALUE IS INITIAL.
+
+    FIELD-SYMBOLS:
+      <gt_sap_data> TYPE STANDARD TABLE.
+
+    "-------------------------------------------------
+
+    "Check if file is supported
+    "-------------------------------------------------
+    IF xv_filename CP '*.xlsx'.
+      lv_filetype      = cc_filetype-xlsx.
+      me->gv_separator = cc_separator-horizontal_tab.
+
+    ELSEIF xv_filename CP '*.csv'.
+      lv_filetype      = cc_filetype-csv.
+      me->gv_separator = cc_separator-semicolon.
+
+    ELSE.
+      RAISE not_supported_file.
+
+    ENDIF.
+
+    init_instance(
+      EXPORTING
+        xt_sap_table              = xt_sap_table
+        xv_filename               = xv_filename
+        xv_header                 = xv_header
+        xs_exit_config            = xs_exit_config
+      EXCEPTIONS
+        unable_define_structdescr = 1
+        OTHERS                    = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE unable_define_structdescr.
+    ENDIF.
+
+
+    "Convert SAP Table data into String table Data
+    "-------------------------------------------------
+    me->gt_str_data = conv_tab_to_ext( ).
+
+
+    "-------------------------------------------------
+    "Start Download on Local / Server
+    "-------------------------------------------------
+    TRY.
+        CASE lv_filetype.
+
+          WHEN cc_filetype-csv.
+
+            CASE xv_source.
+              WHEN cc_file_source-local.
+
+                download_csv_local( ).
+
+              WHEN cc_file_source-server.
+
+                download_csv_server( ).
+
+            ENDCASE.
+
+          WHEN cc_filetype-xlsx.
+
+            CASE xv_source.
+              WHEN cc_file_source-local.
+
+                download_excel_local( ).
+
+              WHEN cc_file_source-server.
+
+                download_excel_server( ).
+
+            ENDCASE.
+        ENDCASE.
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_except_msg) = lx_ai_system_fault->get_text( ).
+        RAISE unable_open_path.
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD file_upload.
+
+    DATA:
+      lv_filetype TYPE char10 VALUE IS INITIAL.
+
+    "-------------------------------------------------
+
+    CLEAR: yt_sap_data[], yt_conversions_errors[].
+
+
+    "Check if file is supported
+    "-------------------------------------------------
+    IF xv_filename CP '*.xlsx'.
+      lv_filetype  = cc_filetype-xlsx.
+
+    ELSEIF xv_filename CP '*.csv'.
+      lv_filetype  = cc_filetype-csv.
+
+    ELSE.
+      RAISE not_supported_file.
+    ENDIF.
+
+    init_instance(
+      EXPORTING
+        xt_sap_table              = xt_sap_table
+        xv_filename               = xv_filename
+        xv_header                 = xv_header
+        xs_exit_config            = xs_exit_config
+      EXCEPTIONS
+        unable_define_structdescr = 1
+        OTHERS                    = 2
+    ).
+    IF sy-subrc <> 0.
+      RAISE unable_define_structdescr.
+    ENDIF.
+
+
+    "-------------------------------------------------
+    "Start Download on Local / Serveer
+    "-------------------------------------------------
+    TRY.
+        CASE lv_filetype.
+
+          WHEN cc_filetype-csv.
+
+            CASE xv_source.
+              WHEN cc_file_source-local.
+
+                me->upload_csv_local( ).
+
+              WHEN cc_file_source-server.
+
+                me->upload_csv_server( ).
+
+            ENDCASE.
+
+          WHEN cc_filetype-xlsx.
+
+            CASE xv_source.
+              WHEN cc_file_source-local.
+
+                "Upload from XLSX with in-built conversion in SAP Format
+                "-------------------------------------------------
+                me->upload_excel_local( ).
+
+              WHEN cc_file_source-server.
+
+                RAISE input_error.
+
+            ENDCASE.
+
+          WHEN OTHERS.
+            RAISE not_supported_file.
+
+        ENDCASE.
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_excp_msg) = lx_ai_system_fault->get_text( ).
+        RAISE unable_open_path.
+    ENDTRY.
+
+
+
+    "Conversion in SAP Format for CSV
+    "-------------------------------------------------
+    me->conv_tab_to_int(
+      IMPORTING
+        yt_sap_data           = yt_sap_data
+        yt_conversions_errors = yt_conversions_errors
+    ).
+
+    IF lines( yt_sap_data ) EQ 0.
+      RAISE empty_file.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD get_header_from_data.
+
+    yv_str_header = ''.
+
+    LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+      CHECK <fcat>-fieldname NE c_mandt.
+
+      yv_str_header = COND #(
+        WHEN yv_str_header EQ '' THEN <fcat>-reptext
+        WHEN yv_str_header NE '' THEN |{ yv_str_header }{ me->gv_separator }{ <fcat>-reptext }|
+      ).
+
+    ENDLOOP.
 
   ENDMETHOD.
 
 
   METHOD conv_tab_to_ext.
 
-    FIELD-SYMBOLS: <gt_sap_data> TYPE STANDARD TABLE.
-    ASSIGN me->gref_sap_data->* TO <gt_sap_data>.
+    FIELD-SYMBOLS:
+      <gt_sap_data> TYPE STANDARD TABLE.
+
+    "---------------------------------------------------------------
 
     CLEAR yt_str_data[].
+
+    ASSIGN me->gref_sap_data->* TO <gt_sap_data>.
 
 
     "Build header line
     "-------------------------------------------------
-    IF x_header EQ abap_true.
+    IF me->gv_header EQ abap_true.
 
       APPEND INITIAL LINE TO yt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
       <str_data> = me->get_header_from_data( ).
@@ -1117,8 +1635,8 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       APPEND INITIAL LINE TO yt_str_data ASSIGNING <str_data>.
       conv_sap_to_string(
         EXPORTING
-          x_sap_data     = <sap_data>
-          x_separator    = me->gv_separator
+          xs_sap_data    = <sap_data>
+          xv_separator   = me->gv_separator
           xt_fcat        = me->gt_fcat
           xo_structdescr = me->go_structdescr
           xs_exit_config = me->gs_exit_config
@@ -1138,24 +1656,24 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     "Conversion in SAP Format for CSV
     "-------------------------------------------------
-    LOOP AT xt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
+    LOOP AT me->gt_str_data ASSIGNING FIELD-SYMBOL(<data_str>).
       DATA(lv_tabix) = sy-tabix.
 
-      IF x_header EQ abap_true.
+      IF me->gv_header EQ abap_true.
         CHECK lv_tabix NE 1.
       ENDIF.
 
       APPEND INITIAL LINE TO yt_sap_data ASSIGNING FIELD-SYMBOL(<data_sap>).
       conv_string_to_sap(
         EXPORTING
-          x_str_data           = <data_str>
+          xv_str_data          = <data_str>
           xt_fcat              = me->gt_fcat
           xo_structdescr       = me->go_structdescr
           xs_exit_config       = me->gs_exit_config
-          x_separator          = me->gv_separator
+          xv_separator         = me->gv_separator
         IMPORTING
-          y_sap_data           = <data_sap>
-          y_conversions_errors = DATA(ls_conv_error)
+          ys_sap_data           = <data_sap>
+          ys_conversions_errors = DATA(ls_conv_error)
         EXCEPTIONS
           conversion_error     = 1
           plausibility_error   = 2
@@ -1171,69 +1689,52 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     ENDLOOP.
 
-    IF yt_conversions_errors IS NOT INITIAL.
-      RAISE conversion_error.
-    ENDIF.
-
-
   ENDMETHOD.
 
 
-  METHOD conv_time_to_ext.
+  METHOD init_managed_ranges.
 
-*    Time conversion exit from SAP to External
-*    From
-*        -> 235959
-*    To
-*        -> 23:59:59
+    "Init range for managed abap typekind
+    "---------------------------------------------------------------
+    CHECK gr_typekind_numbers[] IS INITIAL
+       OR gr_typekind_date[] IS INITIAL
+       OR gr_typekind_time[] IS INITIAL
+       OR gr_typekind_charlike[] IS INITIAL.
 
-    y_time = COND #(
-      WHEN x_time EQ c_initial_time THEN ''
-      ELSE |{ x_time(2) }:{ x_time+2(2) }:{ x_time+4(2) }|
+
+    gr_typekind_numbers = VALUE #(
+      sign = 'I' option = 'EQ'
+      ( low = cl_abap_typedescr=>typekind_float )
+      ( low = cl_abap_typedescr=>typekind_decfloat )
+      ( low = cl_abap_typedescr=>typekind_decfloat16 )
+      ( low = cl_abap_typedescr=>typekind_decfloat34 )
+      ( low = cl_abap_typedescr=>typekind_int )
+      ( low = cl_abap_typedescr=>typekind_int1 )
+      ( low = cl_abap_typedescr=>typekind_int2 )
+      ( low = cl_abap_typedescr=>typekind_int8 )
+      ( low = cl_abap_typedescr=>typekind_intf )
+      ( low = cl_abap_typedescr=>typekind_num )
+      ( low = cl_abap_typedescr=>typekind_numeric )
+      ( low = cl_abap_typedescr=>typekind_packed )
     ).
 
-    CONDENSE y_time NO-GAPS.
+    gr_typekind_date = VALUE #(
+      sign = 'I' option = 'EQ'
+      ( low = cl_abap_typedescr=>typekind_date )
+    ).
 
-  ENDMETHOD.
+    gr_typekind_time = VALUE #(
+      sign = 'I' option = 'EQ'
+      ( low = cl_abap_typedescr=>typekind_time )
+    ).
 
-
-  METHOD conv_time_to_int.
-
-*    Time conversion exit from External to SAP
-*    From
-*        -> 23:59:59
-*        -> 235959
-*    To
-*        -> 235959
-
-    y_time = c_initial_time.
-
-    DATA(lv_time_ext) = x_time.
-    CONDENSE lv_time_ext NO-GAPS.
-
-    IF lv_time_ext IS INITIAL.
-      EXIT.
-    ENDIF.
-
-    IF strlen( lv_time_ext ) NE 8
-      AND strlen( lv_time_ext ) NE 6.
-      RAISE format_error.
-    ENDIF.
-
-    y_time = COND #(
-        WHEN strlen( lv_time_ext ) EQ 6 THEN lv_time_ext
-        WHEN strlen( lv_time_ext ) EQ 8 THEN |{ lv_time_ext(2) }{ lv_time_ext+3(2) }{ lv_time_ext+6(2) }|
-   ).
-
-    CALL FUNCTION 'TIME_CHECK_PLAUSIBILITY'
-      EXPORTING
-        time                      = y_time
-      EXCEPTIONS
-        plausibility_check_failed = 1
-        OTHERS                    = 2.
-    IF sy-subrc <> 0.
-      RAISE plausibility_error.
-    ENDIF.
+    gr_typekind_charlike = VALUE #(
+      sign = 'I' option = 'EQ'
+      ( low = cl_abap_typedescr=>typekind_char )
+      ( low = cl_abap_typedescr=>typekind_clike )
+      ( low = cl_abap_typedescr=>typekind_csequence )
+      ( low = cl_abap_typedescr=>typekind_string )
+    ).
 
   ENDMETHOD.
 
@@ -1242,9 +1743,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     CALL METHOD cl_gui_frontend_services=>gui_download
       EXPORTING
-        filename                = x_filename
+        filename                = me->gv_filename
       CHANGING
-        data_tab                = xt_str_data[]
+        data_tab                = me->gt_str_data[]
       EXCEPTIONS
         file_write_error        = 1
         no_batch                = 2
@@ -1279,17 +1780,17 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
   METHOD download_csv_server.
 
-    OPEN DATASET x_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+    OPEN DATASET me->gv_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
     IF sy-subrc <> 0.
-      CLOSE DATASET x_filename.
+      CLOSE DATASET me->gv_filename.
       RAISE unable_open_path.
     ENDIF.
 
-    LOOP AT xt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
-      TRANSFER <str_data> TO x_filename.
+    LOOP AT me->gt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
+      TRANSFER <str_data> TO me->gv_filename.
     ENDLOOP.
 
-    CLOSE DATASET x_filename.
+    CLOSE DATASET me->gv_filename.
 
   ENDMETHOD.
 
@@ -1349,7 +1850,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     cl_gui_frontend_services=>gui_download(
         EXPORTING
           bin_filesize              = lv_xlength           " File length for binary files
-          filename                  = x_filename           " Name of file
+          filename                  = me->gv_filename      " Name of file
           filetype                  = 'BIN'                " File type (ASCII, binary ...)
         CHANGING
           data_tab                  = lt_bin_tab          " Transfer table
@@ -1380,7 +1881,11 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
           OTHERS                    = 24
         ).
     IF sy-subrc <> 0.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-unable_read_file.
+
     ENDIF.
 
   ENDMETHOD.
@@ -1406,541 +1911,40 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     "-------------------------------------------------
 
-    OPEN DATASET x_filename FOR OUTPUT IN BINARY MODE.
+    OPEN DATASET me->gv_filename FOR OUTPUT IN BINARY MODE.
     IF sy-subrc <> 0.
-      CLOSE DATASET x_filename.
-      RAISE unable_open_path.
-    ENDIF.
 
-    TRANSFER lv_xdata TO x_filename.
-
-    CLOSE DATASET x_filename.
-
-  ENDMETHOD.
-
-
-  METHOD f4_help_dir_input.
-
-    DATA: lv_path TYPE string VALUE IS INITIAL.
-
-    DATA: lv_server         TYPE msxxlist-name,
-          lv_path_tmp       TYPE dxfields-longpath,
-          lv_instancenumber TYPE instanz-systemnr.
-
-    DATA: lt_filetable TYPE filetable,
-          lcl_ref_itab TYPE REF TO file_table,
-          lv_rc        TYPE i.
-
-    "-------------------------------------------------
-
-    CASE x_source.
-
-      WHEN cc_file_source-server.
-
-        lv_instancenumber = ''.
-        CALL FUNCTION 'GET_SYSTEM_NUMBER'
-          IMPORTING
-            instancenumber = lv_instancenumber.
-
-        lv_server = |{ sy-host }_{ sy-sysid }_{ lv_instancenumber }|.
-        CONDENSE lv_server NO-GAPS.
-
-        lv_path_tmp = ''.
-        CALL FUNCTION 'F4_DXFILENAME_TOPRECURSION'
-          EXPORTING
-            i_location_flag = 'A'
-            i_server        = lv_server
-            filemask        = '*.*'
-            fileoperation   = 'R'
-          IMPORTING
-            o_path          = lv_path_tmp
-          EXCEPTIONS
-            rfc_error       = 1
-            error_with_gui  = 2
-            OTHERS          = 3.
-        CHECK sy-subrc EQ 0.
-        lv_path = lv_path_tmp.
-
-      WHEN cc_file_source-local.
-
-        lv_path = get_desktop_directory( ).
-
-        CALL METHOD cl_gui_frontend_services=>file_open_dialog
-          EXPORTING
-*           default_filename  = '*.csv'
-            initial_directory = lv_path
-          CHANGING
-            file_table        = lt_filetable
-            rc                = lv_rc.
-        ASSIGN lt_filetable[ 1 ] TO FIELD-SYMBOL(<filetable>).
-        CHECK sy-subrc EQ 0.
-        lv_path = <filetable>-filename.
-
-    ENDCASE.
-
-    y_path_input = lv_path.
-
-  ENDMETHOD.
-
-
-  METHOD f4_help_dir_output.
-
-    DATA: lv_path TYPE string VALUE IS INITIAL.
-
-    "-------------------------------------------------
-
-    CASE x_source.
-
-      WHEN cc_file_source-server.
-
-        CALL FUNCTION '/SAPDMC/LSM_F4_SERVER_FILE'
-          EXPORTING
-*           directory        = ''
-            filemask         = '.dummysap'
-          IMPORTING
-            serverfile       = lv_path
-          EXCEPTIONS
-            canceled_by_user = 1
-            OTHERS           = 2.
-        CHECK sy-subrc EQ 0.
-
-      WHEN cc_file_source-local.
-
-        lv_path = get_desktop_directory( ).
-
-        CALL METHOD cl_gui_frontend_services=>directory_browse
-          EXPORTING
-            window_title         = ''
-            initial_folder       = lv_path
-          CHANGING
-            selected_folder      = lv_path
-          EXCEPTIONS
-            cntl_error           = 1
-            error_no_gui         = 2
-            not_supported_by_gui = 3
-            OTHERS               = 4.
-        CHECK sy-subrc EQ 0.
-
-    ENDCASE.
-
-    y_path_output = lv_path.
-
-  ENDMETHOD.
-
-
-  METHOD file_download.
-
-    DATA: lv_filetype TYPE char10 VALUE IS INITIAL.
-
-    "-------------------------------------------------
-
-    "Check if file is supported
-    "-------------------------------------------------
-    IF x_filename CP '*.xlsx'.
-      lv_filetype      = c_filetype_xlsx.
-      me->gv_separator = c_separator_horizontal_tab.
-
-    ELSEIF x_filename CP '*.csv'.
-      lv_filetype      = c_filetype_csv.
-      me->gv_separator = c_separator_semicolon.
-
-    ELSE.
-      RAISE not_supported_file.
+      CLOSE DATASET me->gv_filename.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-unable_read_file.
 
     ENDIF.
 
-    FIELD-SYMBOLS: <gt_sap_data> TYPE STANDARD TABLE.
-    ASSIGN me->gref_sap_data->* TO <gt_sap_data>.
+    TRANSFER lv_xdata TO me->gv_filename.
 
-
-    "Convert SAP Table data into String table Data
-    "-------------------------------------------------
-    DATA(lt_str_data) = conv_tab_to_ext( x_header = x_header ).
-
-
-    "-------------------------------------------------
-    "Start Download on Local / Serveer
-    "-------------------------------------------------
-    CASE lv_filetype.
-      WHEN c_filetype_xlsx. "**********************************************************************
-
-        CASE x_source.
-          WHEN cc_file_source-local.
-            "-------------------------------------------------
-
-            download_excel_local(
-              EXPORTING
-                x_filename       = x_filename
-                xt_str_data      = lt_str_data
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-          WHEN cc_file_source-server.
-            "-------------------------------------------------
-
-            download_excel_server(
-              EXPORTING
-                x_filename       = x_filename
-                xt_str_data      = lt_str_data
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-        ENDCASE.
-
-
-      WHEN c_filetype_csv. "**********************************************************************
-
-        CASE x_source.
-          WHEN cc_file_source-local.
-            "-------------------------------------------------
-
-            download_csv_local(
-              EXPORTING
-                x_filename       = x_filename
-              CHANGING
-                xt_str_data      = lt_str_data
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-          WHEN cc_file_source-server.
-            "-------------------------------------------------
-
-            download_csv_server(
-              EXPORTING
-                x_filename       = x_filename
-                xt_str_data      = lt_str_data
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-        ENDCASE.
-
-    ENDCASE.
-
-  ENDMETHOD.
-
-
-  METHOD file_upload.
-
-    DATA: lt_str_data TYPE string_table,
-          lv_filetype TYPE char10 VALUE IS INITIAL.
-
-    "-------------------------------------------------
-
-    CLEAR: yt_sap_data[], yt_conversions_errors[].
-
-
-    "Check if file is supported
-    "-------------------------------------------------
-    IF x_filename CP '*.xlsx'.
-      lv_filetype  = c_filetype_xlsx.
-
-    ELSEIF x_filename CP '*.csv'.
-      lv_filetype  = c_filetype_csv.
-
-    ELSE.
-      RAISE not_supported_file.
-    ENDIF.
-
-
-    "-------------------------------------------------
-    "Start Download on Local / Serveer
-    "-------------------------------------------------
-    CASE lv_filetype.
-      WHEN c_filetype_xlsx. "**********************************************************************
-
-        CASE x_source.
-          WHEN cc_file_source-local.
-            "-------------------------------------------------
-
-            "Upload from XLSX with in-built conversion in SAP Format
-            "-------------------------------------------------
-            me->upload_excel_local(
-              EXPORTING
-                x_filename                = x_filename
-              IMPORTING
-                yt_str_data               = lt_str_data[]
-              EXCEPTIONS
-                unable_open_path          = 1
-                OTHERS                    = 2
-            ).
-            CASE sy-subrc.
-              WHEN 0.
-                "OK
-              WHEN 1.
-                RAISE unable_open_path.
-            ENDCASE.
-
-
-          WHEN cc_file_source-server.
-            "-------------------------------------------------
-
-            RAISE input_error.
-
-        ENDCASE.
-
-      WHEN c_filetype_csv. "**********************************************************************
-
-        CASE x_source.
-          WHEN cc_file_source-local.
-            "-------------------------------------------------
-
-            me->upload_csv_local(
-              EXPORTING
-                x_filename       = x_filename
-              IMPORTING
-                yt_str_data      = lt_str_data[]
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-          WHEN cc_file_source-server.
-            "-------------------------------------------------
-
-            me->upload_csv_server(
-              EXPORTING
-                x_filename       = x_filename
-              IMPORTING
-                yt_str_data      = lt_str_data[]
-              EXCEPTIONS
-                unable_open_path = 1
-                OTHERS           = 2
-            ).
-            IF sy-subrc <> 0.
-              RAISE unable_open_path.
-            ENDIF.
-
-        ENDCASE.
-
-      WHEN OTHERS.
-        RAISE not_supported_file.
-
-    ENDCASE.
-
-
-
-    "Conversion in SAP Format for CSV
-    "-------------------------------------------------
-    me->conv_tab_to_int(
-      EXPORTING
-        x_header              = x_header
-        xt_str_data           = lt_str_data
-      IMPORTING
-        yt_sap_data           = yt_sap_data
-        yt_conversions_errors = yt_conversions_errors
-      EXCEPTIONS
-        conversion_error      = 1
-        OTHERS                = 2
-    ).
-    CASE sy-subrc.
-      WHEN 0.
-        "OK
-      WHEN 1.
-        RAISE conversion_error.
-    ENDCASE.
-
-
-    IF lines( yt_sap_data ) EQ 0.
-      RAISE empty_file.
-    ENDIF.
-
-  ENDMETHOD.
-
-
-  METHOD get_desktop_directory.
-
-    y_desktop_dir = ''.
-    CALL METHOD cl_gui_frontend_services=>get_desktop_directory
-      CHANGING
-        desktop_directory = y_desktop_dir
-      EXCEPTIONS
-        cntl_error        = 1.
-    IF sy-subrc <> 0.
-      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-                 WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-    ENDIF.
-
-    CALL METHOD cl_gui_cfw=>update_view.
-
-  ENDMETHOD.
-
-
-  METHOD get_fieldcat_from_data.
-
-    DATA: lref_sap_data  TYPE REF TO data,
-          lref_sap_table TYPE REF TO data.
-
-    DATA: lv_except_msg TYPE string.
-
-    FIELD-SYMBOLS: <sap_line>  TYPE any,
-                   <sap_table> TYPE STANDARD TABLE.
-
-    "-------------------------------------------------
-
-    FREE yo_structdescr.
-    CLEAR yt_fcat[].
-
-    IF xs_sap_line IS SUPPLIED.
-      CREATE DATA lref_sap_data LIKE xs_sap_line.
-      ASSIGN lref_sap_data->* TO <sap_line>.
-
-      CREATE DATA lref_sap_table LIKE TABLE OF xs_sap_line.
-      ASSIGN lref_sap_table->* TO <sap_table>.
-
-    ELSEIF xt_sap_table IS SUPPLIED.
-      CREATE DATA lref_sap_data LIKE LINE OF xt_sap_table.
-      ASSIGN lref_sap_data->* TO <sap_line>.
-
-      CREATE DATA lref_sap_table LIKE xt_sap_table.
-      ASSIGN lref_sap_table->* TO <sap_table>.
-
-    ELSE.
-      RAISE unable_define_structdescr.
-
-    ENDIF.
-
-    "-------------------------------------------------
-
-    yo_structdescr ?= cl_abap_typedescr=>describe_by_data( <sap_line> ).
-
-
-    TRY.
-        cl_salv_table=>factory( IMPORTING
-                                  r_salv_table   = DATA(lt_salv_table)
-                                CHANGING
-                                  t_table        = <sap_table>  ).
-        yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog( r_columns      = lt_salv_table->get_columns( ) " ALV Filter
-                                                                     r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
-                                                                     ) .
-
-      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        lv_except_msg = lx_ai_system_fault->get_text( ).
-        RAISE unable_define_structdescr.
-
-      CATCH cx_salv_msg  INTO DATA(lx_salv_msg).
-        lv_except_msg = lx_salv_msg->get_text( ).
-        RAISE unable_define_structdescr.
-
-    ENDTRY.
-
-  ENDMETHOD.
-
-
-  METHOD get_header_from_data.
-
-    y_str_header = ''.
-
-    LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-      CHECK <fcat>-fieldname NE c_mandt.
-
-      y_str_header = COND #(
-        WHEN y_str_header EQ '' THEN <fcat>-reptext
-        WHEN y_str_header NE '' THEN |{ y_str_header }{ me->gv_separator }{ <fcat>-reptext }|
-      ).
-
-    ENDLOOP.
-
-    RETURN.
-
-
-  ENDMETHOD.
-
-
-  METHOD remove_special_char.
-
-    CONSTANTS: c_pattern_lect_upper TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', "#EC NOTEXT
-               c_pattern_lect_lower TYPE string VALUE 'abcdefghijklmnopqrstuvwxyz', "#EC NOTEXT
-               c_pattern_digit      TYPE string VALUE '0123456789', "#EC NOTEXT
-               c_pattern_symb       TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£', "#EC NOTEXT
-               c_pattern_lect_acc   TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'. "#EC NOTEXT
-
-    DATA: lv_text    TYPE string,
-          lv_new_str TYPE string VALUE IS INITIAL.
-
-    "Old version - Check Char by Char
-    DATA(lv_length) = strlen( y_text ).
-    lv_text = y_text.
-
-    DO lv_length TIMES.
-      DATA(lv_index)     = sy-index - 1.
-      DATA(lv_curr_char) = lv_text+lv_index(1).
-
-      CHECK lv_curr_char CA c_pattern_lect_upper
-         OR lv_curr_char CA c_pattern_lect_lower
-         OR lv_curr_char CA c_pattern_digit
-         OR lv_curr_char CA c_pattern_symb
-         OR lv_curr_char CA c_pattern_lect_acc
-         OR lv_curr_char EQ space.
-
-      IF lv_new_str IS INITIAL.
-        lv_new_str = lv_curr_char.
-      ELSE.
-        lv_new_str = |{ lv_new_str }{ lv_curr_char }|.
-      ENDIF.
-
-    ENDDO.
-
-    y_text = lv_new_str.
-
-
-    "New Version - Check with regex - TODO Work in Progress Regex
-
-*    CONSTANTS: c_regex_lect_upper TYPE string VALUE 'A-Z',
-*               c_regex_lect_lower TYPE string VALUE 'a-z',
-*               c_regex_digit      TYPE string VALUE '0-9',
-*               c_regex_symb       TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£',
-*               c_regex_lect_acc   TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'.
-*
-*    lv_new_str = y_text.
-*
-*    lv_regex = ''.
-*    lv_regex = |{ lv_regex }[{ c_regex_lect_upper }][{ c_regex_lect_lower }]|.
-*    lv_regex = |{ lv_regex }[{ c_regex_digit }]|.
-*    lv_regex = |{ lv_regex }[{ c_regex_symb }][{ c_regex_lect_acc }]|.
-*
-*    lv_regex = |[^{ lv_regex }]|.
-*
-*    REPLACE ALL OCCURRENCES OF REGEX lv_regex IN lv_new_str WITH ''.
+    CLOSE DATASET me->gv_filename.
 
   ENDMETHOD.
 
 
   METHOD upload_csv_local.
 
-    CLEAR yt_str_data[].
+    CLEAR me->gt_str_data[].
     CALL METHOD cl_gui_frontend_services=>gui_upload
       EXPORTING
-        filename = x_filename
+        filename = me->gv_filename
         filetype = 'ASC'
       CHANGING
-        data_tab = yt_str_data[]
+        data_tab = me->gt_str_data[]
       EXCEPTIONS
         OTHERS   = 1.
     IF sy-subrc <> 0.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-unable_read_file.
+
     ENDIF.
 
   ENDMETHOD.
@@ -1948,53 +1952,61 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
   METHOD upload_csv_server.
 
-    DATA: ls_str_data TYPE string.
+    DATA:
+      ls_str_data TYPE string.
 
     "-------------------------------------------------
 
-    OPEN DATASET x_filename FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+    OPEN DATASET me->gv_filename FOR INPUT IN TEXT MODE ENCODING DEFAULT.
     IF sy-subrc <> 0.
-      CLOSE DATASET x_filename.
-      RAISE unable_open_path.
+
+      CLOSE DATASET me->gv_filename.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-unable_read_file.
+
     ENDIF.
 
     DO.
 
       CLEAR ls_str_data.
-      READ DATASET x_filename INTO ls_str_data.
+      READ DATASET me->gv_filename INTO ls_str_data.
       IF sy-subrc <> 0.
         EXIT.
       ENDIF.
 
-      APPEND ls_str_data TO yt_str_data.
+      APPEND ls_str_data TO me->gt_str_data.
 
     ENDDO.
 
-    CLOSE DATASET x_filename.
+    CLOSE DATASET me->gv_filename.
 
   ENDMETHOD.
 
 
   METHOD upload_excel_local.
 
-    DATA: lv_except_msg    TYPE string,
-          lt_bin_tab       TYPE solix_tab,
-          lcl_excel_ref    TYPE REF TO cl_fdt_xl_spreadsheet,
-          lcl_table_descr  TYPE REF TO cl_abap_tabledescr,
-          lcl_struct_descr TYPE REF TO cl_abap_structdescr.
+    DATA:
+      lv_except_msg    TYPE string,
+      lt_bin_tab       TYPE solix_tab,
+      lcl_excel_ref    TYPE REF TO cl_fdt_xl_spreadsheet,
+      lcl_table_descr  TYPE REF TO cl_abap_tabledescr,
+      lcl_struct_descr TYPE REF TO cl_abap_structdescr.
 
-    FIELD-SYMBOLS: <t_excel_data> TYPE STANDARD TABLE,
-                   <str_data>     TYPE string.
+    FIELD-SYMBOLS:
+      <t_excel_data> TYPE STANDARD TABLE,
+      <str_data>     TYPE string.
 
     "-------------------------------------------------
 
-    CLEAR: yt_str_data[].
+    CLEAR: me->gt_str_data[].
 
     "Read in binary the excel
     "-------------------------------------------------
     CALL METHOD cl_gui_frontend_services=>gui_upload
       EXPORTING
-        filename   = x_filename
+        filename   = me->gv_filename
         filetype   = 'BIN'
       IMPORTING
         filelength = DATA(lv_filelen)
@@ -2004,7 +2016,11 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       EXCEPTIONS
         OTHERS     = 1.
     IF sy-subrc <> 0.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-unable_read_file.
+
     ENDIF.
 
 
@@ -2023,56 +2039,60 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         failed       = 1
         OTHERS       = 2.
     IF sy-subrc <> 0.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_msg-internal_error.
+
     ENDIF.
 
 
     "Reading excel content using HEADERX
     "-------------------------------------------------
     TRY.
-        lcl_excel_ref = NEW cl_fdt_xl_spreadsheet( document_name = x_filename
-                                                   xdocument     = lv_headerx ) .
+        lcl_excel_ref = NEW cl_fdt_xl_spreadsheet(
+          document_name = me->gv_filename
+          xdocument     = lv_headerx
+        ).
+
+
       CATCH cx_fdt_excel_core INTO DATA(lx_excel_core).
         lv_except_msg = lx_excel_core->get_text( ).
     ENDTRY .
 
-    IF lcl_excel_ref IS BOUND.
-      lcl_excel_ref->if_fdt_doc_spreadsheet~get_worksheet_names(
-        IMPORTING
-          worksheet_names = DATA(lt_worksheets) ).
+    CHECK lcl_excel_ref IS BOUND.
+
+    lcl_excel_ref->if_fdt_doc_spreadsheet~get_worksheet_names(
+      IMPORTING
+        worksheet_names = DATA(lt_worksheets) ).
 
 
-      "Takes the first worksheet as default
-      "-------------------------------------------------
-      ASSIGN lt_worksheets[ 1 ] TO FIELD-SYMBOL(<woksheetname>).
-      DATA(lcl_data_ref) = lcl_excel_ref->if_fdt_doc_spreadsheet~get_itab_from_worksheet( <woksheetname> ).
-      ASSIGN lcl_data_ref->* TO <t_excel_data>.
-
-      IF <t_excel_data> IS INITIAL.
-        EXIT.
-      ENDIF.
+    "Takes the first worksheet as default
+    "-------------------------------------------------
+    ASSIGN lt_worksheets[ 1 ] TO FIELD-SYMBOL(<woksheetname>).
+    DATA(lcl_data_ref) = lcl_excel_ref->if_fdt_doc_spreadsheet~get_itab_from_worksheet( <woksheetname> ).
+    ASSIGN lcl_data_ref->* TO <t_excel_data>.
 
 
-      "Convert to CSV String format
-      "---------------------------------------------------------------
-      LOOP AT <t_excel_data> ASSIGNING FIELD-SYMBOL(<excel>).
+    "Convert to CSV String format
+    "---------------------------------------------------------------
+    LOOP AT <t_excel_data> ASSIGNING FIELD-SYMBOL(<excel>).
 
-        APPEND INITIAL LINE TO yt_str_data ASSIGNING <str_data>.
+      APPEND INITIAL LINE TO me->gt_str_data ASSIGNING <str_data>.
 
-        LOOP AT me->go_structdescr->components ASSIGNING FIELD-SYMBOL(<comp>).
+      LOOP AT me->go_structdescr->components ASSIGNING FIELD-SYMBOL(<comp>).
 
-          ASSIGN COMPONENT sy-tabix OF STRUCTURE <excel> TO FIELD-SYMBOL(<excel_col>).
-          CHECK sy-subrc EQ 0.
-          <str_data> = COND #(
-            WHEN <str_data> EQ '' THEN <excel_col>
-            WHEN <str_data> NE '' THEN |{ <str_data> }{ me->gv_separator }{ <excel_col> }|
-          ).
-
-        ENDLOOP.
+        ASSIGN COMPONENT sy-tabix OF STRUCTURE <excel> TO FIELD-SYMBOL(<excel_col>).
+        CHECK sy-subrc EQ 0.
+        <str_data> = COND #(
+          WHEN <str_data> EQ '' THEN <excel_col>
+          WHEN <str_data> NE '' THEN |{ <str_data> }{ me->gv_separator }{ <excel_col> }|
+        ).
 
       ENDLOOP.
 
-    ENDIF.
+    ENDLOOP.
 
   ENDMETHOD.
+
 ENDCLASS.
