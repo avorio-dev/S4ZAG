@@ -331,7 +331,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
         display_generic_alv( <lt_transp_data>[] ).
 
       CATCH cx_salv_msg INTO DATA(lx_salv_msg).
-        DATA(lv_except_msg) = lx_salv_msg->get_text( ).
+        DATA(lv_cx_msg) = lx_salv_msg->get_text( ).
         RAISE EXCEPTION lx_salv_msg.
 
     ENDTRY.
@@ -342,7 +342,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD get_fieldcat_from_data.
 
     DATA:
-      lv_except_msg  TYPE string,
+      lv_cx_msg  TYPE string,
       lref_sap_data  TYPE REF TO data,
       lref_sap_table TYPE REF TO data.
 
@@ -394,11 +394,11 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
 
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        lv_except_msg = lx_ai_system_fault->get_text( ).
+        lv_cx_msg = lx_ai_system_fault->get_text( ).
         RAISE unable_define_structdescr.
 
       CATCH cx_salv_msg  INTO DATA(lx_salv_msg).
-        lv_except_msg = lx_salv_msg->get_text( ).
+        lv_cx_msg = lx_salv_msg->get_text( ).
         RAISE unable_define_structdescr.
 
     ENDTRY.
