@@ -42,7 +42,12 @@ CLASS zag_cl_salv DEFINITION
         green TYPE lvc_col VALUE '5' ##NO_TEXT,
         red   TYPE lvc_col VALUE '6' ##NO_TEXT,
         oran  TYPE lvc_col VALUE '7' ##NO_TEXT,
-      END OF cc_cell_col .
+      END OF cc_cell_col,
+
+      BEGIN OF cc_handler,
+        on_link_click   TYPE string VALUE 'ON_LINK_CLICK'   ##NO_TEXT,
+        on_double_click TYPE string VALUE 'ON_DOUBLE_CLICK' ##NO_TEXT,
+      END OF cc_handler.
 
     CONSTANTS:
       c_col_fieldname TYPE lvc_fname VALUE 'T_COL' ##NO_TEXT.
@@ -628,7 +633,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD on_link_click.
 
     TRY.
-        CALL METHOD me->go_event_handler->('ON_LINK_CLICK')
+        CALL METHOD me->go_event_handler->(cc_handler-on_link_click)
           EXPORTING
             xv_row    = row
             xv_column = column.
@@ -642,7 +647,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD on_double_click.
 
     TRY.
-        CALL METHOD me->go_event_handler->('ON_DOUBLE_CLICK')
+        CALL METHOD me->go_event_handler->(cc_handler-on_double_click)
           EXPORTING
             xv_row    = row
             xv_column = column.
