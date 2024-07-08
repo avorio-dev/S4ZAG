@@ -65,7 +65,7 @@ CLASS zag_cl_csv_xlsx DEFINITION
     CLASS-METHODS:
       conv_data_to_ext
         IMPORTING
-                  !xv_data_int       TYPE dats
+                  !xv_data_int       TYPE string
                   !xv_separator      TYPE abap_char1 DEFAULT cc_separator-slash
         RETURNING VALUE(yv_data_ext) TYPE string,
 
@@ -92,7 +92,7 @@ CLASS zag_cl_csv_xlsx DEFINITION
 
       conv_time_to_ext
         IMPORTING
-                  !xv_time_int       TYPE uzeit
+                  !xv_time_int       TYPE string
         RETURNING VALUE(yv_time_ext) TYPE string,
 
       conv_time_to_int
@@ -163,19 +163,18 @@ CLASS zag_cl_csv_xlsx DEFINITION
         IMPORTING
           !xt_sap_table    TYPE table
           !xv_filename     TYPE string
-          !xv_header       TYPE abap_char1     DEFAULT abap_true
+          !xv_header       TYPE abap_char1    DEFAULT abap_true
           !xo_exit_handler TYPE REF TO object OPTIONAL
-          !xs_exit_config  TYPE ts_exit_config OPTIONAL
         EXCEPTIONS
           unable_define_structdescr,
 
       file_download
         IMPORTING
-          !xv_filename    TYPE string
-          !xt_sap_table   TYPE table
-          !xv_source      TYPE char1          DEFAULT cc_file_source-local
-          !xv_header      TYPE os_boolean     DEFAULT abap_true
-          !xs_exit_config TYPE ts_exit_config OPTIONAL
+          !xv_filename     TYPE string
+          !xt_sap_table    TYPE table
+          !xv_source       TYPE char1         DEFAULT cc_file_source-local
+          !xv_header       TYPE os_boolean    DEFAULT abap_true
+          !xo_exit_handler TYPE REF TO object OPTIONAL
         EXCEPTIONS
           not_supported_file
           unable_define_structdescr
@@ -184,13 +183,13 @@ CLASS zag_cl_csv_xlsx DEFINITION
       file_upload
         IMPORTING
           !xv_filename           TYPE string
-          !xt_sap_table          TYPE table
-          !xv_source             TYPE char1          DEFAULT cc_file_source-local
-          !xv_header             TYPE os_boolean     DEFAULT abap_true
-          !xs_exit_config        TYPE ts_exit_config OPTIONAL
+          !xv_source             TYPE char1         DEFAULT cc_file_source-local
+          !xv_header             TYPE os_boolean    DEFAULT abap_true
+          !xo_exit_handler       TYPE REF TO object OPTIONAL
         EXPORTING
-          !yt_sap_data           TYPE table
           !yt_conversions_errors TYPE tt_conversions_errors
+        CHANGING
+          !yt_sap_data           TYPE table
         EXCEPTIONS
           not_supported_file
           unable_define_structdescr
@@ -354,6 +353,8 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     yv_data_int = c_initial_data.
 
+    CHECK xv_data_ext IS NOT INITIAL.
+
     DATA(lv_data_ext) = xv_data_ext.
     DATA(lv_data_int) = c_initial_data.
     CONDENSE lv_data_ext NO-GAPS.
@@ -457,6 +458,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
 
     yv_numb_int       = 0.
+
+    CHECK xv_numb_ext IS NOT INITIAL.
+
     DATA(lv_numb_int) = xv_numb_ext.
 
     CONDENSE lv_numb_int NO-GAPS.
@@ -689,6 +693,8 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     yv_time_int = c_initial_time.
 
+    CHECK xv_time_ext IS NOT INITIAL.
+
     DATA(lv_time_ext) = xv_time_ext.
     CONDENSE lv_time_ext NO-GAPS.
 
@@ -805,7 +811,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       "---------------------------------------------------------------
       IF <component>-type_kind IN gr_typekind_date[].
 
-        lv_tmp_data = conv_data_to_ext( xv_data_int  = CONV sy-datum( lv_tmp_data )
+        lv_tmp_data = conv_data_to_ext( xv_data_int  = lv_tmp_data
                                         xv_separator = cc_separator-slash ).
 
       ENDIF.
@@ -815,7 +821,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
       "---------------------------------------------------------------
       IF <component>-type_kind IN gr_typekind_time[].
 
-        lv_tmp_data = conv_time_to_ext( CONV sy-uzeit( lv_tmp_data ) ).
+        lv_tmp_data = conv_time_to_ext( lv_tmp_data ).
 
       ENDIF.
 
@@ -1452,7 +1458,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         xt_sap_table              = xt_sap_table
         xv_filename               = xv_filename
         xv_header                 = xv_header
-        xs_exit_config            = xs_exit_config
+        xo_exit_handler           = xo_exit_handler
       EXCEPTIONS
         unable_define_structdescr = 1
         OTHERS                    = 2
@@ -1532,10 +1538,10 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     init_instance(
       EXPORTING
-        xt_sap_table              = xt_sap_table
+        xt_sap_table              = yt_sap_data
         xv_filename               = xv_filename
         xv_header                 = xv_header
-        xs_exit_config            = xs_exit_config
+        xo_exit_handler           = xo_exit_handler
       EXCEPTIONS
         unable_define_structdescr = 1
         OTHERS                    = 2
