@@ -152,8 +152,8 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD display_generic_alv.
 
     DATA:
-      lv_excep_msg TYPE string VALUE IS INITIAL,
-      lx_root      TYPE REF TO cx_root.
+      lv_cx_msg TYPE string VALUE IS INITIAL,
+      lx_root   TYPE REF TO cx_root.
 
     FIELD-SYMBOLS:
       <t_output> TYPE STANDARD TABLE.
@@ -342,7 +342,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD get_fieldcat_from_data.
 
     DATA:
-      lv_cx_msg  TYPE string,
+      lv_cx_msg      TYPE string,
       lref_sap_data  TYPE REF TO data,
       lref_sap_table TYPE REF TO data.
 
