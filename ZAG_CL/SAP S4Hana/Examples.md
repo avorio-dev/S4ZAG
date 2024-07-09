@@ -208,7 +208,8 @@ you will need to comment the following line code at the beginning of the class d
 ## 2. ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
  - FILE_DOWNLOAD
  - FILE_UPLOAD
- 
+
+---
 
 ```abap
   "Example 1 -> Download .CSV
