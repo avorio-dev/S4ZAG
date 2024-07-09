@@ -207,8 +207,12 @@ you will need to comment the following line code at the beginning of the class d
 
 ## 2. ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
  - FILE_DOWNLOAD
- - FILE_UPLOAD
+    - You will be able to download .csv or .xlsx both on your local system or application server
 
+ - FILE_UPLOAD
+    - You will be able to upload .csv from your local system or application server
+    - You will be able to upload .xlsx from your local system
+    - The system will provide you a table with conversion errors
 ---
 
 ```abap
