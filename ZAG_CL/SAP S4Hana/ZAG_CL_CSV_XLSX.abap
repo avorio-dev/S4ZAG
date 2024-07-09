@@ -140,9 +140,14 @@ CLASS zag_cl_csv_xlsx DEFINITION
           !yo_structdescr TYPE REF TO cl_abap_structdescr
           !yt_fcat        TYPE lvc_t_fcat
         RAISING
-          cx_ai_system_fault.
+          cx_ai_system_fault,
 
-    CLASS-METHODS:
+      get_header_from_data
+        IMPORTING
+                  !xt_fcat             TYPE lvc_t_fcat
+                  !xv_separator        TYPE abap_char1 DEFAULT cc_separator-semicolon
+        RETURNING VALUE(yv_str_header) TYPE string,
+
       f4_help_dir_input
         IMPORTING
           !xv_source     TYPE abap_char1 DEFAULT cc_file_source-local
@@ -196,9 +201,6 @@ CLASS zag_cl_csv_xlsx DEFINITION
           input_error
           unable_open_path
           empty_file,
-
-      get_header_from_data
-        RETURNING VALUE(yv_str_header) TYPE string,
 
       conv_tab_to_ext
         RETURNING VALUE(yt_str_data) TYPE string_table,
@@ -763,11 +765,11 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         TRY.
             CALL METHOD xo_exit_handler->(cc_user_exit-pre_sap_to_string)
               EXPORTING
-                xs_fcat       = <fcat>
-                xs_sap_data   = xs_sap_data
-                xv_value      = <value>
+                xs_fcat            = <fcat>
+                xs_sap_data        = xs_sap_data
+                xv_value_pre_conv  = <value>
               CHANGING
-                yv_conv_value = lv_tmp_data.
+                yv_value_post_conv = lv_tmp_data.
 
           CATCH cx_sy_dyn_call_illegal_method INTO DATA(lx_illegal_method).
             lv_cx_msg = lx_illegal_method->get_longtext( ).
@@ -858,11 +860,11 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         TRY.
             CALL METHOD xo_exit_handler->(cc_user_exit-post_sap_to_string)
               EXPORTING
-                xs_fcat       = <fcat>
-                xs_sap_data   = xs_sap_data
-                xv_value      = <value>
+                xs_fcat            = <fcat>
+                xs_sap_data        = xs_sap_data
+                xv_value_pre_conv  = <value>
               CHANGING
-                yv_conv_value = lv_tmp_data.
+                yv_value_post_conv = lv_tmp_data.
 
           CATCH cx_sy_dyn_call_illegal_method INTO lx_illegal_method.
             lv_cx_msg = lx_illegal_method->get_longtext( ).
@@ -921,8 +923,6 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         AND <component>-type_kind NOT IN gr_typekind_time[]
         AND <component>-type_kind NOT IN gr_typekind_charlike[].
 
-*        y_conversions_errors-error = 'Unmanaged data type'. "#EC NOTEXT
-*        RAISE conversion_error.
         CONTINUE.
 
       ENDIF.
@@ -942,9 +942,9 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         TRY.
             CALL METHOD xo_exit_handler->(cc_user_exit-pre_string_to_sap)
               EXPORTING
-                xs_fcat       = <fcat>
+                xs_fcat           = <fcat>
               CHANGING
-                yv_conv_value = lv_current_str.
+                yv_value_pre_conv = lv_current_str.
 
           CATCH cx_sy_dyn_call_illegal_method INTO DATA(lx_illegal_method).
             lv_cx_msg = lx_illegal_method->get_longtext( ).
@@ -1112,10 +1112,10 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         TRY.
             CALL METHOD xo_exit_handler->(cc_user_exit-post_string_to_sap)
               EXPORTING
-                xs_fcat         = <fcat>
-                xv_original_str = lv_orignal_str
+                xs_fcat            = <fcat>
+                xv_value_pre_conv  = lv_orignal_str
               CHANGING
-                yv_conv_value   = lv_current_str.
+                yv_value_post_conv = lv_current_str.
 
           CATCH cx_sy_dyn_call_illegal_method INTO lx_illegal_method.
             lv_cx_msg = lx_illegal_method->get_longtext( ).
@@ -1257,6 +1257,23 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
             errortext = cc_exception_msg-unable_def_struct.
 
     ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_header_from_data.
+
+    yv_str_header = ''.
+
+    LOOP AT xt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+      CHECK <fcat>-fieldname NE c_mandt.
+
+      yv_str_header = COND #(
+        WHEN yv_str_header EQ '' THEN <fcat>-reptext
+        WHEN yv_str_header NE '' THEN |{ yv_str_header }{ xv_separator }{ <fcat>-reptext }|
+      ).
+
+    ENDLOOP.
 
   ENDMETHOD.
 
@@ -1612,23 +1629,6 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_header_from_data.
-
-    yv_str_header = ''.
-
-    LOOP AT me->gt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-      CHECK <fcat>-fieldname NE c_mandt.
-
-      yv_str_header = COND #(
-        WHEN yv_str_header EQ '' THEN <fcat>-reptext
-        WHEN yv_str_header NE '' THEN |{ yv_str_header }{ me->gv_separator }{ <fcat>-reptext }|
-      ).
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-
   METHOD conv_tab_to_ext.
 
     FIELD-SYMBOLS:
@@ -1646,7 +1646,10 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     IF me->gv_header EQ abap_true.
 
       APPEND INITIAL LINE TO yt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
-      <str_data> = me->get_header_from_data( ).
+      <str_data> = me->get_header_from_data(
+        xt_fcat      = me->gt_fcat
+        xv_separator = me->gv_separator
+      ).
 
     ENDIF.
 
