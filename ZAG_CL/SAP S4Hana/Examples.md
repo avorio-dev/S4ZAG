@@ -67,7 +67,7 @@ you will need to comment the following line code at the beginning of the class d
 
   DATA: gt_alv       TYPE TABLE OF ty_alv.
 
-
+  SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
   LOOP AT lt_mara ASSIGNING FIELD-SYMBOL(<mara>).
 
     "Set Data
@@ -135,18 +135,50 @@ you will need to comment the following line code at the beginning of the class d
 
    ).
 
-  FREE lo_salv.
-  lo_salv = NEW zag_cl_salv( ).
+  DATA(lo_salv) = NEW zag_cl_salv( ).
   lo_salv->display_generic_alv(
     EXPORTING
       xv_popup            = abap_true
       xt_col_settings     = lt_col_settings
       xt_output           = gt_alv[]
   ).
+```
+---
 
-
+```abap
   "Example 3 -> Set Event Handler
   "-------------------------------------------------
+
+  "Class Event Hanlder
+  CLASS lcl_event_handler DEFINITION.
+  
+    PUBLIC SECTION.
+      METHODS:
+        on_link_click
+          IMPORTING
+            VALUE(xv_row)    TYPE salv_de_row
+            VALUE(xv_column) TYPE salv_de_column,
+  
+        on_double_click
+          IMPORTING
+            VALUE(xv_row)    TYPE salv_de_row
+            VALUE(xv_column) TYPE salv_de_column.
+  
+  ENDCLASS.
+  CLASS lcl_event_handler IMPLEMENTATION.
+    METHOD on_link_click.
+  
+      MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
+  
+    ENDMETHOD.
+    METHOD on_double_click.
+  
+      MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
+  
+    ENDMETHOD.
+  ENDCLASS.
+
+
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @lt_mara.
 
   lt_col_settings = VALUE #(
@@ -154,8 +186,7 @@ you will need to comment the following line code at the beginning of the class d
       hotspot   = 'X' )
   ).
 
-  FREE lo_salv.
-  lo_salv = NEW zag_cl_salv( ).
+  DATA(lo_salv) = NEW zag_cl_salv( ).
   lo_salv->display_generic_alv(
     EXPORTING
       xt_output        = lt_mara[]
@@ -164,37 +195,6 @@ you will need to comment the following line code at the beginning of the class d
       xv_popup         = abap_true
   ).
 ```
-```abap
-"Class Event Hanlder
-CLASS lcl_event_handler DEFINITION.
-
-  PUBLIC SECTION.
-    METHODS:
-      on_link_click
-        IMPORTING
-          VALUE(xv_row)    TYPE salv_de_row
-          VALUE(xv_column) TYPE salv_de_column,
-
-      on_double_click
-        IMPORTING
-          VALUE(xv_row)    TYPE salv_de_row
-          VALUE(xv_column) TYPE salv_de_column.
-
-ENDCLASS.
-CLASS lcl_event_handler IMPLEMENTATION.
-  METHOD on_link_click.
-
-    MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
-
-  ENDMETHOD.
-  METHOD on_double_click.
-
-    MESSAGE i646(db) WITH 'Row:' xv_row 'Column:' xv_column.
-
-  ENDMETHOD.
-ENDCLASS.
-```
-
 
 ## 2. ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
 
