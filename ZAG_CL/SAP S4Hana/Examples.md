@@ -56,19 +56,21 @@ you will need to comment the following line code at the beginning of the class d
   "          -> Set Labels / Hide fields
   "-------------------------------------------------
 
-  TYPES: BEGIN OF ty_alv,
-           icon  TYPE icon_d,
-           matnr TYPE mara-matnr,
-           ersda TYPE mara-ersda,
-           ernam TYPE mara-ernam,
-           laeda TYPE mara-laeda,
-           aenam TYPE mara-aenam,
-           zeinr TYPE mara-zeinr,
+  TYPES: 
+    BEGIN OF ty_alv,
+        icon  TYPE icon_d,
+        matnr TYPE mara-matnr,
+        ersda TYPE mara-ersda,
+        ernam TYPE mara-ernam,
+        laeda TYPE mara-laeda,
+        aenam TYPE mara-aenam,
+        zeinr TYPE mara-zeinr,
 
-           t_col TYPE lvc_t_scol, "Use this if you want colors in output
-         END OF ty_alv.
+        t_col TYPE lvc_t_scol, "Use this if you want colors in output
+    END OF ty_alv.
 
-  DATA: gt_alv       TYPE TABLE OF ty_alv.
+  DATA: 
+    gt_alv       TYPE TABLE OF ty_alv.
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
   LOOP AT lt_mara ASSIGNING FIELD-SYMBOL(<mara>).
@@ -206,9 +208,7 @@ you will need to comment the following line code at the beginning of the class d
 ## 2. ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
 
 ```abap
-**********************************************************************
-  "ZAG_CL_CSV_XLSX - EXAMPLE
-**********************************************************************
+
   SELECT * UP TO 10 ROWS FROM but000 INTO TABLE @DATA(lt_but000).
 
   DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx(
@@ -294,18 +294,18 @@ you will need to comment the following line code at the beginning of the class d
 ```
 
 ## 3. ZAG_CL_SEND_MAIL <a name="zag_cl_send_mail"></a>
-  - SEND_MAIL
-    - In addition to the classic parameters such as Recipient / Email Subject / Email Body,
-        it allows attaching files like CSV, XLSX, and PDF.
-    
-    - Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
-        It will be enough to provide the name of the Standard Text and, if necessary,
-        you will be able to provide a variable name in the Standard Text
-        (for example &LIFNR&) which will be replaced automatically by corresponding value provided.
-        
-    >NB: If you not provide any mail body, the class will automatically put the subject mail as body because it is a mandatory parameter.
+- SEND_MAIL
+- In addition to the classic parameters such as Recipient / Email Subject / Email Body,
+    it allows attaching files like CSV, XLSX, and PDF.
 
-**********************************************************************
+- Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
+    It will be enough to provide the name of the Standard Text and, if necessary,
+    you will be able to provide a variable name in the Standard Text
+    (for example &LIFNR&) which will be replaced automatically by corresponding value provided.
+    
+>NB: If you not provide any mail body, the class will automatically put the subject mail as body because it is a mandatory parameter.
+
+---
 
 ```abap
   "Example 1 -> Simple mail
