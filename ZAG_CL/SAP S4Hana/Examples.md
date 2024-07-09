@@ -195,11 +195,12 @@ you will need to comment the following line code at the beginning of the class d
   ).
 
   DATA(lo_salv) = NEW zag_cl_salv( ).
+  DATA(lo_event_handler) = NEW lcl_event_handler( ). 
   lo_salv->display_generic_alv(
     EXPORTING
       xt_output        = lt_mara[]
       xt_col_settings  = lt_col_settings[]
-      xo_event_handler = NEW lcl_event_handler( )
+      xo_event_handler = lo_event_handler 
       xv_popup         = abap_true
   ).
 ```
