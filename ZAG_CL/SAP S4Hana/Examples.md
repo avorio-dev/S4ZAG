@@ -22,26 +22,22 @@ you will need to comment the following line code at the beginning of the class d
 
 ## 1. ZAG_CL_SALV <a name="zag_cl_salv"></a>
 
+ - DISPLAY_GENERIC_ALV
+     It allows to Display whatever table you want, providing only the table itself
+     You can also pass additional parameters like
+       - Display in popup
+       - Column Settings in which you can give provide your labels or hide fields
+
+ - GET_FIELDCAT
+     It allows to extract Fieldcat from both table or simple row which you provide
+
+ - SET_COLOR_CELL / SET_COLOR_ROW
+     It allows to set Color tab which will be printed
+     The only constraint is that you will need to have a component in your types
+     named T_COL TYPE lvc_t_scol
+---
+
 ```abap
-**********************************************************************
-  "ZAG_CL_SALV - EXAMPLE
-**********************************************************************
-  " - DISPLAY_GENERIC_ALV
-  "     It allows to Display whatever table you want, providing only the table itself
-  "     You can also pass additional parameters like
-  "       - Display in popup
-  "       - Column Settings in which you can give provide your labels or hide fields
-  "
-  " - GET_FIELDCAT
-  "     It allows to extract Fieldcat from both table or simple row which you provide
-  "
-  " - SET_COLOR_CELL / SET_COLOR_ROW
-  "     It allows to set Color tab which will be printed
-  "     The only constraint is that you will need to have a component in your types
-  "     named T_COL TYPE lvc_t_scol
-
-**********************************************************************
-
   "Example 1 -> Display a generic ALV
   "-------------------------------------------------
 
@@ -49,8 +45,10 @@ you will need to comment the following line code at the beginning of the class d
 
   DATA(lo_salv) = NEW zag_cl_salv( ).
   lo_salv->display_generic_alv( lt_mara ).
+```
+---
 
-
+```abap
   "Example 2 -> Set colors for cells and / or rows
   "          -> Set Labels / Hide fields
   "-------------------------------------------------
