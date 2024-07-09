@@ -538,10 +538,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
     "If T_COL column exists in your table, it will be set as color column reference
     "---------------------------------------------------------------
     TRY.
-        lr_columns->get_column( c_col_fieldname  ).
         lr_columns->set_color_column( c_col_fieldname ).
-
-      CATCH cx_salv_not_found  INTO DATA(lx_salv_not_found).
       CATCH cx_salv_data_error INTO DATA(lx_salv_data_err).
     ENDTRY.
 
