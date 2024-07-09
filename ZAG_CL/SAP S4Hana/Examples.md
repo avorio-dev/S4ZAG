@@ -208,97 +208,34 @@ you will need to comment the following line code at the beginning of the class d
 ## 2. ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
 
 ```abap
-
-  SELECT * UP TO 10 ROWS FROM but000 INTO TABLE @DATA(lt_but000).
-
-  DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx(
-    xt_sap_table = lt_but000
-  ).
-
-  "DOWNLOAD
+  "Example 1 -> Download .CSV
   "-------------------------------------------------
 
-  "Download Example - LOCAL
-  lo_csv_xlsx->file_download(
-    EXPORTING
-      x_filename         = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/my_zag_file.csv|
-      x_source           = zag_cl_csv_xlsx=>cc_file_source-local
-    EXCEPTIONS
-      not_supported_file = 1
-      unable_open_path   = 2
-      OTHERS             = 3
-  ).
-  IF sy-subrc <> 0.
-  ENDIF.
+```
 
+---
 
-  "Download Example - SERVER
-  lo_csv_xlsx->file_download(
-    EXPORTING
-      x_filename         = '/tmp/my_zag_file.csv'
-      x_source           = zag_cl_csv_xlsx=>cc_file_source-server
-    EXCEPTIONS
-      not_supported_file = 1
-      unable_open_path   = 2
-      OTHERS             = 3
-  ).
-  IF sy-subrc <> 0.
-  ENDIF.
-
-
-
-  "UPLOAD
+```abap
+  "Example 2 -> Upload .CSV
   "-------------------------------------------------
 
-  DATA lt_conversion_errors TYPE zag_cl_csv_xlsx=>tt_conversions_errors.
+```
 
-  "Upload Example - LOCAL
-  lo_csv_xlsx->file_upload(
-    EXPORTING
-      x_filename            = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/my_zag_file.csv|
-      x_header              = 'X'
-      x_source              = zag_cl_csv_xlsx=>cc_file_source-local
-    IMPORTING
-      yt_sap_data           = lt_but000
-      yt_conversions_errors = lt_conversion_errors
-    EXCEPTIONS
-      input_error           = 1
-      not_supported_file    = 2
-      unable_open_path      = 3
-      empty_file            = 4
-      conversion_error      = 5
-      OTHERS                = 6
-  ).
-  IF sy-subrc <> 0.
-  ENDIF.
+---
 
-  "Upload Example - SERVER
-  lo_csv_xlsx->file_upload(
-    EXPORTING
-      x_filename            = 'tmp/my_zag_file.csv'
-      x_header              = 'X'
-      x_source              = zag_cl_csv_xlsx=>cc_file_source-server
-    IMPORTING
-      yt_sap_data           = lt_but000
-      yt_conversions_errors = lt_conversion_errors
-    EXCEPTIONS
-      input_error           = 1
-      not_supported_file    = 2
-      unable_open_path      = 3
-      empty_file            = 4
-      conversion_error      = 5
-      OTHERS                = 6
-  ).
-  IF sy-subrc <> 0.
-  ENDIF.
+```abap
+  "Example 2 -> Download / Upload .CSV 
+                with User exit conversion methods 
+  "-------------------------------------------------
+
 ```
 
 ## 3. ZAG_CL_SEND_MAIL <a name="zag_cl_send_mail"></a>
 - SEND_MAIL
-  - In addition to the classic parameters such as Recipient / Email Subject / Email Body,
+    - In addition to the classic parameters such as Recipient / Email Subject / Email Body,
     it allows attaching files like CSV, XLSX, and PDF.
 
-  - Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
+    - Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
     It will be enough to provide the name of the Standard Text and, if necessary,
     you will be able to provide a variable name in the Standard Text
     (for example &LIFNR&) which will be replaced automatically by corresponding value provided.
