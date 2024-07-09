@@ -20,24 +20,22 @@ you will need to comment the following line code at the beginning of the class d
 ---
 
 ## 1. ZAG_CL_SALV <a name="zag_cl_salv"></a>
-
  - DISPLAY_GENERIC_ALV
-     It allows to Display whatever table you want, providing only the table itself
-     You can also pass additional parameters like
+    - It allows to Display whatever table you want, providing only the table itself.
+    - You can also pass additional parameters like
        - Display in popup
        - Column Settings in which you can give provide your labels or hide fields
 
- - GET_FIELDCAT
-     It allows to extract Fieldcat from both table or simple row which you provide
+ - GET_FIELDCAT_FROM_DATA
+    - It allows to extract Fieldcat/Struct Descr from both table or simple row which you provide
 
  - SET_COLOR_CELL / SET_COLOR_ROW
-     It allows to set Color tab which will be printed
-     The only constraint is that you will need to have a component in your types
-     named T_COL TYPE lvc_t_scol
+    - It allows to set Colors which will be printed.
+    - The only constraint is that you will need to have a component in your types named T_COL TYPE lvc_t_scol
    
- - SET HANDLER EVENT ( Double Click, Hotspot Click ) 
-     It allows to set an implementation for event Double Click / Hotspot
-     declaring your class with specific method name
+ - Set Handler For Event ( Double Click, Hotspot Click )    
+    - It allows to implement custom code for event Double Click / Hotspot
+     declaring your class with specific method name.
    
 ---
 
@@ -155,7 +153,7 @@ you will need to comment the following line code at the beginning of the class d
   "Example 3 -> Set Event Handler
   "-------------------------------------------------
 
-  "Class Event Hanlder
+  "Class Event Hanlder which you will implement
   CLASS lcl_event_handler DEFINITION.
   
     PUBLIC SECTION.
@@ -193,8 +191,9 @@ you will need to comment the following line code at the beginning of the class d
       hotspot   = 'X' )
   ).
 
-  DATA(lo_salv) = NEW zag_cl_salv( ).
+  DATA(lo_salv)          = NEW zag_cl_salv( ).
   DATA(lo_event_handler) = NEW lcl_event_handler( ). 
+
   lo_salv->display_generic_alv(
     EXPORTING
       xt_output        = lt_mara[]
@@ -295,35 +294,26 @@ you will need to comment the following line code at the beginning of the class d
 ```
 
 ## 3. ZAG_CL_SEND_MAIL <a name="zag_cl_send_mail"></a>
+  - SEND_MAIL
+    - In addition to the classic parameters such as Recipient / Email Subject / Email Body,
+        it allows attaching files like CSV, XLSX, and PDF.
+    
+    - Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
+        It will be enough to provide the name of the Standard Text and, if necessary,
+        you will be able to provide a variable name in the Standard Text
+        (for example &LIFNR&) which will be replaced automatically by corresponding value provided.
+        
+    >NB: If you not provide any mail body, the class will automatically put the subject mail as body because it is a mandatory parameter.
 
+**********************************************************************
 
 ```abap
-**********************************************************************
-  "ZAG_CL_SEND_MAIL_BCS - EXAMPLE
-**********************************************************************
-  " WHY USE IT?
-
-  " - SEND_MAIL_BCS
-  "     In addition to the classic parameters such as Recipient / Email Subject / Email Body,
-  "     it allows attaching files like CSV, XLSX, and PDF.
-  "     Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
-  "     It will be sufficient to provide the name of the Standard Text and, if necessary,
-  "     you will be able to specify a variable name in the Standard Text
-  "     (for example &LIFNR&) and the corresponding value. The class will automatically
-  "     perform the substitutions.
-
-  "    NB: If you not provide any mail body, the class will automatically put the subject mail as body
-  "        because it is a mandatory parameter.
-
-**********************************************************************
-
-  DATA: lt_recipients TYPE zag_cl_send_mail=>ts_mail_params-recipients.
-
-  SELECT * FROM sflight UP TO 10 ROWS INTO TABLE @DATA(lt_data).
-
-
   "Example 1 -> Simple mail
   "-------------------------------------------------
+
+  SELECT * FROM bseg UP TO 10 ROWS INTO TABLE @DATA(lt_data).
+  
+  DATA: lt_recipients TYPE zag_cl_send_mail=>ts_mail_params-recipients.
 
   lt_recipients = VALUE #(
     (
@@ -362,16 +352,21 @@ you will need to comment the following line code at the beginning of the class d
     OR lv_mail_sent NE abap_true.
     WRITE lv_error_msg.
   ENDIF.
+```
 
+---
 
-
+```abap
   "Example 2 -> Mail with attach. and Standard Text as Mail Body
   "-------------------------------------------------
 
   DATA:
+    lt_recipients TYPE zag_cl_send_mail=>ts_mail_params-recipients,
     ls_mail_body_stdtxt TYPE zag_cl_send_mail=>ts_mail_params-body_stdtxt,
     lt_attch            TYPE zag_cl_send_mail=>ts_mail_params-attachments.
 
+
+  SELECT * FROM bseg UP TO 10 ROWS INTO TABLE @DATA(lt_data).
 
   lt_recipients = VALUE #(
     (
@@ -388,31 +383,31 @@ you will need to comment the following line code at the beginning of the class d
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
 
-  DATA(lo_csv_xlsx) = NEW zag_cl_csv_xlsx( xt_sap_table = lt_data ).
-  lo_csv_xlsx->get_fieldcat_from_data(
-    EXPORTING
-      xt_sap_table              = lt_data
-    IMPORTING
-      yt_fcat                   = DATA(lt_fcat)
-      yo_structdescr            = DATA(lo_structdescr)
-    EXCEPTIONS
-      unable_define_structdescr = 1
-      OTHERS                    = 2
-  ).
+  TRY.
+    zag_cl_csv_xlsx=>get_fieldcat_from_data(
+        EXPORTING
+        xt_sap_table              = lt_data
+        IMPORTING
+        yt_fcat                   = DATA(lt_fcat)
+        yo_structdescr            = DATA(lo_structdescr)
+    ).
+
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+  ENDTRY.
 
 
   APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
-  <csv_line> = lo_csv_xlsx->get_header_from_data( ).
+  <csv_line> = lo_csv_xlsx->get_header_from_data( xt_fcat = lt_fcat ).
 
   LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<sflight>).
 
     APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING <csv_line>.
 
-    lo_csv_xlsx->conv_sap_to_string(
+    zag_cl_csv_xlsx=>conv_sap_to_string(
       EXPORTING
+        xs_sap_data    = <sflight>
         xt_fcat        = lt_fcat
         xo_structdescr = lo_structdescr
-        x_sap_data     = <sflight>
       IMPORTING
         y_str_data     = <csv_line>
     ).
