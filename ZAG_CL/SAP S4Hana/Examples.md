@@ -35,6 +35,11 @@ you will need to comment the following line code at the beginning of the class d
      It allows to set Color tab which will be printed
      The only constraint is that you will need to have a component in your types
      named T_COL TYPE lvc_t_scol
+   
+ - SET HANDLER EVENT ( Double Click, Hotspot Click ) 
+     It allows to set an implementation for event Double Click / Hotspot
+     declaring your class with specific method name
+   
 ---
 
 ```abap
@@ -46,6 +51,7 @@ you will need to comment the following line code at the beginning of the class d
   DATA(lo_salv) = NEW zag_cl_salv( ).
   lo_salv->display_generic_alv( lt_mara ).
 ```
+
 ---
 
 ```abap
@@ -143,6 +149,7 @@ you will need to comment the following line code at the beginning of the class d
       xt_output           = gt_alv[]
   ).
 ```
+
 ---
 
 ```abap
@@ -178,6 +185,7 @@ you will need to comment the following line code at the beginning of the class d
     ENDMETHOD.
   ENDCLASS.
 
+  START-OF-SELECTION.
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @lt_mara.
 
