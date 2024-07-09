@@ -289,12 +289,12 @@ CLASS zag_cl_csv_xlsx DEFINITION
 
     METHODS:
       download_csv_local
-        EXCEPTIONS
-          unable_open_path,
+        RAISING
+          cx_ai_system_fault,
 
       download_csv_server
-        EXCEPTIONS
-          unable_open_path,
+        RAISING
+          cx_ai_system_fault,
 
       download_excel_local
         RAISING
@@ -1866,7 +1866,11 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         error_no_gui            = 23
         OTHERS                  = 24.
     IF sy-subrc <> 0.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_exception_msg-unable_read_file.
+
     ENDIF.
 
   ENDMETHOD.
@@ -1876,8 +1880,13 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     OPEN DATASET me->gv_filename FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
     IF sy-subrc <> 0.
+
       CLOSE DATASET me->gv_filename.
-      RAISE unable_open_path.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = cc_exception_msg-unable_read_file.
+
     ENDIF.
 
     LOOP AT me->gt_str_data ASSIGNING FIELD-SYMBOL(<str_data>).
@@ -2009,6 +2018,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     IF sy-subrc <> 0.
 
       CLOSE DATASET me->gv_filename.
+
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = cc_exception_msg-unable_read_file.
