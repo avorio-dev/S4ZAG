@@ -295,10 +295,10 @@ you will need to comment the following line code at the beginning of the class d
 
 ## 3. ZAG_CL_SEND_MAIL <a name="zag_cl_send_mail"></a>
 - SEND_MAIL
-- In addition to the classic parameters such as Recipient / Email Subject / Email Body,
+  - In addition to the classic parameters such as Recipient / Email Subject / Email Body,
     it allows attaching files like CSV, XLSX, and PDF.
 
-- Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
+  - Furthermore, you will be able to use a Standard Text created by Trx SO10 as the Email Body.
     It will be enough to provide the name of the Standard Text and, if necessary,
     you will be able to provide a variable name in the Standard Text
     (for example &LIFNR&) which will be replaced automatically by corresponding value provided.
