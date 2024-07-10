@@ -566,14 +566,16 @@ you will need to comment the following line code at the beginning of the class d
 ---
 
 ```abap
- "Example 1 -> Display ALV with settings and handler double click
- "-------------------------------------------------
-  DATA: lv_tabname      TYPE string,
-        lt_selopt       TYPE zag_cl_alv_ida=>tt_selopt,
-        lt_field_list   TYPE zag_cl_alv_ida=>tt_field_list,
-        lt_field_label  TYPE zag_cl_alv_ida=>tt_field_label,
-        lt_sort_group   TYPE zag_cl_alv_ida=>tt_sort_group,
-        ls_double_click TYPE zag_cl_alv_ida=>ts_double_click.
+"Example 2 -> Display ALV with custom settings
+  "-------------------------------------------------
+
+  DATA:
+    lo_ida         TYPE REF TO zag_cl_salv_ida,
+    lv_tabname     TYPE string,
+    lt_selopt      TYPE zag_cl_salv_ida=>tt_selopt,
+    lt_field_list  TYPE zag_cl_salv_ida=>tt_field_list,
+    lt_field_label TYPE zag_cl_salv_ida=>tt_field_label,
+    lt_sort_group  TYPE zag_cl_salv_ida=>tt_sort_group.
 
 
   "DDIC Tabname or CDS Name
@@ -604,7 +606,7 @@ you will need to comment the following line code at the beginning of the class d
 
   "List of fields to extract
   "-------------------------------------------------
-  lt_field_list = VALUE zag_cl_alv_ida=>tt_field_list(
+  lt_field_list = VALUE zag_cl_salv_ida=>tt_field_list(
     ( CONV string('EBELN') )
     ( CONV string('EBELP') )
     ( CONV string('AEDAT') )
@@ -644,16 +646,8 @@ you will need to comment the following line code at the beginning of the class d
   ).
 
 
-  "Double Click Handler
+  "ALV IDA
   "-------------------------------------------------
-  ls_double_click-repid   = sy-repid.
-  ls_double_click-perform = 'DOUBLE_CLICK'.
-
-
-  "ALV
-  "-------------------------------------------------
-  DATA: lo_ida TYPE REF TO zag_cl_alv_ida.
-
   CREATE OBJECT lo_ida
     EXPORTING
       xv_ddic_tabname     = CONV #( lv_tabname )
@@ -661,41 +655,60 @@ you will need to comment the following line code at the beginning of the class d
       xt_field_list       = lt_field_list[]
       xt_field_label      = lt_field_label[]
       xt_sort_group       = lt_sort_group[]
-      xs_double_click     = ls_double_click
+      xv_max_rows         = 100
     EXCEPTIONS
       table_not_supported = 1
       OTHERS              = 2.
-  IF sy-subrc <> 0.
-  ENDIF.
 
   lo_ida->display( ).
+```
 
-*&---------------------------------------------------------------------*
-*& Form DOUBLE_CLICK
-*&---------------------------------------------------------------------*
-FORM double_click USING xs_selected_row TYPE REF TO data.
+---
 
-  DATA: ls_ekpo        TYPE ekpo.
+```abap
+  "Example 3 -> Display ALV event handler
+  "-------------------------------------------------
 
-  ASSIGN xs_selected_row->* TO FIELD-SYMBOL(<ekpo>).
-  MOVE-CORRESPONDING <ekpo> TO ls_ekpo.
-
-  DATA(lo_ida_item) = NEW zag_cl_alv_ida(
-    xv_ddic_tabname = 'EKPO'
-    xt_selopt       = VALUE #(
-     ( fieldname = 'EBELN'
-       selopt_t  = VALUE #(
-        ( sign = 'I' option = 'EQ'
-          low  = ls_ekpo-ebeln
-          high = ls_ekpo-ebeln )
-       )
-     ) )
-  ).
-  IF lo_ida_item IS BOUND.
-    lo_ida_item->display( ).
-  ENDIF.
-
-ENDFORM.
+  CLASS lcl_event_hanlder DEFINITION.
+    PUBLIC SECTION.
+      METHODS on_double_click
+        IMPORTING
+          xv_tabname      TYPE dbtabl
+          xs_selected_row TYPE any.
+  
+  ENDCLASS.
+  
+  CLASS lcl_event_hanlder IMPLEMENTATION.
+  
+    METHOD on_double_click.
+  
+  
+  
+    ENDMETHOD.
+  ENDCLASS.
+  
+  
+  START-OF-SELECTION.
+  
+    DATA:
+      lo_ida           TYPE REF TO zag_cl_salv_ida,
+      lv_tabname       TYPE string,
+      lo_event_hanlder TYPE REF TO lcl_event_hanlder.
+  
+  
+    lv_tabname = 'EKPO'.
+  
+    lo_event_hanlder = NEW lcl_event_hanlder( ).
+    CREATE OBJECT lo_ida
+      EXPORTING
+        xv_ddic_tabname     = CONV #( lv_tabname )
+        xo_event_handler    = lo_event_hanlder
+        xv_max_rows         = 100
+      EXCEPTIONS
+        table_not_supported = 1
+        OTHERS              = 2.
+  
+    lo_ida->display( ).
 ```
 
 
