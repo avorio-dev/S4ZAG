@@ -561,8 +561,11 @@ you will need to comment the following line code at the beginning of the class d
       OTHERS              = 2.
 
   lo_ida->display( ).
+```
 
+---
 
+```abap
  "Example 1 -> Display ALV with settings and handler double click
  "-------------------------------------------------
   DATA: lv_tabname      TYPE string,
