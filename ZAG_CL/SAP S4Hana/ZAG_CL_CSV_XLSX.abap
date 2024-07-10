@@ -331,14 +331,17 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 *    To
 *        -> 31/12/2024
 
-    DATA(lv_data_int) = xv_data_int.
+    DATA(lv_data_ext) = xv_data_int.
 
-    yv_data_ext = COND #(
-      WHEN lv_data_int EQ c_initial_data THEN ''
-      ELSE |{ lv_data_int+6(2) }{ xv_separator }{ lv_data_int+4(2) }{ xv_separator }{ lv_data_int(4) }|
+    lv_data_ext = COND #(
+      WHEN lv_data_ext NE c_initial_data
+        THEN |{ lv_data_ext+6(2) }{ xv_separator }{ lv_data_ext+4(2) }{ xv_separator }{ lv_data_ext(4) }|
+
+      ELSE ''
     ).
 
     CONDENSE yv_data_ext NO-GAPS.
+    yv_data_ext = lv_data_ext.
 
   ENDMETHOD.
 
@@ -357,15 +360,16 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     CHECK xv_data_ext IS NOT INITIAL.
 
-    DATA(lv_data_ext) = xv_data_ext.
-    DATA(lv_data_int) = c_initial_data.
-    CONDENSE lv_data_ext NO-GAPS.
+    DATA(lv_data_int) = xv_data_ext.
+    CONDENSE lv_data_int NO-GAPS.
 
 
-    CASE strlen( lv_data_ext ).
+    CASE strlen( lv_data_int ).
       WHEN 8.
         "Format like 20231225
-        lv_data_int = lv_data_ext.
+
+        "Already in SAP Format
+        "Nothing to do
 
       WHEN 10.
 
@@ -373,13 +377,13 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
         "25-12-2023
         "2023-12-25
 
-        IF lv_data_ext+2(1) CA cc_symbols-digit.
+        IF lv_data_int+2(1) CA cc_symbols-digit.
           "Format like 2023-12-25
-          lv_data_int = |{ lv_data_ext(4) }{ lv_data_ext+5(2) }{ lv_data_ext+8(2) }|.
+          lv_data_int = |{ lv_data_int(4) }{ lv_data_int+5(2) }{ lv_data_int+8(2) }|.
 
-        ELSEIF lv_data_ext+2(1) NA cc_symbols-digit.
+        ELSEIF lv_data_int+2(1) NA cc_symbols-digit.
           "Format like 25-12-2023
-          lv_data_int = |{ lv_data_ext+6(4) }{ lv_data_ext+3(2) }{ lv_data_ext(2) }|.
+          lv_data_int = |{ lv_data_int+6(4) }{ lv_data_int+3(2) }{ lv_data_int(2) }|.
 
         ELSE.
           RAISE format_error.
@@ -394,7 +398,7 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
       EXPORTING
-        date                      = lv_data_int
+        date                      = CONV sy-datum( lv_data_int )
       EXCEPTIONS
         plausibility_check_failed = 1
         OTHERS                    = 2.
@@ -417,22 +421,21 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 *        -> 1000,25
 *        -> -1000,25
 
-    yv_numb_ext        = 0.
-    DATA(lv_numb_int) = xv_numb_int.
+    yv_numb_ext       = 0.
+    DATA(lv_numb_ext) = xv_numb_int.
 
 
-    REPLACE '.' IN lv_numb_int WITH ','.
+    REPLACE '.' IN lv_numb_ext WITH ','.
 
-    FIND '-' IN lv_numb_int.
+    FIND '-' IN lv_numb_ext.
     IF sy-subrc EQ 0.
-      REPLACE '-' IN lv_numb_int WITH ''.
-      lv_numb_int = |-{ lv_numb_int }|.
+      REPLACE '-' IN lv_numb_ext WITH ''.
+      lv_numb_ext = |-{ lv_numb_ext }|.
     ENDIF.
 
-    CONDENSE lv_numb_int NO-GAPS.
 
-
-    yv_numb_ext = lv_numb_int.
+    CONDENSE lv_numb_ext NO-GAPS.
+    yv_numb_ext = lv_numb_ext.
 
   ENDMETHOD.
 
@@ -656,7 +659,6 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
     "-------------------------------------------------
 
     CONDENSE lv_numb_int NO-GAPS.
-
     yv_numb_int = lv_numb_int.
 
   ENDMETHOD.
@@ -670,12 +672,14 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 *    To
 *        -> 23:59:59
 
-    yv_time_ext        = ''.
+    yv_time_ext       = ''.
     DATA(lv_time_int) = xv_time_int.
 
     lv_time_int = COND #(
-      WHEN xv_time_int EQ c_initial_time THEN ''
-      ELSE |{ lv_time_int(2) }:{ lv_time_int+2(2) }:{ lv_time_int+4(2) }|
+      WHEN lv_time_int NE c_initial_time
+        THEN |{ lv_time_int(2) }:{ lv_time_int+2(2) }:{ lv_time_int+4(2) }|
+
+      ELSE ''
     ).
 
     CONDENSE lv_time_int NO-GAPS.
@@ -697,31 +701,33 @@ CLASS zag_cl_csv_xlsx IMPLEMENTATION.
 
     CHECK xv_time_ext IS NOT INITIAL.
 
-    DATA(lv_time_ext) = xv_time_ext.
-    CONDENSE lv_time_ext NO-GAPS.
+    DATA(lv_time_int) = xv_time_ext.
+    CONDENSE lv_time_int NO-GAPS.
 
-    CHECK lv_time_ext IS NOT INITIAL.
+    CHECK lv_time_int IS NOT INITIAL.
 
 
-    IF strlen( lv_time_ext ) NE 8
-      AND strlen( lv_time_ext ) NE 6.
+    IF strlen( lv_time_int ) NE 8
+      AND strlen( lv_time_int ) NE 6.
       RAISE format_error.
     ENDIF.
 
-    yv_time_int = COND #(
-        WHEN strlen( lv_time_ext ) EQ 6 THEN lv_time_ext
-        WHEN strlen( lv_time_ext ) EQ 8 THEN |{ lv_time_ext(2) }{ lv_time_ext+3(2) }{ lv_time_ext+6(2) }|
+    lv_time_int = COND #(
+        WHEN strlen( lv_time_int ) EQ 6 THEN lv_time_int
+        WHEN strlen( lv_time_int ) EQ 8 THEN |{ lv_time_int(2) }{ lv_time_int+3(2) }{ lv_time_int+6(2) }|
    ).
 
     CALL FUNCTION 'TIME_CHECK_PLAUSIBILITY'
       EXPORTING
-        time                      = yv_time_int
+        time                      = CONV sy-uzeit( lv_time_int )
       EXCEPTIONS
         plausibility_check_failed = 1
         OTHERS                    = 2.
     IF sy-subrc <> 0.
       RAISE plausibility_error.
     ENDIF.
+
+    yv_time_int = lv_time_int.
 
   ENDMETHOD.
 
