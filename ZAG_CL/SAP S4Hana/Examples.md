@@ -539,27 +539,27 @@ you will need to comment the following line code at the beginning of the class d
 
 ## 4. ZAG_CL_ALV_IDA <a name="zag_cl_salv_ida"></a>
 
+- Display
+  - It allows to execute a query directly without select statement into provided table
+  - You can specify the fields list to extract, labels and set event handler providing your instance class with specific method ( ON_DOUBLE_CLICK )  
 ```abap
-**********************************************************************
-  "ZAG_CL_ALV_IDA - EXAMPLE
-**********************************************************************
-  " - DISPLAY
+  "Example 1 -> Display a generic ALV
+  "-------------------------------------------------
 
- "Example 1 -> Display a generic ALV
- "-------------------------------------------------
-  DATA: lo_ida TYPE REF TO zag_cl_alv_ida.
-  
+  DATA:
+    lo_ida     TYPE REF TO zag_cl_salv_ida,
+    lv_tabname TYPE string.
+
   lv_tabname = 'EKPO'.
-  
+
   CREATE OBJECT lo_ida
     EXPORTING
       xv_ddic_tabname     = CONV #( lv_tabname )
+      xv_max_rows         = 100
     EXCEPTIONS
       table_not_supported = 1
       OTHERS              = 2.
-  IF sy-subrc <> 0.
-  ENDIF.
-  
+
   lo_ida->display( ).
 
 
