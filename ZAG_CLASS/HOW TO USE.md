@@ -12,11 +12,29 @@ you will need to comment the following line code at the beginning of the class d
 
 ---
   
-## 1. [ZAG_CL_SALV](#zag_cl_salv)
-## 2. [ZAG_CL_CSV_XLSX](#zag_cl_csv_xlsx)
-## 3. [ZAG_CL_SEND_MAIL](#zag_cl_send_mail)
-## 4. [ZAG_CL_SALV_IDA](#zag_cl_salv_ida)
+## 1. ZAG_CL_SALV
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/HOW%20TO%20USE/ZAG_CL_SALV.md)
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/ZAG_CL_SALV.abap)
 
+---
+
+## 2. ZAG_CL_CSV_XLSX
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/HOW%20TO%20USE/ZAG_CL_CSV_XLSX.md)
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/ZAG_CL_CSV_XLSX.abap)
+
+---
+
+## 3. ZAG_CL_SEND_MAIL
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/HOW%20TO%20USE/ZAG_CL_SEND_MAIL.md)
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/ZAG_CL_SEND_MAIL.abap)
+
+---
+
+## 4. ZAG_CL_SALV_IDA
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/HOW%20TO%20USE/ZAG_CL_SALV_IDA.md)
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/ZAG_CL_SALV_IDA.abap)
+
+---
 
 
 
