@@ -1,71 +1,95 @@
-class ZAG_CL_SALV_IDA definition
-  public
-  final
-  create public .
+CLASS zag_cl_salv_ida DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  types:
-    BEGIN OF ts_field_label,
+    " Types
+    "-------------------------------------------------
+    TYPES:
+      BEGIN OF ts_field_label,
         fieldname TYPE string,
         label     TYPE string,
-      END OF ts_field_label .
-  types:
-    BEGIN OF ts_double_click,
+      END OF ts_field_label,
+
+      BEGIN OF ts_double_click,
         repid   TYPE sy-repid,
         perform TYPE string,
-      END OF ts_double_click .
-  types:
-    tt_field_label TYPE TABLE OF ts_field_label .
-  types:
-    tt_selopt TYPE TABLE OF asint_frange .             "if_salv_service_types=>yt_named_ranges,
-  types TT_FIELD_LIST type IF_SALV_GUI_TYPES_IDA=>YTS_FIELD_NAME .
-  types TT_SORT_GROUP type IF_SALV_GUI_TYPES_IDA=>YT_SORT_RULE .
+      END OF ts_double_click.
 
-  methods CONSTRUCTOR
-    importing
-      !XV_DDIC_TABNAME type DBTABL
-      !XT_SELOPT type TT_SELOPT optional
-      !XT_FIELD_LIST type TT_FIELD_LIST optional
-      !XT_FIELD_LABEL type TT_FIELD_LABEL optional
-      !XT_SORT_GROUP type TT_SORT_GROUP optional
-      !XS_DOUBLE_CLICK type TS_DOUBLE_CLICK optional
-    exceptions
-      TABLE_NOT_SUPPORTED .
-  methods DISPLAY .
+    TYPES:
+      tt_selopt      TYPE TABLE OF asint_frange,
+      tt_field_list  TYPE if_salv_gui_types_ida=>yts_field_name,
+      tt_field_label TYPE TABLE OF ts_field_label,
+      tt_sort_group  TYPE if_salv_gui_types_ida=>yt_sort_rule.
+
+
+    " Methods
+    "-------------------------------------------------
+    METHODS:
+      constructor
+        IMPORTING
+          !xv_ddic_tabname  TYPE dbtabl
+          !xt_selopt        TYPE tt_selopt OPTIONAL
+          !xt_field_list    TYPE tt_field_list OPTIONAL
+          !xt_field_label   TYPE tt_field_label OPTIONAL
+          !xt_sort_group    TYPE tt_sort_group OPTIONAL
+          !xo_event_handler TYPE REF TO object OPTIONAL
+          !xv_max_rows      TYPE i OPTIONAL
+        EXCEPTIONS
+          table_not_supported,
+
+      display .
+
+
   PROTECTED SECTION.
+
   PRIVATE SECTION.
 
-    DATA go_ida TYPE REF TO if_salv_gui_table_ida .
-    DATA gs_double_click TYPE ts_double_click.
-    DATA gv_ddic_tabname TYPE dbtabl.
+    " Data
+    "-------------------------------------------------
+    DATA:
+      gv_ddic_tabname  TYPE dbtabl,
+      go_ida           TYPE REF TO if_salv_gui_table_ida,
+      go_event_handler TYPE REF TO object.
 
-    METHODS set_selopt
-      IMPORTING
-        !xt_selopt TYPE tt_selopt .
-    METHODS set_field_list
-      IMPORTING
-        !xt_field_list TYPE tt_field_list .
-    METHODS set_field_label
-      IMPORTING
-        !xt_field_label TYPE tt_field_label .
-    METHODS set_sort_group
-      IMPORTING
-        !xt_sort_group TYPE tt_sort_group .
-    METHODS set_handler
-      IMPORTING
-        !xs_double_click TYPE ts_double_click.
-    METHODS handle_dbclick
+
+
+    " Methods
+    "-------------------------------------------------
+    METHODS:
+      set_selopt
+        IMPORTING
+          !xt_selopt TYPE tt_selopt,
+
+      set_field_list
+        IMPORTING
+          !xt_field_list TYPE tt_field_list,
+
+      set_field_label
+        IMPORTING
+          !xt_field_label TYPE tt_field_label,
+
+      set_sort_group
+        IMPORTING
+          !xt_sort_group TYPE tt_sort_group,
+
+      set_handler
+        IMPORTING
+          !xo_event_handler TYPE REF TO object,
+
+      handle_dbclick
         FOR EVENT double_click OF if_salv_gui_table_display_opt.
 
 ENDCLASS.
 
 
 
-CLASS ZAG_CL_SALV_IDA IMPLEMENTATION.
+CLASS zag_cl_salv_ida IMPLEMENTATION.
 
 
-  METHOD CONSTRUCTOR.
+  METHOD constructor.
 
     "Check if table is supported by IDA
     "-------------------------------------------------
@@ -73,114 +97,66 @@ CLASS ZAG_CL_SALV_IDA IMPLEMENTATION.
       RAISE table_not_supported.
     ENDIF.
 
-    gv_ddic_tabname = xv_ddic_tabname.
-    go_ida = cl_salv_gui_table_ida=>create( iv_table_name = gv_ddic_tabname ).
-    IF cl_salv_gui_table_ida=>db_capabilities( )->is_max_rows_recommended( ).
-      go_ida->set_maximum_number_of_rows(  iv_number_of_rows = 10000 ).
+    "Init Instance
+    me->gv_ddic_tabname = xv_ddic_tabname.
+    me->go_ida          = cl_salv_gui_table_ida=>create( gv_ddic_tabname ).
+
+    IF xv_max_rows NE 0.
+      me->go_ida->set_maximum_number_of_rows( iv_number_of_rows = xv_max_rows ).
+    ENDIF.
+
+    IF cl_salv_gui_table_ida=>db_capabilities( )->is_max_rows_recommended( )
+      AND xv_max_rows EQ 0 OR xv_max_rows GT 10000.
+      me->go_ida->set_maximum_number_of_rows( iv_number_of_rows = 10000 ).
     ENDIF.
 
 
     "Select options
     "-------------------------------------------------
-    IF xt_selopt IS NOT INITIAL.
-      me->set_selopt( xt_selopt = xt_selopt[] ).
+    IF xt_selopt[] IS NOT INITIAL.
+      me->set_selopt( xt_selopt[] ).
     ENDIF.
 
 
     "Field List
     "-------------------------------------------------
-    IF xt_field_list IS NOT INITIAL.
-      me->set_field_list( xt_field_list = xt_field_list[] ).
+    IF xt_field_list[] IS NOT INITIAL.
+      me->set_field_list( xt_field_list[] ).
     ENDIF.
 
 
     "Field Label
     "-------------------------------------------------
-    IF xt_field_label IS NOT INITIAL.
-      me->set_field_label( xt_field_label = xt_field_label[] ).
+    IF xt_field_label[] IS NOT INITIAL.
+      me->set_field_label( xt_field_label[] ).
     ENDIF.
 
 
     "Sorting and Grouping
     "-------------------------------------------------
-    IF xt_sort_group IS NOT INITIAL.
-      me->set_sort_group( xt_sort_group = xt_sort_group[] ).
+    IF xt_sort_group[] IS NOT INITIAL.
+      me->set_sort_group( xt_sort_group[] ).
     ENDIF.
 
 
     "Set Handler
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    IF xs_double_click IS NOT INITIAL.
-      me->set_handler( xs_double_click = xs_double_click ).
+    IF xo_event_handler IS BOUND.
+      me->set_handler( xo_event_handler ).
     ENDIF.
 
   ENDMETHOD.
 
 
-  METHOD DISPLAY.
+  METHOD display.
 
-    go_ida->display_options( )->enable_alternating_row_pattern( ).
-    go_ida->fullscreen( )->display( ).
-
-  ENDMETHOD.
-
-
-  METHOD HANDLE_DBCLICK.
-
-    DATA: lref_selected_row TYPE REF TO data.
-
-    CHECK go_ida->selection( )->is_row_selected( ).
-
-
-    CREATE DATA lref_selected_row TYPE (gv_ddic_tabname).
-    ASSIGN lref_selected_row->* TO FIELD-SYMBOL(<selected_row>).
-
-    go_ida->selection( )->get_selected_row(
-      IMPORTING
-        es_row = <selected_row>
-    ).
-
-    PERFORM (gs_double_click-perform) IN PROGRAM (gs_double_click-repid) IF FOUND
-        USING gv_ddic_tabname
-              <selected_row>.
+    me->go_ida->display_options( )->enable_alternating_row_pattern( ).
+    me->go_ida->fullscreen( )->display( ).
 
   ENDMETHOD.
 
 
-  METHOD SET_FIELD_LABEL.
-
-    LOOP AT xt_field_label ASSIGNING FIELD-SYMBOL(<field_label>).
-
-      go_ida->field_catalog( )->set_field_header_texts(
-        iv_field_name  = CONV #( <field_label>-fieldname )
-        iv_header_text = CONV #( <field_label>-label )
-      ).
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-
-  METHOD SET_FIELD_LIST.
-
-    go_ida->field_catalog( )->set_available_fields( its_field_names = xt_field_list ).
-
-  ENDMETHOD.
-
-
-  METHOD SET_HANDLER.
-
-    CLEAR gs_double_click.
-    gs_double_click = xs_double_click.
-
-    go_ida->display_options( )->enable_double_click( ).
-    go_ida->selection( )->set_selection_mode( iv_mode = 'SINGLE' ).
-    SET HANDLER me->handle_dbclick FOR go_ida->display_options( ).
-
-  ENDMETHOD.
-
-
-  METHOD SET_SELOPT.
+  METHOD set_selopt.
 
     DATA(lo_sel) = NEW cl_salv_range_tab_collector( ).
 
@@ -189,7 +165,7 @@ CLASS ZAG_CL_SALV_IDA IMPLEMENTATION.
       lo_sel->add_ranges_for_name(
         EXPORTING
           iv_name   = CONV #( <named_range>-fieldname )
-          it_ranges = <named_range>-selopt_t
+          it_ranges = <named_range>-selopt_t[]
       ).
 
     ENDLOOP.
@@ -199,14 +175,76 @@ CLASS ZAG_CL_SALV_IDA IMPLEMENTATION.
         et_named_ranges = DATA(lt_named_ranges)
     ).
 
-    go_ida->set_select_options( it_ranges = lt_named_ranges ).
+    me->go_ida->set_select_options( it_ranges = lt_named_ranges[] ).
 
   ENDMETHOD.
 
 
-  METHOD SET_SORT_GROUP.
+  METHOD set_field_list.
 
-    go_ida->default_layout( )->set_sort_order( it_sort_order = xt_sort_group ).
+    me->go_ida->field_catalog( )->set_available_fields( its_field_names = xt_field_list[] ).
 
   ENDMETHOD.
+
+
+  METHOD set_field_label.
+
+    LOOP AT xt_field_label ASSIGNING FIELD-SYMBOL(<field_label>).
+
+      me->go_ida->field_catalog( )->set_field_header_texts(
+        iv_field_name  = CONV #( <field_label>-fieldname )
+        iv_header_text = CONV #( <field_label>-label )
+      ).
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD set_sort_group.
+
+    me->go_ida->default_layout( )->set_sort_order( it_sort_order = xt_sort_group[] ).
+
+  ENDMETHOD.
+
+
+  METHOD set_handler.
+
+    FREE me->go_event_handler.
+    me->go_event_handler = xo_event_handler.
+
+    me->go_ida->display_options( )->enable_double_click( ).
+    me->go_ida->selection( )->set_selection_mode( iv_mode = 'SINGLE' ).
+    SET HANDLER me->handle_dbclick FOR me->go_ida->display_options( ).
+
+  ENDMETHOD.
+
+
+  METHOD handle_dbclick.
+
+    DATA:
+      lref_selected_row TYPE REF TO data.
+
+    CHECK me->go_ida->selection( )->is_row_selected( ).
+
+    CREATE DATA lref_selected_row TYPE (me->gv_ddic_tabname).
+    ASSIGN lref_selected_row->* TO FIELD-SYMBOL(<selected_row>).
+
+    me->go_ida->selection( )->get_selected_row(
+      IMPORTING
+        es_row = <selected_row>
+    ).
+
+    TRY.
+        CALL METHOD me->go_event_handler->('ON_DOUBLE_CLICK')
+          EXPORTING
+            xv_tabname      = me->gv_ddic_tabname
+            xs_selected_row = <selected_row>.
+
+      CATCH cx_sy_dyn_call_illegal_method INTO DATA(lx_illegal_method).
+        DATA(lv_cx_msg) = lx_illegal_method->get_longtext( ).
+    ENDTRY.
+
+  ENDMETHOD.
+
 ENDCLASS.
