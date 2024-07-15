@@ -1,5 +1,5 @@
 # Classes Example List
-Below there are examples on how to use the library classes.
+Below ther're examples of how to use the class library.
 The target of this classes is to USE THEM, not to adapt! 
 In this way, no time will be wasted!!!
 So, if you have suggestions, please contact me :)
