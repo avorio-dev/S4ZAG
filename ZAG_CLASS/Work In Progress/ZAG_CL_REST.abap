@@ -1,61 +1,107 @@
-class ZAG_CL_REST definition
-  public
-  final
-  create public .
+CLASS zag_cl_rest DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
+    INTERFACES if_http_extension .
 
-  types:
-    BEGIN OF ty_oauth2_token_resp,
-             access_token       TYPE string,
-             expires_in         TYPE i,
-             refresh_expires_in TYPE i,
-             refresh_token      TYPE string,
-             token_type         TYPE string,
-             not_before_policy  TYPE i,
-             session_state      TYPE string,
-             scope              TYPE string,
-           END OF ty_oauth2_token_resp .
+    TYPES:
+      BEGIN OF ty_oauth2_token_resp,
+        access_token       TYPE string,
+        expires_in         TYPE i,
+        refresh_expires_in TYPE i,
+        refresh_token      TYPE string,
+        token_type         TYPE string,
+        not_before_policy  TYPE i,
+        session_state      TYPE string,
+        scope              TYPE string,
+      END OF ty_oauth2_token_resp .
 
-  constants C_HTTP_499 type I value 499 ##NO_TEXT.
+    CONSTANTS c_http_499 TYPE i VALUE 499 ##NO_TEXT.
 
-  class-methods FORMAT_SYST_MESSAGE
-    returning
-      value(Y_MSG) type STRING .
-  class-methods GENERATE_SAS_TOKEN
-    importing
-      !X_TOKEN_POST_URL type STRING
-      !X_KEY_NAME type STRING
-      !X_SHARED_KEY type STRING
-    exporting
-      !Y_SAS_TOKEN type STRING .
-  class-methods GENERATE_TOKEN_OAUTH2
-    importing
-      !X_CLIENT_OPENID type STRING
-      !X_CLIENT_SECRET type STRING
-      !X_USER type STRING
-      !X_PASSWORD type STRING
-      !X_URI type STRING
-    exporting
-      !Y_TOKEN type STRING
-      !Y_CODE type I
-      !Y_REASON type STRING
-    exceptions
-      HTTP_CLIENT_ERROR .
+    CLASS-METHODS format_syst_message
+      RETURNING
+        VALUE(y_msg) TYPE string .
+    CLASS-METHODS generate_sas_token
+      IMPORTING
+        !x_token_post_url TYPE string
+        !x_key_name       TYPE string
+        !x_shared_key     TYPE string
+      EXPORTING
+        !y_sas_token      TYPE string .
+    CLASS-METHODS generate_token_oauth2
+      IMPORTING
+        !x_client_openid TYPE string
+        !x_client_secret TYPE string
+        !x_user          TYPE string
+        !x_password      TYPE string
+        !x_uri           TYPE string
+      EXPORTING
+        !y_token         TYPE string
+        !y_code          TYPE i
+        !y_reason        TYPE string
+      EXCEPTIONS
+        http_client_error .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS ZAG_CL_REST IMPLEMENTATION.
+CLASS zag_cl_rest IMPLEMENTATION.
+
+  METHOD if_http_extension~handle_request.
+
+    DATA: lt_data_req  TYPE TABLE OF lfa1,
+          lt_data_resp TYPE TABLE OF lfb1.
+
+    "---------------------------------------------------------------
+
+    CLEAR: lt_data_req[],
+           lt_data_resp[].
+
+    " Import JSON into SAP Structure Request
+    "-------------------------------------------------
+    DATA(lv_json_string) = server->request->get_cdata( ).
+
+    /ui2/cl_json=>deserialize(
+      EXPORTING
+        json     = lv_json_string
+      CHANGING
+        data     = lt_data_req
+    ).
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_REST=>FORMAT_SYST_MESSAGE
-* +-------------------------------------------------------------------------------------------------+
-* | [<-()] Y_MSG                          TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
+    " Custom Logic
+    "---------------------------------------------------------------
+    IF lt_data_req IS NOT INITIAL.
+
+      SELECT lifnr, bukrs
+        FROM lfb1
+        INTO TABLE @DATA(lt_lfb1)
+        FOR ALL ENTRIES IN @lt_data_req
+        WHERE lifnr EQ @lt_data_req-lifnr.
+      IF sy-subrc EQ 0.
+
+        lt_data_resp[] = CORRESPONDING #( lt_lfb1[] ).
+
+      ENDIF.
+
+    ENDIF.
+
+
+    " Export SAP Response Structure into JSON
+    "-------------------------------------------------
+    lv_json_string = /ui2/cl_json=>serialize( data = lt_data_resp ).
+
+    server->response->set_cdata(
+        data = lv_json_string
+    ).
+
+  ENDMETHOD.
+
+
   METHOD format_syst_message.
 
     CALL FUNCTION 'FORMAT_MESSAGE'
@@ -78,14 +124,6 @@ CLASS ZAG_CL_REST IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_REST=>GENERATE_SAS_TOKEN
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_TOKEN_POST_URL               TYPE        STRING
-* | [--->] X_KEY_NAME                     TYPE        STRING
-* | [--->] X_SHARED_KEY                   TYPE        STRING
-* | [<---] Y_SAS_TOKEN                    TYPE        STRING
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD generate_sas_token.
 
     DATA: lv_seconds_to_now   TYPE p,
@@ -224,19 +262,6 @@ CLASS ZAG_CL_REST IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method ZAG_CL_REST=>GENERATE_TOKEN_OAUTH2
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] X_CLIENT_OPENID                TYPE        STRING
-* | [--->] X_CLIENT_SECRET                TYPE        STRING
-* | [--->] X_USER                         TYPE        STRING
-* | [--->] X_PASSWORD                     TYPE        STRING
-* | [--->] X_URI                          TYPE        STRING
-* | [<---] Y_TOKEN                        TYPE        STRING
-* | [<---] Y_CODE                         TYPE        I
-* | [<---] Y_REASON                       TYPE        STRING
-* | [EXC!] HTTP_CLIENT_ERROR
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD generate_token_oauth2.
 
     "HOW TO USE
