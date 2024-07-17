@@ -4,10 +4,23 @@ CLASS zag_cl_rest DEFINITION
   CREATE PUBLIC .
 
   PUBLIC SECTION.
-    INTERFACES if_http_extension .
 
+    " Interfaces
+    "-------------------------------------------------
+    INTERFACES:
+      if_http_extension.
+
+
+    "Aliases
+    "---------------------------------------------------------------
+    ALIASES:
+      handle_request FOR if_http_extension~handle_request.
+
+
+    " Types
+    "-------------------------------------------------
     TYPES:
-      BEGIN OF ty_oauth2_token_resp,
+      BEGIN OF ts_oauth2_token_resp,
         access_token       TYPE string,
         expires_in         TYPE i,
         refresh_expires_in TYPE i,
@@ -16,91 +29,61 @@ CLASS zag_cl_rest DEFINITION
         not_before_policy  TYPE i,
         session_state      TYPE string,
         scope              TYPE string,
-      END OF ty_oauth2_token_resp .
+      END OF ts_oauth2_token_resp .
 
-    CONSTANTS c_http_499 TYPE i VALUE 499 ##NO_TEXT.
 
-    CLASS-METHODS format_syst_message
-      RETURNING
-        VALUE(y_msg) TYPE string .
-    CLASS-METHODS generate_sas_token
-      IMPORTING
-        !x_token_post_url TYPE string
-        !x_key_name       TYPE string
-        !x_shared_key     TYPE string
-      EXPORTING
-        !y_sas_token      TYPE string .
-    CLASS-METHODS generate_token_oauth2
-      IMPORTING
-        !x_client_openid TYPE string
-        !x_client_secret TYPE string
-        !x_user          TYPE string
-        !x_password      TYPE string
-        !x_uri           TYPE string
-      EXPORTING
-        !y_token         TYPE string
-        !y_code          TYPE i
-        !y_reason        TYPE string
-      EXCEPTIONS
-        http_client_error .
+    " Constants
+    "-------------------------------------------------
+    CONSTANTS:
+      c_http_499 TYPE i VALUE 499 ##NO_TEXT.
+
+    " Data
+    "-------------------------------------------------
+
+
+    " Methods
+    "-------------------------------------------------
+    CLASS-METHODS:
+      format_syst_message
+        RETURNING VALUE(y_msg) TYPE string,
+
+      generate_token_sas
+        IMPORTING
+                  !xv_token_post_url  TYPE string
+                  !xv_key_name        TYPE string
+                  !xv_shared_key      TYPE string
+        RETURNING VALUE(yv_sas_token) TYPE string,
+
+      generate_token_oauth2
+        IMPORTING
+          !xv_client_openid TYPE string
+          !xv_client_secret TYPE string
+          !xv_user          TYPE string
+          !xv_password      TYPE string
+          !xv_uri           TYPE string
+        EXPORTING
+          !yv_token         TYPE string
+          !yv_code          TYPE i
+          !yv_reason        TYPE string
+        EXCEPTIONS
+          http_client_error .
+
   PROTECTED SECTION.
+
   PRIVATE SECTION.
+
+    "Constants
+    "---------------------------------------------------------------
+    CONSTANTS:
+      BEGIN OF cc_exception_msg,
+        unable_det_client_obj TYPE string VALUE 'Unable determine Client Object'     ##NO_TEXT,
+      END OF cc_exception_msg.
+
 ENDCLASS.
 
 
 
 CLASS zag_cl_rest IMPLEMENTATION.
-
-  METHOD if_http_extension~handle_request.
-
-    DATA: lt_data_req  TYPE TABLE OF lfa1,
-          lt_data_resp TYPE TABLE OF lfb1.
-
-    "---------------------------------------------------------------
-
-    CLEAR: lt_data_req[],
-           lt_data_resp[].
-
-    " Import JSON into SAP Structure Request
-    "-------------------------------------------------
-    DATA(lv_json_string) = server->request->get_cdata( ).
-
-    /ui2/cl_json=>deserialize(
-      EXPORTING
-        json     = lv_json_string
-      CHANGING
-        data     = lt_data_req
-    ).
-
-
-    " Custom Logic
-    "---------------------------------------------------------------
-    IF lt_data_req IS NOT INITIAL.
-
-      SELECT lifnr, bukrs
-        FROM lfb1
-        INTO TABLE @DATA(lt_lfb1)
-        FOR ALL ENTRIES IN @lt_data_req
-        WHERE lifnr EQ @lt_data_req-lifnr.
-      IF sy-subrc EQ 0.
-
-        lt_data_resp[] = CORRESPONDING #( lt_lfb1[] ).
-
-      ENDIF.
-
-    ENDIF.
-
-
-    " Export SAP Response Structure into JSON
-    "-------------------------------------------------
-    lv_json_string = /ui2/cl_json=>serialize( data = lt_data_resp ).
-
-    server->response->set_cdata(
-        data = lv_json_string
-    ).
-
-  ENDMETHOD.
-
 
   METHOD format_syst_message.
 
@@ -124,16 +107,17 @@ CLASS zag_cl_rest IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD generate_sas_token.
+  METHOD generate_token_sas.
 
-    DATA: lv_seconds_to_now   TYPE p,
-          lv_seconds_in_week  TYPE p,
-          lv_expiry_time      TYPE string,
+    DATA:
+      lv_seconds_to_now   TYPE p,
+      lv_seconds_in_week  TYPE p,
+      lv_expiry_time      TYPE string,
 
-          lv_utf8_url         TYPE string,
-          lv_data_to_sign_str TYPE string,
-          lv_data_to_sign_bin TYPE xstring,
-          lv_shared_key_bin   TYPE xstring.
+      lv_utf8_url         TYPE string,
+      lv_data_to_sign_str TYPE string,
+      lv_data_to_sign_bin TYPE xstring,
+      lv_shared_key_bin   TYPE xstring.
 
     "-------------------------------------------------
 
@@ -197,14 +181,15 @@ CLASS zag_cl_rest IMPLEMENTATION.
                               TIME DATA(lv_time).
 
     "Get the difference from 01.01.1970 to now in seconds
-    CALL METHOD cl_abap_tstmp=>td_subtract
+    cl_abap_tstmp=>td_subtract(
       EXPORTING
         date1    = lv_date
         time1    = lv_time
         date2    = '19700101'
         time2    = '000000'
       IMPORTING
-        res_secs = lv_seconds_to_now.
+        res_secs = lv_seconds_to_now
+    ).
 
     "Add expiry time in seconds ( seconds to now + one week in seconds )
     lv_seconds_in_week = 60 * 60 * 24 * 7.
@@ -216,8 +201,11 @@ CLASS zag_cl_rest IMPLEMENTATION.
     "-------------------------------------------------
 
     "Build string to Sign
-    lv_utf8_url         = escape( val    = x_token_post_url
-                                  format = cl_abap_format=>e_uri_full ).
+    lv_utf8_url = escape(
+      val    = xv_token_post_url
+      format = cl_abap_format=>e_uri_full
+    ).
+
     lv_data_to_sign_str = |{ lv_utf8_url }{ cl_abap_char_utilities=>newline }{ lv_expiry_time }|.
 
     "Build Binary data to Sign
@@ -233,7 +221,7 @@ CLASS zag_cl_rest IMPLEMENTATION.
     DATA(lo_conv_key) = cl_abap_conv_out_ce=>create( encoding = 'UTF-8' ).
     lo_conv_key->convert(
       EXPORTING
-        data   = x_shared_key
+        data   = xv_shared_key
       IMPORTING
         buffer = lv_shared_key_bin
     ).
@@ -241,28 +229,41 @@ CLASS zag_cl_rest IMPLEMENTATION.
 
     "Build Signature
     "-------------------------------------------------
-    CALL METHOD cl_abap_hmac=>calculate_hmac_for_raw
-      EXPORTING
-        if_algorithm     = 'sha-256'
-        if_key           = lv_shared_key_bin
-        if_data          = lv_data_to_sign_bin
-        if_length        = 0
-      IMPORTING
-        ef_hmacb64string = DATA(lv_signature).
+    TRY.
+        cl_abap_hmac=>calculate_hmac_for_raw(
+          EXPORTING
+            if_algorithm     = 'sha-256'
+            if_key           = lv_shared_key_bin
+            if_data          = lv_data_to_sign_bin
+            if_length        = 0
+          IMPORTING
+            ef_hmacb64string = DATA(lv_signature)
+        ).
 
+      CATCH cx_abap_message_digest INTO DATA(lx_abap_message_digest).
 
-    lv_signature = escape( val    = lv_signature
-                           format = cl_abap_format=>e_uri_full ).
+    ENDTRY.
+
+    lv_signature = escape(
+      val    = lv_signature
+      format = cl_abap_format=>e_uri_full
+    ).
+
 
     "Build SAS Token
     "-------------------------------------------------
-    y_sas_token = |SharedAccessSignature sr={ lv_utf8_url }&sig={ lv_signature }&se={ lv_expiry_time }&skn={ x_key_name }|.
+    yv_sas_token = |SharedAccessSignature sr={ lv_utf8_url }&sig={ lv_signature }&se={ lv_expiry_time }&skn={ xv_key_name }|.
 
 
   ENDMETHOD.
 
 
   METHOD generate_token_oauth2.
+
+    DATA:
+      lv_req_params        TYPE string,
+      ls_oauth2_token_resp TYPE ts_oauth2_token_resp,
+      lt_header            TYPE tihttpnvp.
 
     "HOW TO USE
     "Once token will be generated, it will need to be put in your service as follow
@@ -294,26 +295,21 @@ CLASS zag_cl_rest IMPLEMENTATION.
 
     "Creation of New IF_HTTP_Client Object
     "-------------------------------------------------
-    CALL METHOD cl_http_client=>create_by_url
+    cl_http_client=>create_by_url(
       EXPORTING
-        url                = x_uri
-*       proxy_host         =
-*       proxy_service      =
+        url                = xv_uri
         ssl_id             = 'ANONYM'
-*       sap_username       =
-*       sap_client         =
-*       proxy_user         =
-*       proxy_passwd       =
       IMPORTING
         client             = DATA(lo_client)
       EXCEPTIONS
         argument_not_found = 1
         plugin_not_active  = 2
         internal_error     = 3
-        OTHERS             = 4.
+        OTHERS             = 4
+    ).
     IF sy-subrc <> 0.
-      y_code   = c_http_499.
-      y_reason = 'Unable determine Client Object'.
+      yv_code   = c_http_499.
+      yv_reason = cc_exception_msg-unable_det_client_obj.
       RAISE http_client_error.
     ENDIF.
 
@@ -325,18 +321,20 @@ CLASS zag_cl_rest IMPLEMENTATION.
 
     "Set Data
     "-------------------------------------------------
-    DATA lv_strdata TYPE string.
-    lv_strdata = |{ lv_strdata }client_id={ x_client_openid }|.
-    lv_strdata = |{ lv_strdata }&client_secret={ x_client_secret }|.
-    lv_strdata = |{ lv_strdata }&username={ x_user }|.
-    lv_strdata = |{ lv_strdata }&password={ x_password }|.
-    lv_strdata = |{ lv_strdata }&grant_type=password|.
+    lv_req_params = ''.
+    lv_req_params = |{ lv_req_params }client_id={ xv_client_openid }|.
+    lv_req_params = |{ lv_req_params }&client_secret={ xv_client_secret }|.
+    lv_req_params = |{ lv_req_params }&username={ xv_user }|.
+    lv_req_params = |{ lv_req_params }&password={ xv_password }|.
+    lv_req_params = |{ lv_req_params }&grant_type=password|.
 
 
-    DATA(lv_strlen) = strlen( lv_strdata ).
-    lo_client->request->set_cdata( data   = lv_strdata " Required
-                                   length = lv_strlen " Optional
-                                   offset = 0 ). " Optional
+    DATA(lv_strlen) = strlen( lv_req_params ).
+    lo_client->request->set_cdata(
+      data   = lv_req_params
+      length = lv_strlen
+      offset = 0
+    ).
 
 
     "Send HTTP Request
@@ -350,8 +348,8 @@ CLASS zag_cl_rest IMPLEMENTATION.
         OTHERS                     = 5
     ).
     IF sy-subrc <> 0.
-      y_code   = c_http_499.
-      y_reason = format_syst_message( ).
+      yv_code   = c_http_499.
+      yv_reason = format_syst_message( ).
       RAISE http_client_error.
     ENDIF.
 
@@ -366,17 +364,17 @@ CLASS zag_cl_rest IMPLEMENTATION.
         OTHERS                     = 4
     ).
     IF sy-subrc <> 0.
-      y_code   = c_http_499.
-      y_reason = format_syst_message( ).
+      yv_code   = c_http_499.
+      yv_reason = format_syst_message( ).
       RAISE http_client_error.
     ENDIF.
 
 
     "Get data from response
     "-------------------------------------------------
-    DATA: ls_oauth2_token_resp TYPE ty_oauth2_token_resp.
     DATA(lv_json_response) = lo_client->response->get_cdata( ).
 
+    CLEAR ls_oauth2_token_resp.
     /ui2/cl_json=>deserialize(
       EXPORTING
         json        = lv_json_response
@@ -384,12 +382,12 @@ CLASS zag_cl_rest IMPLEMENTATION.
         data        = ls_oauth2_token_resp
     ).
 
-    y_token = ls_oauth2_token_resp-access_token.
+    yv_token = ls_oauth2_token_resp-access_token.
 
 
     "Close connection
     "-------------------------------------------------
-    DATA lt_header TYPE tihttpnvp.
+    CLEAR lt_header[].
     lo_client->response->get_header_fields(
       CHANGING
         fields = lt_header
@@ -397,8 +395,8 @@ CLASS zag_cl_rest IMPLEMENTATION.
 
     lo_client->response->get_status(
       IMPORTING
-        code   = y_code
-        reason = y_reason
+        code   = yv_code
+        reason = yv_reason
     ).
 
     lo_client->close(
@@ -407,10 +405,61 @@ CLASS zag_cl_rest IMPLEMENTATION.
         OTHERS             = 2
     ).
     IF sy-subrc <> 0.
-      y_code   = c_http_499.
-      y_reason = format_syst_message( ).
+      yv_code   = c_http_499.
+      yv_reason = format_syst_message( ).
       RAISE http_client_error.
     ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD handle_request.
+
+    DATA: lt_data_req  TYPE TABLE OF lfa1,
+          lt_data_resp TYPE TABLE OF lfb1.
+
+    "---------------------------------------------------------------
+
+    CLEAR: lt_data_req[],
+           lt_data_resp[].
+
+    " Import JSON into SAP Structure Request
+    "-------------------------------------------------
+    DATA(lv_json_string) = server->request->get_cdata( ).
+
+    /ui2/cl_json=>deserialize(
+      EXPORTING
+        json     = lv_json_string
+      CHANGING
+        data     = lt_data_req
+    ).
+
+
+    " Custom Logic
+    "---------------------------------------------------------------
+    IF lt_data_req IS NOT INITIAL.
+
+      SELECT lifnr, bukrs
+        FROM lfb1
+        INTO TABLE @DATA(lt_lfb1)
+        FOR ALL ENTRIES IN @lt_data_req
+        WHERE lifnr EQ @lt_data_req-lifnr.
+      IF sy-subrc EQ 0.
+
+        lt_data_resp[] = CORRESPONDING #( lt_lfb1[] ).
+
+      ENDIF.
+
+    ENDIF.
+
+
+    " Export SAP Response Structure into JSON
+    "-------------------------------------------------
+    lv_json_string = /ui2/cl_json=>serialize( data = lt_data_resp ).
+
+    server->response->set_cdata(
+        data = lv_json_string
+    ).
 
   ENDMETHOD.
 ENDCLASS.
