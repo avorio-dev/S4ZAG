@@ -23,7 +23,7 @@ CLASS zag_cl_salv DEFINITION
     " Constants
     "---------------------------------------------------------------
     CONSTANTS:
-      BEGIN OF cc_icon,
+      BEGIN OF tc_icon,
         green TYPE icon_d VALUE '@5B@' ##NO_TEXT,
         red   TYPE icon_d VALUE '@5C@' ##NO_TEXT,
         yell  TYPE icon_d VALUE '@5D@' ##NO_TEXT,
@@ -32,9 +32,9 @@ CLASS zag_cl_salv DEFINITION
         exec  TYPE icon_d VALUE '@15@' ##NO_TEXT,
         refr  TYPE icon_d VALUE '@42@' ##NO_TEXT,
         save  TYPE icon_d VALUE '@2L@' ##NO_TEXT,
-      END OF cc_icon,
+      END OF tc_icon,
 
-      BEGIN OF cc_cell_col,
+      BEGIN OF tc_cell_col,
         cyan  TYPE lvc_col VALUE '1' ##NO_TEXT,
         grey  TYPE lvc_col VALUE '2' ##NO_TEXT,
         yell  TYPE lvc_col VALUE '3' ##NO_TEXT,
@@ -42,12 +42,12 @@ CLASS zag_cl_salv DEFINITION
         green TYPE lvc_col VALUE '5' ##NO_TEXT,
         red   TYPE lvc_col VALUE '6' ##NO_TEXT,
         oran  TYPE lvc_col VALUE '7' ##NO_TEXT,
-      END OF cc_cell_col,
+      END OF tc_cell_col,
 
-      BEGIN OF cc_event_handler,
+      BEGIN OF tc_event_handler,
         on_link_click   TYPE string VALUE 'ON_LINK_CLICK'   ##NO_TEXT,
         on_double_click TYPE string VALUE 'ON_DOUBLE_CLICK' ##NO_TEXT,
-      END OF cc_event_handler.
+      END OF tc_event_handler.
 
     CONSTANTS:
       c_col_fieldname TYPE lvc_fname VALUE 'T_COL' ##NO_TEXT.
@@ -630,7 +630,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD on_link_click.
 
     TRY.
-        CALL METHOD me->go_event_handler->(cc_event_handler-on_link_click)
+        CALL METHOD me->go_event_handler->(tc_event_handler-on_link_click)
           EXPORTING
             xv_row    = row
             xv_column = column.
@@ -644,7 +644,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD on_double_click.
 
     TRY.
-        CALL METHOD me->go_event_handler->(cc_event_handler-on_double_click)
+        CALL METHOD me->go_event_handler->(tc_event_handler-on_double_click)
           EXPORTING
             xv_row    = row
             xv_column = column.

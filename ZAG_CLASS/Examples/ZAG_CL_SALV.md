@@ -62,8 +62,8 @@
     "Set Icon
     DATA(lv_diff) = sy-datum - <mara>-ersda.
     <alv>-icon = COND #(
-      WHEN lv_diff MOD 2 EQ 0 THEN zag_cl_salv=>cc_icon-green
-      ELSE zag_cl_salv=>cc_icon-red
+      WHEN lv_diff MOD 2 EQ 0 THEN zag_cl_salv=>tc_icon-green
+      ELSE zag_cl_salv=>tc_icon-red
     ).
 
 
@@ -73,7 +73,7 @@
       "Set Single Cell Color
       zag_cl_salv=>set_color_cell(
         EXPORTING
-          xs_color            = VALUE #( col = zag_cl_salv=>cc_cell_col-green
+          xs_color            = VALUE #( col = zag_cl_salv=>tc_cell_col-green
                                          int = 1
                                          inv = 1 )
           xt_fieldname        = VALUE #( ( 'MATNR' ) )
@@ -90,7 +90,7 @@
       "Set Row Color
       zag_cl_salv=>set_color_row(
         EXPORTING
-          xs_color          = VALUE #( col = zag_cl_salv=>cc_cell_col-red
+          xs_color          = VALUE #( col = zag_cl_salv=>tc_cell_col-red
                                        int = 0
                                        inv = 0 )
         CHANGING

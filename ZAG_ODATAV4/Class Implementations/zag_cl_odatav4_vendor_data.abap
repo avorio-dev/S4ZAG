@@ -34,9 +34,9 @@ CLASS zag_cl_odatav4_vendor_data DEFINITION
           ts_cds_views         FOR zag_if_odatav4_vendor~ts_cds_views,
           ts_deep_vendor       FOR zag_if_odatav4_vendor~ts_deep_struct,
           tt_deep_vendor       FOR zag_if_odatav4_vendor~tt_deep_struct,
-          cc_entity_set_names  FOR zag_if_odatav4_vendor~cc_entity_set_names,
-          cc_entity_type_names FOR zag_if_odatav4_vendor~cc_entity_type_names,
-          cc_nav_prop_names    FOR zag_if_odatav4_vendor~cc_nav_prop_names.
+          tc_entity_set_names  FOR zag_if_odatav4_vendor~tc_entity_set_names,
+          tc_entity_type_names FOR zag_if_odatav4_vendor~tc_entity_type_names,
+          tc_nav_prop_names    FOR zag_if_odatav4_vendor~tc_nav_prop_names.
 
 
     " Methods - Vendor
@@ -166,7 +166,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
       CASE lv_entity_type_name.
 
-        WHEN cc_entity_type_names-internal-vendor.
+        WHEN tc_entity_type_names-internal-vendor.
           create_entity_vendor_deep(
             io_request  = io_request
             io_response = io_response
@@ -198,16 +198,16 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     CASE lv_source_entity_name.
 
-      WHEN cc_entity_type_names-internal-vendor.
+      WHEN tc_entity_type_names-internal-vendor.
 
         create_entity_vendor(
             io_request  = io_request
             io_response = io_response
         ).
 
-      WHEN cc_entity_type_names-internal-company.
+      WHEN tc_entity_type_names-internal-company.
 
-      WHEN cc_entity_type_names-internal-purchorg.
+      WHEN tc_entity_type_names-internal-purchorg.
 
       WHEN OTHERS.
 
@@ -231,16 +231,16 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     CASE lv_source_entity_name.
 
-      WHEN cc_entity_type_names-internal-vendor.
+      WHEN tc_entity_type_names-internal-vendor.
 
         delete_entity_vendor(
             io_request  = io_request
             io_response = io_response
         ).
 
-      WHEN cc_entity_type_names-internal-company.
+      WHEN tc_entity_type_names-internal-company.
 
-      WHEN cc_entity_type_names-internal-purchorg.
+      WHEN tc_entity_type_names-internal-purchorg.
 
       WHEN OTHERS.
 
@@ -265,7 +265,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     CASE lv_entityset_name.
 
-      WHEN cc_entity_set_names-internal-vendor.
+      WHEN tc_entity_set_names-internal-vendor.
 
         read_entity_vendor(
             io_request  = io_request
@@ -273,7 +273,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ).
 
 
-      WHEN cc_entity_set_names-internal-company.
+      WHEN tc_entity_set_names-internal-company.
 
         read_entity_company(
             io_request  = io_request
@@ -281,7 +281,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ).
 
 
-      WHEN cc_entity_set_names-internal-purchorg.
+      WHEN tc_entity_set_names-internal-purchorg.
 
         read_entity_purchorg(
             io_request  = io_request
@@ -397,7 +397,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
      ).
 
     CASE lv_entityset_name.
-      WHEN cc_entity_set_names-internal-vendor.
+      WHEN tc_entity_set_names-internal-vendor.
 
         read_list_vendor(
             io_request        = io_request
@@ -411,7 +411,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ).
 
 
-      WHEN cc_entity_set_names-internal-company.
+      WHEN tc_entity_set_names-internal-company.
 
         read_list_company(
             io_request        = io_request
@@ -425,7 +425,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
         ).
 
 
-      WHEN cc_entity_set_names-internal-purchorg.
+      WHEN tc_entity_set_names-internal-purchorg.
 
         read_list_purchorg(
             io_request        = io_request
@@ -459,7 +459,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ).
 
     CASE lv_source_entity_name.
-      WHEN cc_entity_type_names-internal-vendor.
+      WHEN tc_entity_type_names-internal-vendor.
 
         read_ref_key_list_vendor(
             io_request  = io_request
@@ -487,16 +487,16 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
     CASE lv_source_entity_name.
 
-      WHEN cc_entity_type_names-internal-vendor.
+      WHEN tc_entity_type_names-internal-vendor.
 
         update_entity_vendor(
             io_request  = io_request
             io_response = io_response
         ).
 
-      WHEN cc_entity_type_names-internal-company.
+      WHEN tc_entity_type_names-internal-company.
 
-      WHEN cc_entity_type_names-internal-purchorg.
+      WHEN tc_entity_type_names-internal-purchorg.
 
       WHEN OTHERS.
 
@@ -584,8 +584,8 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
       ).
 
 
-      CHECK ls_data_description_express CS cc_nav_prop_names-internal-vendor_to_company
-         OR ls_data_description_express CS cc_nav_prop_names-internal-vendor_to_purchorg.
+      CHECK ls_data_description_express CS tc_nav_prop_names-internal-vendor_to_company
+         OR ls_data_description_express CS tc_nav_prop_names-internal-vendor_to_purchorg.
 
     ENDIF.
 
@@ -1101,7 +1101,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
     ).
 
     CASE lv_nav_property_name.
-      WHEN cc_nav_prop_names-internal-vendor_to_company.
+      WHEN tc_nav_prop_names-internal-vendor_to_company.
 
         CLEAR lt_key_company[].
         SELECT lifnr, bukrs
@@ -1111,7 +1111,7 @@ CLASS zag_cl_odatav4_vendor_data IMPLEMENTATION.
 
         io_response->set_target_key_data( lt_key_company ).
 
-      WHEN cc_nav_prop_names-internal-vendor_to_purchorg.
+      WHEN tc_nav_prop_names-internal-vendor_to_purchorg.
 
         CLEAR lt_key_purchorg[].
         SELECT lifnr, ekorg

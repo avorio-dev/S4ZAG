@@ -75,9 +75,9 @@ CLASS zag_cl_rest DEFINITION
     "Constants
     "---------------------------------------------------------------
     CONSTANTS:
-      BEGIN OF cc_exception_msg,
+      BEGIN OF tc_exception_msg,
         unable_det_client_obj TYPE string VALUE 'Unable determine Client Object'     ##NO_TEXT,
-      END OF cc_exception_msg.
+      END OF tc_exception_msg.
 
 ENDCLASS.
 
@@ -309,7 +309,7 @@ CLASS zag_cl_rest IMPLEMENTATION.
     ).
     IF sy-subrc <> 0.
       yv_code   = c_http_499.
-      yv_reason = cc_exception_msg-unable_det_client_obj.
+      yv_reason = tc_exception_msg-unable_det_client_obj.
       RAISE http_client_error.
     ENDIF.
 

@@ -23,9 +23,9 @@ CLASS zag_cl_odatav4_vendor_model DEFINITION
     "---------------------------------------------------------------
     ALIASES:
         ts_cds_views         FOR zag_if_odatav4_vendor~ts_cds_views,
-        cc_entity_set_names  FOR zag_if_odatav4_vendor~cc_entity_set_names,
-        cc_entity_type_names FOR zag_if_odatav4_vendor~cc_entity_type_names,
-        cc_nav_prop_names    FOR zag_if_odatav4_vendor~cc_nav_prop_names.
+        tc_entity_set_names  FOR zag_if_odatav4_vendor~tc_entity_set_names,
+        tc_entity_type_names FOR zag_if_odatav4_vendor~tc_entity_type_names,
+        tc_nav_prop_names    FOR zag_if_odatav4_vendor~tc_nav_prop_names.
 
 
     "Methods
@@ -74,13 +74,13 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     "Create Entity Type
     "---------------------------------------------------------------
     DATA(lo_entity_type) = io_model->create_entity_type_by_struct(
-                             iv_entity_type_name          = cc_entity_type_names-internal-company
+                             iv_entity_type_name          = tc_entity_type_names-internal-company
                              is_structure                 = ls_ref_cds_view
                              iv_add_conv_to_prim_props    = abap_true
                              iv_add_f4_help_to_prim_props = abap_true
                              iv_gen_prim_props            = abap_true
     ).
-    lo_entity_type->set_edm_name( cc_entity_type_names-edm-company ).
+    lo_entity_type->set_edm_name( tc_entity_type_names-edm-company ).
 
 
     " Rename external EDM names of properties so that CamelCase notation is used
@@ -113,9 +113,9 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     " Create Entity Set
     "---------------------------------------------------------------
     DATA(lo_entity_set) = lo_entity_type->create_entity_set(
-        iv_entity_set_name = cc_entity_set_names-internal-company
+        iv_entity_set_name = tc_entity_set_names-internal-company
     ).
-    lo_entity_set->set_edm_name( cc_entity_set_names-edm-company ).
+    lo_entity_set->set_edm_name( tc_entity_set_names-edm-company ).
 
 
   ENDMETHOD.
@@ -130,13 +130,13 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     "Create Entity Type
     "---------------------------------------------------------------
     DATA(lo_entity_type) = io_model->create_entity_type_by_struct(
-                             iv_entity_type_name          = cc_entity_type_names-internal-purchorg
+                             iv_entity_type_name          = tc_entity_type_names-internal-purchorg
                              is_structure                 = ls_ref_cds_view
                              iv_add_conv_to_prim_props    = abap_true
                              iv_add_f4_help_to_prim_props = abap_true
                              iv_gen_prim_props            = abap_true
     ).
-    lo_entity_type->set_edm_name( cc_entity_type_names-edm-purchorg ).
+    lo_entity_type->set_edm_name( tc_entity_type_names-edm-purchorg ).
 
 
     " Rename external EDM names of properties so that CamelCase notation is used
@@ -169,9 +169,9 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     " Create Entity Set
     "---------------------------------------------------------------
     DATA(lo_entity_set) = lo_entity_type->create_entity_set(
-        iv_entity_set_name = cc_entity_set_names-internal-purchorg
+        iv_entity_set_name = tc_entity_set_names-internal-purchorg
     ).
-    lo_entity_set->set_edm_name( cc_entity_set_names-edm-purchorg ).
+    lo_entity_set->set_edm_name( tc_entity_set_names-edm-purchorg ).
 
 
   ENDMETHOD.
@@ -187,13 +187,13 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     " Create Entity Type
     "---------------------------------------------------------------
     DATA(lo_entity_type) = io_model->create_entity_type_by_struct(
-        iv_entity_type_name          = cc_entity_type_names-internal-vendor
+        iv_entity_type_name          = tc_entity_type_names-internal-vendor
         is_structure                 = ls_ref_cds_view
         iv_gen_prim_props            = abap_true
         iv_add_conv_to_prim_props    = abap_true
         iv_add_f4_help_to_prim_props = abap_true
     ).
-    lo_entity_type->set_edm_name( cc_entity_type_names-edm-vendor ).
+    lo_entity_type->set_edm_name( tc_entity_type_names-edm-vendor ).
 
 
     " Rename external EDM names of properties so that CamelCase notation is used
@@ -222,20 +222,20 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     " Create Entity Set / Add the binding of the navigation path
     "---------------------------------------------------------------
     DATA(lo_entity_set) = lo_entity_type->create_entity_set(
-        iv_entity_set_name = cc_entity_set_names-internal-vendor
+        iv_entity_set_name = tc_entity_set_names-internal-vendor
     ).
-    lo_entity_set->set_edm_name( cc_entity_set_names-edm-vendor ).
+    lo_entity_set->set_edm_name( tc_entity_set_names-edm-vendor ).
 
     lo_entity_set->add_navigation_prop_binding(
       EXPORTING
-        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_company )
-        iv_target_entity_set        = cc_entity_set_names-internal-company
+        iv_navigation_property_path = CONV #( tc_nav_prop_names-internal-vendor_to_company )
+        iv_target_entity_set        = tc_entity_set_names-internal-company
     ).
 
     lo_entity_set->add_navigation_prop_binding(
       EXPORTING
-        iv_navigation_property_path = CONV #( cc_nav_prop_names-internal-vendor_to_purchorg )
-        iv_target_entity_set        = cc_entity_set_names-internal-purchorg
+        iv_navigation_property_path = CONV #( tc_nav_prop_names-internal-vendor_to_purchorg )
+        iv_target_entity_set        = tc_entity_set_names-internal-purchorg
     ).
 
 
@@ -243,22 +243,22 @@ CLASS zag_cl_odatav4_vendor_model IMPLEMENTATION.
     "---------------------------------------------------------------
     FREE lo_nav_prop.
     lo_nav_prop = lo_entity_type->create_navigation_property(
-        iv_property_name = cc_nav_prop_names-internal-vendor_to_company
+        iv_property_name = tc_nav_prop_names-internal-vendor_to_company
     ).
-    lo_nav_prop->set_edm_name( cc_nav_prop_names-edm-vendor_to_comapny ).
+    lo_nav_prop->set_edm_name( tc_nav_prop_names-edm-vendor_to_comapny ).
 
-    lo_nav_prop->set_target_entity_type_name( cc_entity_type_names-internal-company ).
+    lo_nav_prop->set_target_entity_type_name( tc_entity_type_names-internal-company ).
     lo_nav_prop->set_target_multiplicity( /iwbep/if_v4_med_element=>gcs_med_nav_multiplicity-to_many_optional ).
     lo_nav_prop->set_on_delete_action( /iwbep/if_v4_med_element=>gcs_med_on_delete_action-none ).
 
 
     FREE lo_nav_prop.
     lo_nav_prop = lo_entity_type->create_navigation_property(
-        iv_property_name = cc_nav_prop_names-internal-vendor_to_purchorg
+        iv_property_name = tc_nav_prop_names-internal-vendor_to_purchorg
     ).
-    lo_nav_prop->set_edm_name( cc_nav_prop_names-edm-vendor_to_purchorg ).
+    lo_nav_prop->set_edm_name( tc_nav_prop_names-edm-vendor_to_purchorg ).
 
-    lo_nav_prop->set_target_entity_type_name( cc_entity_type_names-internal-purchorg ).
+    lo_nav_prop->set_target_entity_type_name( tc_entity_type_names-internal-purchorg ).
     lo_nav_prop->set_target_multiplicity( /iwbep/if_v4_med_element=>gcs_med_nav_multiplicity-to_many_optional ).
     lo_nav_prop->set_on_delete_action( /iwbep/if_v4_med_element=>gcs_med_on_delete_action-none ).
 

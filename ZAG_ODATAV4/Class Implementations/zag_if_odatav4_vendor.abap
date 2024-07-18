@@ -40,16 +40,16 @@ INTERFACE zag_if_odatav4_vendor
 
     " Data Sources Names
     "---------------------------------------------------------------
-    BEGIN OF cc_cds_view_names,
+    BEGIN OF tc_cds_view_names,
       vendor   TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFA1',
       company  TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFB1',
       purchorg TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFM1',
-    END OF cc_cds_view_names,
+    END OF tc_cds_view_names,
 
 
     " Entity Type Names
     "---------------------------------------------------------------
-    BEGIN OF cc_entity_type_names,
+    BEGIN OF tc_entity_type_names,
       BEGIN OF internal,
         vendor   TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFA1',
         company  TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFB1',
@@ -61,12 +61,12 @@ INTERFACE zag_if_odatav4_vendor
         company  TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE 'CompanyType',
         purchorg TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE 'PurchorgType',
       END OF edm,
-    END OF cc_entity_type_names,
+    END OF tc_entity_type_names,
 
 
     " Entity Set Names
     "---------------------------------------------------------------
-    BEGIN OF cc_entity_set_names,
+    BEGIN OF tc_entity_set_names,
       BEGIN OF internal,
         vendor   TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFA1',
         company  TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE 'ZAG_CDS_LFB1',
@@ -77,12 +77,12 @@ INTERFACE zag_if_odatav4_vendor
         company  TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE 'Company',
         purchorg TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE 'Purchorg',
       END OF edm,
-    END OF cc_entity_set_names ,
+    END OF tc_entity_set_names ,
 
 
     " Navigation Properties Names
     "---------------------------------------------------------------
-    BEGIN OF cc_nav_prop_names,
+    BEGIN OF tc_nav_prop_names,
       BEGIN OF internal,
         vendor_to_company  TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE '_COMPANY',
         vendor_to_purchorg TYPE /iwbep/if_v4_med_element=>ty_e_med_internal_name VALUE '_PURCHORG',
@@ -91,6 +91,6 @@ INTERFACE zag_if_odatav4_vendor
         vendor_to_comapny  TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE '_Company',
         vendor_to_purchorg TYPE /iwbep/if_v4_med_element=>ty_e_med_edm_name VALUE '_Purchorg',
       END OF edm,
-    END OF cc_nav_prop_names.
+    END OF tc_nav_prop_names.
 
 ENDINTERFACE.

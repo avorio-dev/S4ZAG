@@ -49,18 +49,18 @@ CLASS zag_cl_send_mail DEFINITION
     " Constants
     "-------------------------------------------------
     CONSTANTS:
-      BEGIN OF cc_attch_type,
+      BEGIN OF tc_attch_type,
         csv  TYPE soodk-objtp VALUE 'CSV' ##NO_TEXT,
         raw  TYPE soodk-objtp VALUE 'RAW' ##NO_TEXT,
         pdf  TYPE char3       VALUE 'PDF' ##NO_TEXT,
         bin  TYPE soodk-objtp VALUE 'BIN' ##NO_TEXT,
         xlsx TYPE char4       VALUE 'XLSX' ##NO_TEXT,
-      END OF cc_attch_type,
+      END OF tc_attch_type,
 
-      BEGIN OF cc_mail_type,
+      BEGIN OF tc_mail_type,
         htm TYPE char3 VALUE 'HTM' ##NO_TEXT,
         raw TYPE char3 VALUE 'RAW' ##NO_TEXT,
-      END OF cc_mail_type.
+      END OF tc_mail_type.
 
 
     " Methods
@@ -345,7 +345,7 @@ CLASS zag_cl_send_mail IMPLEMENTATION.
         ENDIF.
 
         me->go_document = cl_document_bcs=>create_document(
-          i_type    = cc_mail_type-htm
+          i_type    = tc_mail_type-htm
           i_text    = lt_lines[]
           i_subject = me->gs_mail_params-object
         ).
@@ -452,10 +452,10 @@ CLASS zag_cl_send_mail IMPLEMENTATION.
             REFRESH lt_soli_tab[].
             lt_soli_tab[] = cl_bcs_convert=>string_to_soli( iv_string = lv_csv_string ).
 
-            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-csv }|.
+            lv_attch_subject = |{ lv_attch_subject }.{ tc_attch_type-csv }|.
 
             me->go_document->add_attachment(
-                i_attachment_type     = cc_attch_type-csv
+                i_attachment_type     = tc_attch_type-csv
                 i_attachment_subject  = lv_attch_subject
                 i_att_content_text    = lt_soli_tab[]
             ).
@@ -470,10 +470,10 @@ CLASS zag_cl_send_mail IMPLEMENTATION.
             REFRESH lt_solix_tab[].
             lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_xlsx ).
 
-            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-xlsx }|.
+            lv_attch_subject = |{ lv_attch_subject }.{ tc_attch_type-xlsx }|.
 
             me->go_document->add_attachment(
-              i_attachment_type     = cc_attch_type-bin
+              i_attachment_type     = tc_attch_type-bin
               i_attachment_subject  = lv_attch_subject
               i_attachment_size    = CONV sood-objlen( xstrlen( <attch>-data_xlsx ) )
               i_att_content_hex    = lt_solix_tab[]
@@ -489,10 +489,10 @@ CLASS zag_cl_send_mail IMPLEMENTATION.
             REFRESH lt_solix_tab[].
             lt_solix_tab = cl_bcs_convert=>xstring_to_solix( iv_xstring = <attch>-data_pdf ).
 
-            lv_attch_subject = |{ lv_attch_subject }.{ cc_attch_type-pdf }|.
+            lv_attch_subject = |{ lv_attch_subject }.{ tc_attch_type-pdf }|.
 
             me->go_document->add_attachment(
-                  i_attachment_type    = cc_attch_type-raw
+                  i_attachment_type    = tc_attch_type-raw
                   i_attachment_subject = lv_attch_subject
                   i_att_content_hex    = lt_solix_tab[]
             ).

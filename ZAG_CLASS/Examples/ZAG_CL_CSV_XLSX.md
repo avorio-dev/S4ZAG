@@ -21,7 +21,7 @@
     EXPORTING
       xv_filename               = lv_filename
       xt_sap_table              = lt_caufv
-      xv_source                 = zag_cl_csv_xlsx=>cc_file_source-local
+      xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
       xv_header                 = abap_true
     EXCEPTIONS
       not_supported_file        = 1
@@ -46,7 +46,7 @@
   lo_csv_xlsx->file_upload(
     EXPORTING
       xv_filename               = lv_filename
-      xv_source                 = zag_cl_csv_xlsx=>cc_file_source-local
+      xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
       xv_header                 = abap_true
     IMPORTING
       yt_conversions_errors     = DATA(lt_conv_error)
@@ -135,7 +135,7 @@
       EXPORTING
         xv_filename               = lv_filename
         xt_sap_table              = lt_caufv
-        xv_source                 = zag_cl_csv_xlsx=>cc_file_source-local
+        xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
         xv_header                 = abap_true
         xo_exit_handler           = lo_exit_handler
       EXCEPTIONS
@@ -149,7 +149,7 @@
     lo_csv_xlsx->file_upload(
       EXPORTING
         xv_filename               = lv_filename
-        xv_source                 = zag_cl_csv_xlsx=>cc_file_source-local
+        xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
         xv_header                 = abap_true
         xo_exit_handler           = lo_exit_handler
       IMPORTING
