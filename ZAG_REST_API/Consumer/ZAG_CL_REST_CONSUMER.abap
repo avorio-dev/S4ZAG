@@ -1,9 +1,71 @@
-CLASS zag_cl_rest_simple_consumer DEFINITION
+CLASS zag_cl_rest_consumer DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
 
   PUBLIC SECTION.
+
+    " Interfaces
+    "-------------------------------------------------
+
+
+    " Aliases
+    "-------------------------------------------------
+
+
+    " Types
+    "-------------------------------------------------
+    TYPES:
+      BEGIN OF ts_sas_token_params,
+        uri        TYPE string,
+        url        TYPE string,
+        key_name   TYPE string,
+        shared_key TYPE string,
+      END OF ts_sas_token_params,
+
+      BEGIN OF ts_oauth2_token_params,
+        par TYPE string,
+      END OF ts_oauth2_token_params,
+
+      BEGIN OF ts_rest_response,
+        http_code TYPE string,
+        reason    TYPE string,
+      END OF ts_rest_response.
+
+
+    " Constants
+    "-------------------------------------------------
+
+
+    " Data
+    "-------------------------------------------------
+
+
+    " Methods
+    "-------------------------------------------------
+    CLASS-METHODS:
+      consume_rest
+        IMPORTING
+          !xv_url                TYPE string
+          !xv_username           TYPE string
+          !xv_password           TYPE string
+          !xref_data             TYPE REF TO data
+          !xs_sas_token_param    TYPE ts_sas_token_params OPTIONAL
+          !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
+        RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
+        RAISING cx_ai_system_fault.
+
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    " Interfaces
+    "-------------------------------------------------
+
+
+    " Aliases
+    "-------------------------------------------------
 
 
     " Types
@@ -23,6 +85,17 @@ CLASS zag_cl_rest_simple_consumer DEFINITION
 
     " Constants
     "-------------------------------------------------
+    CONSTANTS:
+      c_http_499            TYPE i      VALUE 499 ##NO_TEXT,
+      c_content_type_json   TYPE string VALUE 'application/json; charset=utf-8' ##NO_TEXT,
+      c_content_type_xml    TYPE string VALUE 'application/xml; charset=utf-8' ##NO_TEXT,
+      c_request_method_get  TYPE string VALUE 'GET' ##NO_TEXT,
+      c_request_method_post TYPE string VALUE 'POST' ##NO_TEXT.
+
+    CONSTANTS:
+      BEGIN OF tc_exception_msg,
+        unable_det_client_obj TYPE string VALUE 'Unable determine Client Object'     ##NO_TEXT,
+      END OF tc_exception_msg.
 
 
     " Methods
@@ -47,38 +120,25 @@ CLASS zag_cl_rest_simple_consumer DEFINITION
           !yv_code          TYPE i
           !yv_reason        TYPE string
         EXCEPTIONS
-          http_client_error .
+          http_client_error ,
 
-    METHODS:
-      consume_rest_request.
-
-
-  PROTECTED SECTION.
-
-  PRIVATE SECTION.
-
-    "Constants
-    "---------------------------------------------------------------
-    CONSTANTS:
-      c_http_499 TYPE i VALUE 499 ##NO_TEXT.
-
-    CONSTANTS:
-      BEGIN OF cc_exception_msg,
-        unable_det_client_obj TYPE string VALUE 'Unable determine Client Object'     ##NO_TEXT,
-      END OF cc_exception_msg.
-
-
-    "Methods
-    "---------------------------------------------------------------
-    CLASS-METHODS:
       format_syst_message
         RETURNING VALUE(y_msg) TYPE string.
+
 
 ENDCLASS.
 
 
 
-CLASS zag_cl_rest_simple_consumer IMPLEMENTATION.
+CLASS zag_cl_rest_consumer IMPLEMENTATION.
+
+  METHOD consume_rest.
+
+
+
+
+  ENDMETHOD.
+
 
   METHOD generate_token_sas.
 
@@ -282,7 +342,7 @@ CLASS zag_cl_rest_simple_consumer IMPLEMENTATION.
     ).
     IF sy-subrc <> 0.
       yv_code   = c_http_499.
-      yv_reason = cc_exception_msg-unable_det_client_obj.
+      yv_reason = tc_exception_msg-unable_det_client_obj.
       RAISE http_client_error.
     ENDIF.
 
@@ -382,14 +442,6 @@ CLASS zag_cl_rest_simple_consumer IMPLEMENTATION.
       yv_reason = format_syst_message( ).
       RAISE http_client_error.
     ENDIF.
-
-  ENDMETHOD.
-
-
-  METHOD consume_rest_request.
-
-
-
 
   ENDMETHOD.
 
