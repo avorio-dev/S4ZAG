@@ -24,11 +24,15 @@ CLASS zag_cl_rest_consumer DEFINITION
       END OF ts_sas_token_params,
 
       BEGIN OF ts_oauth2_token_params,
-        par TYPE string,
+        client_openid TYPE string,
+        client_secret TYPE string,
+        user          TYPE string,
+        password      TYPE string,
+        uri           TYPE string,
       END OF ts_oauth2_token_params,
 
       BEGIN OF ts_rest_response,
-        http_code TYPE string,
+        http_code TYPE i,
         reason    TYPE string,
       END OF ts_rest_response.
 
@@ -46,14 +50,14 @@ CLASS zag_cl_rest_consumer DEFINITION
     CLASS-METHODS:
       consume_rest
         IMPORTING
-          !xv_url                TYPE string
-          !xv_username           TYPE string
-          !xv_password           TYPE string
-          !xref_data             TYPE REF TO data
-          !xs_sas_token_param    TYPE ts_sas_token_params OPTIONAL
-          !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
+                  !xv_url                 TYPE string
+                  !xref_data              TYPE REF TO data
+                  !xv_username            TYPE string OPTIONAL
+                  !xv_password            TYPE string OPTIONAL
+                  !xs_sas_token_param     TYPE ts_sas_token_params OPTIONAL
+                  !xs_oauth2_token_param  TYPE ts_oauth2_token_params OPTIONAL
         RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
-        RAISING cx_ai_system_fault.
+        RAISING   cx_ai_system_fault.
 
 
   PROTECTED SECTION.
@@ -94,7 +98,8 @@ CLASS zag_cl_rest_consumer DEFINITION
 
     CONSTANTS:
       BEGIN OF tc_exception_msg,
-        unable_det_client_obj TYPE string VALUE 'Unable determine Client Object'     ##NO_TEXT,
+        unable_determine_http_obj TYPE string VALUE 'Unable determine HTTP Client Object' ##NO_TEXT,
+        unable_determine_auth     TYPE string VALUE 'Missing Authentication Params'       ##NO_TEXT,
       END OF tc_exception_msg.
 
 
@@ -135,6 +140,169 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
   METHOD consume_rest.
 
 
+    "Create and Config HTTP Client
+    "---------------------------------------------------------------
+    cl_http_client=>create_by_url(
+      EXPORTING
+        url                = xv_url            " URL
+*        proxy_host         =                  " Logical destination (specified in function call)
+*        proxy_service      =                  " Port Number
+*        ssl_id             =                  " SSL Identity
+*        sap_username       =                  " ABAP System, User Logon Name
+*        sap_client         =                  " R/3 system (client number from logon)
+*        proxy_user         =                  " Proxy user
+*        proxy_passwd       =                  " Proxy password
+      IMPORTING
+        client             = DATA(lo_client)   " HTTP Client Abstraction
+      EXCEPTIONS
+        argument_not_found = 1                " Communication parameter (host or service) not available
+        plugin_not_active  = 2                " HTTP/HTTPS communication not available
+        internal_error     = 3                " Internal error (e.g. name too long)
+        OTHERS             = 4
+    ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_http_obj.
+    ENDIF.
+
+    lo_client->propertytype_logon_popup = lo_client->co_disabled.
+    lo_client->request->set_method( c_request_method_post ).
+    lo_client->request->set_content_type( c_content_type_json ).
+
+
+    "Set authentication method
+    "---------------------------------------------------------------
+    IF xs_sas_token_param IS SUPPLIED.
+
+      DATA(lv_sas_token) = generate_token_sas(
+          xv_token_post_url = xs_sas_token_param-url
+          xv_key_name       = xs_sas_token_param-key_name
+          xv_shared_key     = xs_sas_token_param-shared_key
+      ).
+
+      lo_client->request->set_header_field(
+          name  = 'Authorization'
+          value = lv_sas_token
+      ).
+
+
+    ELSEIF xs_oauth2_token_param IS SUPPLIED.
+
+      generate_token_oauth2(
+        EXPORTING
+          xv_client_openid  = xs_oauth2_token_param-client_openid
+          xv_client_secret  = xs_oauth2_token_param-client_secret
+          xv_user           = xs_oauth2_token_param-user
+          xv_password       = xs_oauth2_token_param-password
+          xv_uri            = xs_oauth2_token_param-uri
+*        IMPORTING
+*          yv_token          =
+*          yv_code           =
+*          yv_reason         =
+        EXCEPTIONS
+          http_client_error = 1
+          OTHERS            = 2
+      ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = tc_exception_msg-unable_determine_auth.
+      ENDIF.
+
+
+    ELSEIF xv_username IS SUPPLIED
+       AND xv_password IS SUPPLIED.
+
+      lo_client->authenticate(
+          username             = xv_username " ABAP System, User Logon Name
+          password             = xv_password " Logon ID
+*          language             =             " SAP System, Current Language
+      ).
+
+
+    ELSE.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_auth.
+
+
+    ENDIF.
+
+
+    "Set Body Content
+    "---------------------------------------------------------------
+    DATA: ls_lfa1 TYPE lfa1.
+    SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
+
+    TRY.
+        DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
+        DATA(lv_xjson) = cl_bcs_convert=>string_to_xstring( lv_json ).
+
+      CATCH cx_bcs INTO DATA(lx_bcs).
+        DATA(lv_xmsg) = lx_bcs->get_longtext( ).
+
+    ENDTRY.
+    lo_client->request->set_data( data = lv_xjson ).
+
+
+    "Call HTTP Client
+    "---------------------------------------------------------------
+    lo_client->send(
+      EXCEPTIONS
+        http_communication_failure = 1 " Communication Error
+        http_invalid_state         = 2 " Invalid state
+        http_processing_failed     = 3 " Error When Processing Method
+        http_invalid_timeout       = 4 " Invalid Time Entry
+        OTHERS                     = 5
+    ).
+    IF sy-subrc <> 0.
+      lv_xmsg = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = lv_xmsg.
+    ENDIF.
+
+    lo_client->receive(
+      EXCEPTIONS
+        http_communication_failure = 1 " Communication Error
+        http_invalid_state         = 2 " Invalid state
+        http_processing_failed     = 3 " Error when processing method
+        OTHERS                     = 4
+    ).
+    IF sy-subrc <> 0.
+      lv_xmsg = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = lv_xmsg.
+    ENDIF.
+
+
+    "Read HTTP Response
+    "---------------------------------------------------------------
+    DATA: lt_header TYPE tihttpnvp.
+    lo_client->response->get_header_fields(
+      CHANGING
+        fields = lt_header " Header fields
+    ).
+
+    lo_client->response->get_status(
+      IMPORTING
+        code   = ys_rest_response-http_code " HTTP Status Code
+        reason = ys_rest_response-reason    " HTTP status description
+    ).
+
+    lo_client->close(
+      EXCEPTIONS
+        http_invalid_state = 1 " Invalid state
+        OTHERS             = 2
+    ).
+    IF sy-subrc <> 0.
+      lv_xmsg = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = lv_xmsg.
+    ENDIF.
 
 
   ENDMETHOD.
@@ -342,7 +510,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
     ).
     IF sy-subrc <> 0.
       yv_code   = c_http_499.
-      yv_reason = tc_exception_msg-unable_det_client_obj.
+      yv_reason = tc_exception_msg-unable_determine_http_obj.
       RAISE http_client_error.
     ENDIF.
 
@@ -442,6 +610,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       yv_reason = format_syst_message( ).
       RAISE http_client_error.
     ENDIF.
+
 
   ENDMETHOD.
 
