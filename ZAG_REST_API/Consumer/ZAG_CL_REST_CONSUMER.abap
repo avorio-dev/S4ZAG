@@ -106,6 +106,17 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
+      set_authentication
+        IMPORTING
+          !xv_username           TYPE string OPTIONAL
+          !xv_password           TYPE string OPTIONAL
+          !xs_sas_token_param    TYPE ts_sas_token_params OPTIONAL
+          !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
+        CHANGING
+          !yo_client             TYPE REF TO if_http_client
+        RAISING
+          cx_ai_system_fault,
+
       generate_token_sas
         IMPORTING
                   !xv_token_post_url  TYPE string
@@ -144,20 +155,13 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
     "---------------------------------------------------------------
     cl_http_client=>create_by_url(
       EXPORTING
-        url                = xv_url            " URL
-*        proxy_host         =                  " Logical destination (specified in function call)
-*        proxy_service      =                  " Port Number
-*        ssl_id             =                  " SSL Identity
-*        sap_username       =                  " ABAP System, User Logon Name
-*        sap_client         =                  " R/3 system (client number from logon)
-*        proxy_user         =                  " Proxy user
-*        proxy_passwd       =                  " Proxy password
+        url                = xv_url
       IMPORTING
-        client             = DATA(lo_client)   " HTTP Client Abstraction
+        client             = DATA(lo_client)
       EXCEPTIONS
-        argument_not_found = 1                " Communication parameter (host or service) not available
-        plugin_not_active  = 2                " HTTP/HTTPS communication not available
-        internal_error     = 3                " Internal error (e.g. name too long)
+        argument_not_found = 1
+        plugin_not_active  = 2
+        internal_error     = 3
         OTHERS             = 4
     ).
     IF sy-subrc <> 0.
@@ -171,79 +175,40 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
     lo_client->request->set_content_type( c_content_type_json ).
 
 
-    "Set authentication method
+    "Set authentication based on input Params
     "---------------------------------------------------------------
-    IF xs_sas_token_param IS SUPPLIED.
-
-      DATA(lv_sas_token) = generate_token_sas(
-          xv_token_post_url = xs_sas_token_param-url
-          xv_key_name       = xs_sas_token_param-key_name
-          xv_shared_key     = xs_sas_token_param-shared_key
-      ).
-
-      lo_client->request->set_header_field(
-          name  = 'Authorization'
-          value = lv_sas_token
-      ).
-
-
-    ELSEIF xs_oauth2_token_param IS SUPPLIED.
-
-      generate_token_oauth2(
-        EXPORTING
-          xv_client_openid  = xs_oauth2_token_param-client_openid
-          xv_client_secret  = xs_oauth2_token_param-client_secret
-          xv_user           = xs_oauth2_token_param-user
-          xv_password       = xs_oauth2_token_param-password
-          xv_uri            = xs_oauth2_token_param-uri
-*        IMPORTING
-*          yv_token          =
-*          yv_code           =
-*          yv_reason         =
-        EXCEPTIONS
-          http_client_error = 1
-          OTHERS            = 2
-      ).
-      IF sy-subrc <> 0.
-        RAISE EXCEPTION TYPE cx_ai_system_fault
+    TRY.
+        set_authentication(
           EXPORTING
-            errortext = tc_exception_msg-unable_determine_auth.
-      ENDIF.
+            xv_username           = xv_username
+            xv_password           = xv_password
+            xs_sas_token_param    = xs_sas_token_param
+            xs_oauth2_token_param = xs_oauth2_token_param
+          CHANGING
+            yo_client             = lo_client
+        ).
 
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        RAISE EXCEPTION lx_ai_system_fault.
 
-    ELSEIF xv_username IS SUPPLIED
-       AND xv_password IS SUPPLIED.
-
-      lo_client->authenticate(
-          username             = xv_username " ABAP System, User Logon Name
-          password             = xv_password " Logon ID
-*          language             =             " SAP System, Current Language
-      ).
-
-
-    ELSE.
-      RAISE EXCEPTION TYPE cx_ai_system_fault
-        EXPORTING
-          errortext = tc_exception_msg-unable_determine_auth.
-
-
-    ENDIF.
+    ENDTRY.
 
 
     "Set Body Content
     "---------------------------------------------------------------
-    DATA: ls_lfa1 TYPE lfa1.
-    SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
-
     TRY.
+
+        DATA: ls_lfa1 TYPE lfa1.
+        SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
+
         DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
         DATA(lv_xjson) = cl_bcs_convert=>string_to_xstring( lv_json ).
+        lo_client->request->set_data( data = lv_xjson ).
 
       CATCH cx_bcs INTO DATA(lx_bcs).
         DATA(lv_xmsg) = lx_bcs->get_longtext( ).
 
     ENDTRY.
-    lo_client->request->set_data( data = lv_xjson ).
 
 
     "Call HTTP Client
@@ -304,6 +269,84 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
           errortext = lv_xmsg.
     ENDIF.
 
+
+  ENDMETHOD.
+
+
+  METHOD set_authentication.
+
+    "Set authentication method
+    "---------------------------------------------------------------
+    IF xs_sas_token_param IS SUPPLIED.
+
+      DATA(lv_sas_token) = generate_token_sas(
+          xv_token_post_url = xs_sas_token_param-url
+          xv_key_name       = xs_sas_token_param-key_name
+          xv_shared_key     = xs_sas_token_param-shared_key
+      ).
+
+      yo_client->request->set_header_field(
+          name  = 'Authorization'
+          value = lv_sas_token
+      ).
+
+
+    ELSEIF xs_oauth2_token_param IS SUPPLIED.
+
+      generate_token_oauth2(
+        EXPORTING
+          xv_client_openid  = xs_oauth2_token_param-client_openid
+          xv_client_secret  = xs_oauth2_token_param-client_secret
+          xv_user           = xs_oauth2_token_param-user
+          xv_password       = xs_oauth2_token_param-password
+          xv_uri            = xs_oauth2_token_param-uri
+        IMPORTING
+          yv_token          = DATA(lv_oauth2_token)
+*          yv_code           =
+*          yv_reason         =
+        EXCEPTIONS
+          http_client_error = 1
+          OTHERS            = 2
+      ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = tc_exception_msg-unable_determine_auth.
+      ENDIF.
+
+      yo_client->request->set_header_field(
+        name  = 'Username'
+        value = xv_username
+      ).
+
+      yo_client->request->set_header_field(
+        name  = 'Password'
+        value = xv_password
+      ).
+
+      yo_client->request->set_header_field(
+        name  = 'Authorization'
+        value = lv_oauth2_token
+      ).
+
+
+    ELSEIF xv_username IS SUPPLIED
+       AND xv_password IS SUPPLIED.
+
+      yo_client->authenticate(
+          username             = xv_username " ABAP System, User Logon Name
+          password             = xv_password " Logon ID
+*          language             =             " SAP System, Current Language
+      ).
+
+
+    ELSE.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_auth.
+
+
+    ENDIF.
 
   ENDMETHOD.
 
@@ -583,7 +626,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         data        = ls_oauth2_token_resp
     ).
 
-    yv_token = ls_oauth2_token_resp-access_token.
+    yv_token = |Bearer { ls_oauth2_token_resp-access_token }|.
 
 
     "Close connection
