@@ -113,9 +113,7 @@ CLASS zag_cl_rest_consumer DEFINITION
           !xs_sas_token_param    TYPE ts_sas_token_params OPTIONAL
           !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
         CHANGING
-          !yo_client             TYPE REF TO if_http_client
-        RAISING
-          cx_ai_system_fault,
+          !yo_client             TYPE REF TO if_http_client,
 
       generate_token_sas
         IMPORTING
@@ -177,21 +175,15 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Set authentication based on input Params
     "---------------------------------------------------------------
-    TRY.
-        set_authentication(
-          EXPORTING
-            xv_username           = xv_username
-            xv_password           = xv_password
-            xs_sas_token_param    = xs_sas_token_param
-            xs_oauth2_token_param = xs_oauth2_token_param
-          CHANGING
-            yo_client             = lo_client
-        ).
-
-      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        RAISE EXCEPTION lx_ai_system_fault.
-
-    ENDTRY.
+    set_authentication(
+      EXPORTING
+        xv_username           = xv_username
+        xv_password           = xv_password
+        xs_sas_token_param    = xs_sas_token_param
+        xs_oauth2_token_param = xs_oauth2_token_param
+      CHANGING
+        yo_client             = lo_client
+    ).
 
 
     "Set Body Content
@@ -277,7 +269,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Set authentication method
     "---------------------------------------------------------------
-    IF xs_sas_token_param IS SUPPLIED.
+    IF xs_sas_token_param IS NOT INITIAL.
 
       DATA(lv_sas_token) = generate_token_sas(
           xv_token_post_url = xs_sas_token_param-url
@@ -291,7 +283,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       ).
 
 
-    ELSEIF xs_oauth2_token_param IS SUPPLIED.
+    ELSEIF xs_oauth2_token_param IS NOT INITIAL.
 
       generate_token_oauth2(
         EXPORTING
@@ -308,11 +300,6 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
           http_client_error = 1
           OTHERS            = 2
       ).
-      IF sy-subrc <> 0.
-        RAISE EXCEPTION TYPE cx_ai_system_fault
-          EXPORTING
-            errortext = tc_exception_msg-unable_determine_auth.
-      ENDIF.
 
       yo_client->request->set_header_field(
         name  = 'Username'
@@ -330,21 +317,14 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       ).
 
 
-    ELSEIF xv_username IS SUPPLIED
-       AND xv_password IS SUPPLIED.
+    ELSEIF xv_username IS NOT INITIAL
+       AND xv_password IS NOT INITIAL.
 
       yo_client->authenticate(
           username             = xv_username " ABAP System, User Logon Name
           password             = xv_password " Logon ID
 *          language             =             " SAP System, Current Language
       ).
-
-
-    ELSE.
-      RAISE EXCEPTION TYPE cx_ai_system_fault
-        EXPORTING
-          errortext = tc_exception_msg-unable_determine_auth.
-
 
     ENDIF.
 
