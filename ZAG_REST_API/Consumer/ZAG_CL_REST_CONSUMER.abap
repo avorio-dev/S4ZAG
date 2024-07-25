@@ -148,6 +148,8 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
   METHOD consume_rest.
 
+    DATA: lv_xmsg TYPE string.
+
 
     "Create and Config HTTP Client
     "---------------------------------------------------------------
@@ -188,19 +190,19 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Set Body Content
     "---------------------------------------------------------------
-    TRY.
-
-        DATA: ls_lfa1 TYPE lfa1.
-        SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
-
-        DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
-        DATA(lv_xjson) = cl_bcs_convert=>string_to_xstring( lv_json ).
-        lo_client->request->set_data( data = lv_xjson ).
-
-      CATCH cx_bcs INTO DATA(lx_bcs).
-        DATA(lv_xmsg) = lx_bcs->get_longtext( ).
-
-    ENDTRY.
+*    TRY.
+*
+*        DATA: ls_lfa1 TYPE lfa1.
+*        SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
+*
+*        DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
+*        DATA(lv_xjson) = cl_bcs_convert=>string_to_xstring( lv_json ).
+*        lo_client->request->set_data( data = lv_xjson ).
+*
+*      CATCH cx_bcs INTO DATA(lx_bcs).
+*        DATA(lv_xmsg) = lx_bcs->get_longtext( ).
+*
+*    ENDTRY.
 
 
     "Call HTTP Client
@@ -237,6 +239,8 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Read HTTP Response
     "---------------------------------------------------------------
+    DATA(lv_json_response) = lo_client->response->get_cdata( ).
+
     DATA: lt_header TYPE tihttpnvp.
     lo_client->response->get_header_fields(
       CHANGING
