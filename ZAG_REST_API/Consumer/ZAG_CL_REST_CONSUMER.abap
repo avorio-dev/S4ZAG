@@ -5,14 +5,6 @@ CLASS zag_cl_rest_consumer DEFINITION
 
   PUBLIC SECTION.
 
-    " Interfaces
-    "-------------------------------------------------
-
-
-    " Aliases
-    "-------------------------------------------------
-
-
     " Types
     "-------------------------------------------------
     TYPES:
@@ -32,17 +24,20 @@ CLASS zag_cl_rest_consumer DEFINITION
       END OF ts_oauth2_token_params,
 
       BEGIN OF ts_rest_response,
-        http_code TYPE i,
-        reason    TYPE string,
+        http_code   TYPE i,
+        reason      TYPE string,
+        resp_header TYPE tihttpnvp,
+        resp_body   TYPE string,
       END OF ts_rest_response.
 
 
-    " Constants
+    "Constants
     "-------------------------------------------------
-
-
-    " Data
-    "-------------------------------------------------
+    CONSTANTS:
+      BEGIN OF tc_request_method,
+        get  TYPE string VALUE 'GET' ##NO_TEXT,
+        post TYPE string VALUE 'POST' ##NO_TEXT,
+      END OF tc_request_method.
 
 
     " Methods
@@ -51,6 +46,7 @@ CLASS zag_cl_rest_consumer DEFINITION
       consume_rest
         IMPORTING
                   !xv_url                 TYPE string
+                  !xv_method              TYPE string DEFAULT tc_request_method-get
                   !xref_data              TYPE REF TO data
                   !xv_username            TYPE string OPTIONAL
                   !xv_password            TYPE string OPTIONAL
@@ -63,14 +59,6 @@ CLASS zag_cl_rest_consumer DEFINITION
   PROTECTED SECTION.
 
   PRIVATE SECTION.
-
-    " Interfaces
-    "-------------------------------------------------
-
-
-    " Aliases
-    "-------------------------------------------------
-
 
     " Types
     "-------------------------------------------------
@@ -90,22 +78,30 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Constants
     "-------------------------------------------------
     CONSTANTS:
-      c_http_499            TYPE i      VALUE 499 ##NO_TEXT,
-      c_content_type_json   TYPE string VALUE 'application/json; charset=utf-8' ##NO_TEXT,
-      c_content_type_xml    TYPE string VALUE 'application/xml; charset=utf-8' ##NO_TEXT,
-      c_request_method_get  TYPE string VALUE 'GET' ##NO_TEXT,
-      c_request_method_post TYPE string VALUE 'POST' ##NO_TEXT.
+      c_http_499          TYPE i      VALUE 499 ##NO_TEXT,
+      c_content_type_json TYPE string VALUE 'application/json; charset=utf-8' ##NO_TEXT,
+      c_content_type_xml  TYPE string VALUE 'application/xml; charset=utf-8' ##NO_TEXT.
 
     CONSTANTS:
       BEGIN OF tc_exception_msg,
         unable_determine_http_obj TYPE string VALUE 'Unable determine HTTP Client Object' ##NO_TEXT,
         unable_determine_auth     TYPE string VALUE 'Missing Authentication Params'       ##NO_TEXT,
+        unable_send_request       TYPE string VALUE 'Unable to send Request'              ##NO_TEXT,
+        unable_receive_response   TYPE string VALUE 'Unable to receive Response'          ##NO_TEXT,
+        unable_close_connection   TYPE string VALUE 'Unable to Close Connection'          ##NO_TEXT,
       END OF tc_exception_msg.
 
 
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
+      set_http_client
+        IMPORTING
+                  !xv_url          TYPE string
+                  !xv_method       TYPE string DEFAULT tc_request_method-get
+        RETURNING VALUE(yo_client) TYPE REF TO if_http_client
+        RAISING   cx_ai_system_fault,
+
       set_authentication
         IMPORTING
           !xv_username           TYPE string OPTIONAL
@@ -114,6 +110,30 @@ CLASS zag_cl_rest_consumer DEFINITION
           !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
         CHANGING
           !yo_client             TYPE REF TO if_http_client,
+
+      set_header_request
+        CHANGING
+          !yo_client TYPE REF TO if_http_client,
+
+      set_body_request
+        CHANGING
+          !yo_client TYPE REF TO if_http_client,
+
+      send_request
+        IMPORTING
+                  !xo_client TYPE REF TO if_http_client
+        RAISING   cx_ai_system_fault,
+
+      get_response
+        IMPORTING
+                  !xo_client              TYPE REF TO if_http_client
+        RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
+        RAISING   cx_ai_system_fault,
+
+      close_connection
+        CHANGING
+                 !yo_client TYPE REF TO if_http_client
+        RAISING  cx_ai_system_fault,
 
       generate_token_sas
         IMPORTING
@@ -153,11 +173,71 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Create and Config HTTP Client
     "---------------------------------------------------------------
+    TRY.
+
+        DATA(lo_client) = set_http_client( xv_url ).
+
+
+        "Set authentication based on input Params
+        "---------------------------------------------------------------
+        set_authentication(
+          EXPORTING
+            xv_username           = xv_username
+            xv_password           = xv_password
+            xs_sas_token_param    = xs_sas_token_param
+            xs_oauth2_token_param = xs_oauth2_token_param
+          CHANGING
+            yo_client             = lo_client
+        ).
+
+
+        "Set request content
+        "---------------------------------------------------------------
+        set_header_request(
+          CHANGING
+            yo_client = lo_client
+        ).
+
+        set_body_request(
+          CHANGING
+            yo_client = lo_client
+        ).
+
+
+        "Call HTTP Client
+        "---------------------------------------------------------------
+        send_request( lo_client ).
+
+
+        "Get body response content
+        "---------------------------------------------------------------
+        ys_rest_response = get_response( lo_client ).
+
+
+        "Close client connection
+        "---------------------------------------------------------------
+        close_connection(
+          CHANGING
+            yo_client = lo_client
+        ).
+
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        RAISE EXCEPTION lx_ai_system_fault.
+
+    ENDTRY.
+
+
+  ENDMETHOD.
+
+
+  METHOD set_http_client.
+
     cl_http_client=>create_by_url(
       EXPORTING
         url                = xv_url
       IMPORTING
-        client             = DATA(lo_client)
+        client             = yo_client
       EXCEPTIONS
         argument_not_found = 1
         plugin_not_active  = 2
@@ -170,100 +250,9 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
           errortext = tc_exception_msg-unable_determine_http_obj.
     ENDIF.
 
-    lo_client->propertytype_logon_popup = lo_client->co_disabled.
-    lo_client->request->set_method( c_request_method_post ).
-    lo_client->request->set_content_type( c_content_type_json ).
-
-
-    "Set authentication based on input Params
-    "---------------------------------------------------------------
-    set_authentication(
-      EXPORTING
-        xv_username           = xv_username
-        xv_password           = xv_password
-        xs_sas_token_param    = xs_sas_token_param
-        xs_oauth2_token_param = xs_oauth2_token_param
-      CHANGING
-        yo_client             = lo_client
-    ).
-
-
-    "Set Body Content
-    "---------------------------------------------------------------
-*    TRY.
-*
-*        DATA: ls_lfa1 TYPE lfa1.
-*        SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
-*
-*        DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
-*        DATA(lv_xjson) = cl_bcs_convert=>string_to_xstring( lv_json ).
-*        lo_client->request->set_data( data = lv_xjson ).
-*
-*      CATCH cx_bcs INTO DATA(lx_bcs).
-*        DATA(lv_xmsg) = lx_bcs->get_longtext( ).
-*
-*    ENDTRY.
-
-
-    "Call HTTP Client
-    "---------------------------------------------------------------
-    lo_client->send(
-      EXCEPTIONS
-        http_communication_failure = 1 " Communication Error
-        http_invalid_state         = 2 " Invalid state
-        http_processing_failed     = 3 " Error When Processing Method
-        http_invalid_timeout       = 4 " Invalid Time Entry
-        OTHERS                     = 5
-    ).
-    IF sy-subrc <> 0.
-      lv_xmsg = format_syst_message( ).
-      RAISE EXCEPTION TYPE cx_ai_system_fault
-        EXPORTING
-          errortext = lv_xmsg.
-    ENDIF.
-
-    lo_client->receive(
-      EXCEPTIONS
-        http_communication_failure = 1 " Communication Error
-        http_invalid_state         = 2 " Invalid state
-        http_processing_failed     = 3 " Error when processing method
-        OTHERS                     = 4
-    ).
-    IF sy-subrc <> 0.
-      lv_xmsg = format_syst_message( ).
-      RAISE EXCEPTION TYPE cx_ai_system_fault
-        EXPORTING
-          errortext = lv_xmsg.
-    ENDIF.
-
-
-    "Read HTTP Response
-    "---------------------------------------------------------------
-    DATA(lv_json_response) = lo_client->response->get_cdata( ).
-
-    DATA: lt_header TYPE tihttpnvp.
-    lo_client->response->get_header_fields(
-      CHANGING
-        fields = lt_header " Header fields
-    ).
-
-    lo_client->response->get_status(
-      IMPORTING
-        code   = ys_rest_response-http_code " HTTP Status Code
-        reason = ys_rest_response-reason    " HTTP status description
-    ).
-
-    lo_client->close(
-      EXCEPTIONS
-        http_invalid_state = 1 " Invalid state
-        OTHERS             = 2
-    ).
-    IF sy-subrc <> 0.
-      lv_xmsg = format_syst_message( ).
-      RAISE EXCEPTION TYPE cx_ai_system_fault
-        EXPORTING
-          errortext = lv_xmsg.
-    ENDIF.
+    yo_client->propertytype_logon_popup = yo_client->co_disabled.
+    yo_client->request->set_method( xv_method ).
+    yo_client->request->set_content_type( c_content_type_json ).
 
 
   ENDMETHOD.
@@ -330,6 +319,107 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 *          language             =             " SAP System, Current Language
       ).
 
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD set_header_request.
+
+
+
+
+
+
+
+
+  ENDMETHOD.
+
+
+  METHOD set_body_request.
+
+    CHECK 1 = 2.
+
+    DATA: ls_lfa1 TYPE lfa1.
+    SELECT SINGLE * FROM lfa1 INTO ls_lfa1.
+
+    DATA(lv_json)  = /ui2/cl_json=>serialize( ls_lfa1 ).
+    yo_client->request->set_cdata( lv_json ).
+
+  ENDMETHOD.
+
+
+  METHOD send_request.
+
+    DATA: lv_xmsg TYPE string.
+
+    xo_client->send(
+      EXCEPTIONS
+        http_communication_failure = 1 " Communication Error
+        http_invalid_state         = 2 " Invalid state
+        http_processing_failed     = 3 " Error When Processing Method
+        http_invalid_timeout       = 4 " Invalid Time Entry
+        OTHERS                     = 5
+    ).
+    IF sy-subrc <> 0.
+      lv_xmsg = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_send_request.
+    ENDIF.
+
+
+    xo_client->receive(
+      EXCEPTIONS
+        http_communication_failure = 1 " Communication Error
+        http_invalid_state         = 2 " Invalid state
+        http_processing_failed     = 3 " Error when processing method
+        OTHERS                     = 4
+    ).
+    IF sy-subrc <> 0.
+      lv_xmsg = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_receive_response.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD get_response.
+
+    CLEAR ys_rest_response.
+
+
+    xo_client->response->get_header_fields(
+      CHANGING
+        fields = ys_rest_response-resp_header " Header fields
+    ).
+
+    ys_rest_response-resp_body = xo_client->response->get_cdata( ).
+
+    xo_client->response->get_status(
+      IMPORTING
+        code   = ys_rest_response-http_code " HTTP Status Code
+        reason = ys_rest_response-reason    " HTTP status description
+    ).
+
+
+  ENDMETHOD.
+
+
+  METHOD close_connection.
+
+    yo_client->close(
+      EXCEPTIONS
+        http_invalid_state = 1 " Invalid state
+        OTHERS             = 2
+    ).
+    IF sy-subrc <> 0.
+      DATA(lv_xmsg) = format_syst_message( ).
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_close_connection.
     ENDIF.
 
   ENDMETHOD.
