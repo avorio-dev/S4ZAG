@@ -42,13 +42,6 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
-      call_rest_api
-        IMPORTING
-                  !xv_url                 TYPE string
-                  !xv_method              TYPE string DEFAULT tc_request_method-get
-        RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
-        RAISING   cx_ai_system_fault,
-
       generate_token_sas
         IMPORTING
                   !xs_token_sas_params TYPE ts_token_sas_params
@@ -60,12 +53,21 @@ CLASS zag_cl_rest_consumer DEFINITION
         RETURNING VALUE(yv_token_oauth2)  TYPE string
         RAISING   cx_ai_system_fault.
 
+    METHODS:
+      call_rest_api
+        IMPORTING
+                  !xv_url                 TYPE string
+                  !xv_method              TYPE string DEFAULT tc_request_method-get
+        RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
+        RAISING   cx_ai_system_fault.
+
+
 
   PROTECTED SECTION.
 
     "Methods
     "-------------------------------------------------
-    CLASS-METHODS:
+    METHODS:
       set_authentication
         CHANGING
                  !yo_client TYPE REF TO if_http_client
@@ -118,6 +120,10 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
+      format_syst_message
+        RETURNING VALUE(y_msg) TYPE string.
+
+    METHODS:
       set_http_client
         IMPORTING
                   !xv_url          TYPE string
@@ -139,10 +145,7 @@ CLASS zag_cl_rest_consumer DEFINITION
       close_connection
         CHANGING
                  !yo_client TYPE REF TO if_http_client
-        RAISING  cx_ai_system_fault,
-
-      format_syst_message
-        RETURNING VALUE(y_msg) TYPE string.
+        RAISING  cx_ai_system_fault.
 
 
 ENDCLASS.
@@ -157,12 +160,12 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
     TRY.
         "Create and Config HTTP Client
         "-------------------------------------------------
-        DATA(lo_client) = set_http_client( xv_url ).
+        DATA(lo_client) = me->set_http_client( xv_url ).
 
 
         "Set Authentication data
         "-------------------------------------------------
-        set_authentication(
+        me->set_authentication(
           CHANGING
             yo_client = lo_client
         ).
@@ -170,7 +173,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
         "Set Request Header data
         "-------------------------------------------------
-        set_header_request(
+        me->set_header_request(
           CHANGING
             yo_client = lo_client
         ).
@@ -178,7 +181,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
         "Set Request Body data
         "-------------------------------------------------
-        set_body_request(
+        me->set_body_request(
           CHANGING
             yo_client = lo_client
         ).
@@ -186,17 +189,17 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
         "Call HTTP Client
         "-------------------------------------------------
-        send_request( lo_client ).
+        me->send_request( lo_client ).
 
 
         "Get Response data
         "-------------------------------------------------
-        ys_rest_response = get_response( lo_client ).
+        ys_rest_response = me->get_response( lo_client ).
 
 
         "Close client connection
         "-------------------------------------------------
-        close_connection(
+        me->close_connection(
           CHANGING
             yo_client = lo_client
         ).
@@ -247,8 +250,8 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         IF 1 = 2.
 
           DATA:
-            lv_username TYPE string,
-            lv_password TYPE string.
+            lv_username TYPE string VALUE 'ZAGUSR',
+            lv_password TYPE string VALUE 'P@ssw0rd'.
 
           yo_client->request->set_header_field(
             name  = 'Username'
@@ -296,7 +299,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
 
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        DATA(lv_xmsg) = lx_ai_system_fault->get_text( ).
+        DATA(lv_cx_msg) = lx_ai_system_fault->get_text( ).
         RAISE EXCEPTION lx_ai_system_fault.
 
     ENDTRY.
@@ -337,7 +340,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
   METHOD send_request.
 
-    DATA: lv_xmsg TYPE string.
+    DATA: lv_cx_msg TYPE string.
 
     xo_client->send(
       EXCEPTIONS
@@ -348,7 +351,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 5
     ).
     IF sy-subrc <> 0.
-      lv_xmsg = format_syst_message( ).
+      lv_cx_msg = format_syst_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_send_request.
@@ -363,7 +366,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 4
     ).
     IF sy-subrc <> 0.
-      lv_xmsg = format_syst_message( ).
+      lv_cx_msg = format_syst_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_receive_response.
@@ -402,7 +405,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS             = 2
     ).
     IF sy-subrc <> 0.
-      DATA(lv_xmsg) = format_syst_message( ).
+      DATA(lv_cx_msg) = format_syst_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_close_connection.
