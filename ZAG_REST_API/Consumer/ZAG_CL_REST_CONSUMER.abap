@@ -1,6 +1,5 @@
 CLASS zag_cl_rest_consumer DEFINITION
   PUBLIC
-  FINAL
   CREATE PUBLIC .
 
   PUBLIC SECTION.
@@ -47,11 +46,6 @@ CLASS zag_cl_rest_consumer DEFINITION
         IMPORTING
                   !xv_url                 TYPE string
                   !xv_method              TYPE string DEFAULT tc_request_method-get
-                  !xref_data              TYPE REF TO data
-                  !xv_username            TYPE string OPTIONAL
-                  !xv_password            TYPE string OPTIONAL
-                  !xs_sas_token_param     TYPE ts_sas_token_params OPTIONAL
-                  !xs_oauth2_token_param  TYPE ts_oauth2_token_params OPTIONAL
         RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
         RAISING   cx_ai_system_fault.
 
@@ -103,13 +97,8 @@ CLASS zag_cl_rest_consumer DEFINITION
         RAISING   cx_ai_system_fault,
 
       set_authentication
-        IMPORTING
-          !xv_username           TYPE string OPTIONAL
-          !xv_password           TYPE string OPTIONAL
-          !xs_sas_token_param    TYPE ts_sas_token_params OPTIONAL
-          !xs_oauth2_token_param TYPE ts_oauth2_token_params OPTIONAL
         CHANGING
-          !yo_client             TYPE REF TO if_http_client,
+          !yo_client TYPE REF TO if_http_client,
 
       set_header_request
         CHANGING
@@ -178,14 +167,9 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         DATA(lo_client) = set_http_client( xv_url ).
 
 
-        "Set authentication based on input Params
+        "Set authentication method
         "---------------------------------------------------------------
         set_authentication(
-          EXPORTING
-            xv_username           = xv_username
-            xv_password           = xv_password
-            xs_sas_token_param    = xs_sas_token_param
-            xs_oauth2_token_param = xs_oauth2_token_param
           CHANGING
             yo_client             = lo_client
         ).
@@ -260,14 +244,19 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
   METHOD set_authentication.
 
-    "Set authentication method
-    "---------------------------------------------------------------
-    IF xs_sas_token_param IS NOT INITIAL.
+    DATA:
+      ls_sas_token_param    TYPE ts_sas_token_params,
+      ls_oauth2_token_param TYPE ts_oauth2_token_params,
+      lv_username           TYPE string,
+      lv_password           TYPE string.
+
+
+    IF ls_sas_token_param IS NOT INITIAL.
 
       DATA(lv_sas_token) = generate_token_sas(
-          xv_token_post_url = xs_sas_token_param-url
-          xv_key_name       = xs_sas_token_param-key_name
-          xv_shared_key     = xs_sas_token_param-shared_key
+          xv_token_post_url = ls_sas_token_param-url
+          xv_key_name       = ls_sas_token_param-key_name
+          xv_shared_key     = ls_sas_token_param-shared_key
       ).
 
       yo_client->request->set_header_field(
@@ -276,15 +265,15 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       ).
 
 
-    ELSEIF xs_oauth2_token_param IS NOT INITIAL.
+    ELSEIF ls_oauth2_token_param IS NOT INITIAL.
 
       generate_token_oauth2(
         EXPORTING
-          xv_client_openid  = xs_oauth2_token_param-client_openid
-          xv_client_secret  = xs_oauth2_token_param-client_secret
-          xv_user           = xs_oauth2_token_param-user
-          xv_password       = xs_oauth2_token_param-password
-          xv_uri            = xs_oauth2_token_param-uri
+          xv_client_openid  = ls_oauth2_token_param-client_openid
+          xv_client_secret  = ls_oauth2_token_param-client_secret
+          xv_user           = ls_oauth2_token_param-user
+          xv_password       = ls_oauth2_token_param-password
+          xv_uri            = ls_oauth2_token_param-uri
         IMPORTING
           yv_token          = DATA(lv_oauth2_token)
 *          yv_code           =
@@ -295,28 +284,25 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       ).
 
       yo_client->request->set_header_field(
-        name  = 'Username'
-        value = xv_username
-      ).
-
-      yo_client->request->set_header_field(
-        name  = 'Password'
-        value = xv_password
-      ).
-
-      yo_client->request->set_header_field(
         name  = 'Authorization'
         value = lv_oauth2_token
       ).
 
+    ENDIF.
 
-    ELSEIF xv_username IS NOT INITIAL
-       AND xv_password IS NOT INITIAL.
 
-      yo_client->authenticate(
-          username             = xv_username " ABAP System, User Logon Name
-          password             = xv_password " Logon ID
-*          language             =             " SAP System, Current Language
+
+    IF lv_username IS NOT INITIAL
+       AND lv_password IS NOT INITIAL.
+
+      yo_client->request->set_header_field(
+        name  = 'Username'
+        value = lv_username
+      ).
+
+      yo_client->request->set_header_field(
+        name  = 'Password'
+        value = lv_password
       ).
 
     ENDIF.
@@ -326,12 +312,17 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
   METHOD set_header_request.
 
+    CHECK 1 = 2.
 
+    yo_client->request->set_header_field(
+      name  = 'x-entity'
+      value = 'Customer'
+    ).
 
-
-
-
-
+    yo_client->request->set_header_field(
+      name  = 'x-action'
+      value = 'Created'
+    ).
 
   ENDMETHOD.
 
