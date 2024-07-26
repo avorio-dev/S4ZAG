@@ -7,20 +7,20 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Types
     "-------------------------------------------------
     TYPES:
-      BEGIN OF ts_sas_token_params,
+      BEGIN OF ts_token_sas_params,
         uri        TYPE string,
         url        TYPE string,
         key_name   TYPE string,
         shared_key TYPE string,
-      END OF ts_sas_token_params,
+      END OF ts_token_sas_params,
 
-      BEGIN OF ts_oauth2_token_params,
+      BEGIN OF ts_token_oauth2_params,
         client_openid TYPE string,
         client_secret TYPE string,
         user          TYPE string,
         password      TYPE string,
         uri           TYPE string,
-      END OF ts_oauth2_token_params,
+      END OF ts_token_oauth2_params,
 
       BEGIN OF ts_rest_response,
         http_code   TYPE i,
@@ -42,22 +42,50 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
-      consume_rest
+      call_rest_api
         IMPORTING
                   !xv_url                 TYPE string
                   !xv_method              TYPE string DEFAULT tc_request_method-get
         RETURNING VALUE(ys_rest_response) TYPE ts_rest_response
+        RAISING   cx_ai_system_fault,
+
+      generate_token_sas
+        IMPORTING
+                  !xs_token_sas_params TYPE ts_token_sas_params
+        RETURNING VALUE(yv_token_sas)  TYPE string,
+
+      generate_token_oauth2
+        IMPORTING
+                  !xs_token_oauth2_params TYPE ts_token_oauth2_params
+        RETURNING VALUE(yv_token_oauth2)  TYPE string
         RAISING   cx_ai_system_fault.
 
 
   PROTECTED SECTION.
 
+    "Methods
+    "-------------------------------------------------
+    CLASS-METHODS:
+      set_authentication
+        CHANGING
+                 !yo_client TYPE REF TO if_http_client
+        RAISING  cx_ai_system_fault,
+
+      set_header_request
+        CHANGING
+          !yo_client TYPE REF TO if_http_client,
+
+      set_body_request
+        CHANGING
+          !yo_client TYPE REF TO if_http_client.
+
+
   PRIVATE SECTION.
 
-    " Types
+    "Types
     "-------------------------------------------------
     TYPES:
-      BEGIN OF ts_oauth2_token_resp,
+      BEGIN OF ts_token_oauth2_resp,
         access_token       TYPE string,
         expires_in         TYPE i,
         refresh_expires_in TYPE i,
@@ -66,7 +94,7 @@ CLASS zag_cl_rest_consumer DEFINITION
         not_before_policy  TYPE i,
         session_state      TYPE string,
         scope              TYPE string,
-      END OF ts_oauth2_token_resp .
+      END OF ts_token_oauth2_resp.
 
 
     " Constants
@@ -78,8 +106,9 @@ CLASS zag_cl_rest_consumer DEFINITION
 
     CONSTANTS:
       BEGIN OF tc_exception_msg,
-        unable_determine_http_obj TYPE string VALUE 'Unable determine HTTP Client Object' ##NO_TEXT,
-        unable_determine_auth     TYPE string VALUE 'Missing Authentication Params'       ##NO_TEXT,
+        unable_determine_http_obj TYPE string VALUE 'Unable to determine HTTP Client Object' ##NO_TEXT,
+        missing_auth_params       TYPE string VALUE 'Missing Authentication Params'       ##NO_TEXT,
+        unable_determine_token    TYPE string VALUE 'Unable to determine Access Token'    ##NO_TEXT,
         unable_send_request       TYPE string VALUE 'Unable to send Request'              ##NO_TEXT,
         unable_receive_response   TYPE string VALUE 'Unable to receive Response'          ##NO_TEXT,
         unable_close_connection   TYPE string VALUE 'Unable to Close Connection'          ##NO_TEXT,
@@ -95,18 +124,6 @@ CLASS zag_cl_rest_consumer DEFINITION
                   !xv_method       TYPE string DEFAULT tc_request_method-get
         RETURNING VALUE(yo_client) TYPE REF TO if_http_client
         RAISING   cx_ai_system_fault,
-
-      set_authentication
-        CHANGING
-          !yo_client TYPE REF TO if_http_client,
-
-      set_header_request
-        CHANGING
-          !yo_client TYPE REF TO if_http_client,
-
-      set_body_request
-        CHANGING
-          !yo_client TYPE REF TO if_http_client,
 
       send_request
         IMPORTING
@@ -124,27 +141,6 @@ CLASS zag_cl_rest_consumer DEFINITION
                  !yo_client TYPE REF TO if_http_client
         RAISING  cx_ai_system_fault,
 
-      generate_token_sas
-        IMPORTING
-                  !xv_token_post_url  TYPE string
-                  !xv_key_name        TYPE string
-                  !xv_shared_key      TYPE string
-        RETURNING VALUE(yv_sas_token) TYPE string,
-
-      generate_token_oauth2
-        IMPORTING
-          !xv_client_openid TYPE string
-          !xv_client_secret TYPE string
-          !xv_user          TYPE string
-          !xv_password      TYPE string
-          !xv_uri           TYPE string
-        EXPORTING
-          !yv_token         TYPE string
-          !yv_code          TYPE i
-          !yv_reason        TYPE string
-        EXCEPTIONS
-          http_client_error ,
-
       format_syst_message
         RETURNING VALUE(y_msg) TYPE string.
 
@@ -155,33 +151,33 @@ ENDCLASS.
 
 CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
-  METHOD consume_rest.
-
-    DATA: lv_xmsg TYPE string.
+  METHOD call_rest_api.
 
 
-    "Create and Config HTTP Client
-    "---------------------------------------------------------------
     TRY.
-
+        "Create and Config HTTP Client
+        "-------------------------------------------------
         DATA(lo_client) = set_http_client( xv_url ).
 
 
-        "Set authentication method
-        "---------------------------------------------------------------
+        "Set Authentication data
+        "-------------------------------------------------
         set_authentication(
           CHANGING
-            yo_client             = lo_client
+            yo_client = lo_client
         ).
 
 
-        "Set request content
-        "---------------------------------------------------------------
+        "Set Request Header data
+        "-------------------------------------------------
         set_header_request(
           CHANGING
             yo_client = lo_client
         ).
 
+
+        "Set Request Body data
+        "-------------------------------------------------
         set_body_request(
           CHANGING
             yo_client = lo_client
@@ -189,17 +185,17 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
 
         "Call HTTP Client
-        "---------------------------------------------------------------
+        "-------------------------------------------------
         send_request( lo_client ).
 
 
-        "Get body response content
-        "---------------------------------------------------------------
+        "Get Response data
+        "-------------------------------------------------
         ys_rest_response = get_response( lo_client ).
 
 
         "Close client connection
-        "---------------------------------------------------------------
+        "-------------------------------------------------
         close_connection(
           CHANGING
             yo_client = lo_client
@@ -244,68 +240,67 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
   METHOD set_authentication.
 
-    DATA:
-      ls_sas_token_param    TYPE ts_sas_token_params,
-      ls_oauth2_token_param TYPE ts_oauth2_token_params,
-      lv_username           TYPE string,
-      lv_password           TYPE string.
+    TRY.
+
+        "Authentication with Username/Password
+        "-------------------------------------------------
+        IF 1 = 2.
+
+          DATA:
+            lv_username TYPE string,
+            lv_password TYPE string.
+
+          yo_client->request->set_header_field(
+            name  = 'Username'
+            value = lv_username
+          ).
+
+          yo_client->request->set_header_field(
+            name  = 'Password'
+            value = lv_password
+          ).
+
+        ENDIF.
 
 
-    IF ls_sas_token_param IS NOT INITIAL.
+        " Authentication with SAS Token
+        "-------------------------------------------------
+        IF 1 = 2.
 
-      DATA(lv_sas_token) = generate_token_sas(
-          xv_token_post_url = ls_sas_token_param-url
-          xv_key_name       = ls_sas_token_param-key_name
-          xv_shared_key     = ls_sas_token_param-shared_key
-      ).
+          DATA: ls_token_sas_param TYPE ts_token_sas_params.
 
-      yo_client->request->set_header_field(
-          name  = 'Authorization'
-          value = lv_sas_token
-      ).
+          DATA(lv_token_sas) = generate_token_sas( ls_token_sas_param ).
 
+          yo_client->request->set_header_field(
+              name  = 'Authorization'
+              value = lv_token_sas
+          ).
 
-    ELSEIF ls_oauth2_token_param IS NOT INITIAL.
-
-      generate_token_oauth2(
-        EXPORTING
-          xv_client_openid  = ls_oauth2_token_param-client_openid
-          xv_client_secret  = ls_oauth2_token_param-client_secret
-          xv_user           = ls_oauth2_token_param-user
-          xv_password       = ls_oauth2_token_param-password
-          xv_uri            = ls_oauth2_token_param-uri
-        IMPORTING
-          yv_token          = DATA(lv_oauth2_token)
-*          yv_code           =
-*          yv_reason         =
-        EXCEPTIONS
-          http_client_error = 1
-          OTHERS            = 2
-      ).
-
-      yo_client->request->set_header_field(
-        name  = 'Authorization'
-        value = lv_oauth2_token
-      ).
-
-    ENDIF.
+        ENDIF.
 
 
+        " Authentication with OAUTH2 Token
+        "-------------------------------------------------
+        IF 1 = 2.
 
-    IF lv_username IS NOT INITIAL
-       AND lv_password IS NOT INITIAL.
+          DATA: ls_token_oauth2_param TYPE ts_token_oauth2_params.
 
-      yo_client->request->set_header_field(
-        name  = 'Username'
-        value = lv_username
-      ).
+          DATA(lv_token_oauth2) = generate_token_oauth2( ls_token_oauth2_param ).
 
-      yo_client->request->set_header_field(
-        name  = 'Password'
-        value = lv_password
-      ).
+          yo_client->request->set_header_field(
+            name  = 'Authorization'
+            value = lv_token_oauth2
+          ).
 
-    ENDIF.
+        ENDIF.
+
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_xmsg) = lx_ai_system_fault->get_text( ).
+        RAISE EXCEPTION lx_ai_system_fault.
+
+    ENDTRY.
+
 
   ENDMETHOD.
 
@@ -428,54 +423,9 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       lv_data_to_sign_bin TYPE xstring,
       lv_shared_key_bin   TYPE xstring.
 
-    "-------------------------------------------------
 
     "Alghorithm reference from Microsoft Documentation
     "https://learn.microsoft.com/en-us/rest/api/eventhub/generate-sas-token
-
-    "HOW TO USE
-    "-------------------------------------------------
-
-*    cl_http_client=>create_by_url(
-*    EXPORTING
-*      url                = post_url
-*    IMPORTING
-*      client             = lo_client
-*    EXCEPTIONS
-*      argument_not_found = 1
-*      plugin_not_active  = 2
-*      internal_error     = 3
-*      ).
-*
-*    IF sy-subrc IS NOT INITIAL.
-*      "Handle errors
-*    ENDIF.
-*
-*    lo_client->propertytype_logon_popup = lo_client->co_disabled.
-*    lo_client->request->set_method( 'POST' ).
-*
-*    "-------------------------------------------------
-*
-*    lo_client->request->set_header_field(
-*    EXPORTING
-*       name  = 'Content-Type'
-*       value = 'application/json'
-*    ).
-*
-*    zag_cl_rest=>generate_sas_token(
-*      EXPORTING
-*        X_TOKEN_POST_URL = token_url
-*        x_key_name       = key_name
-*        x_shared_key     = shared_key
-*      RECEIVING
-*        y_sas_token  = lv_auth
-*    ).
-*
-*    lo_client->request->set_header_field(
-*    EXPORTING
-*       name  = 'Authorization'
-*       value = lv_auth ).
-
     "-------------------------------------------------
 
 
@@ -511,7 +461,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Build string to Sign
     lv_utf8_url = escape(
-      val    = xv_token_post_url
+      val    = xs_token_sas_params-url
       format = cl_abap_format=>e_uri_full
     ).
 
@@ -530,7 +480,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
     DATA(lo_conv_key) = cl_abap_conv_out_ce=>create( encoding = 'UTF-8' ).
     lo_conv_key->convert(
       EXPORTING
-        data   = xv_shared_key
+        data   = xs_token_sas_params-shared_key
       IMPORTING
         buffer = lv_shared_key_bin
     ).
@@ -561,7 +511,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     "Build SAS Token
     "-------------------------------------------------
-    yv_sas_token = |SharedAccessSignature sr={ lv_utf8_url }&sig={ lv_signature }&se={ lv_expiry_time }&skn={ xv_key_name }|.
+    yv_token_sas = |SharedAccessSignature sr={ lv_utf8_url }&sig={ lv_signature }&se={ lv_expiry_time }&skn={ xs_token_sas_params-key_name }|.
 
 
   ENDMETHOD.
@@ -571,42 +521,15 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     DATA:
       lv_req_params        TYPE string,
-      ls_oauth2_token_resp TYPE ts_oauth2_token_resp,
+      ls_token_oauth2_resp TYPE ts_token_oauth2_resp,
       lt_header            TYPE tihttpnvp.
-
-    "HOW TO USE
-    "Once token will be generated, it will need to be put in your service as follow
-    "-------------------------------------------------
-*    generate_oauth2_token(
-*      EXPORTING
-*        x_client_openid = lv_client_openid
-*        x_client_secret = lv_client_secret
-*        x_user          = lv_user
-*        x_password      = lv_password
-*        x_uri           = lv_uri_token
-*      IMPORTING
-*        y_token         = DATA(lv_token)
-*        y_code          = DATA(lv_code)
-*        y_reason        = DATA(lv_reason)
-*    ).
-*
-*    lv_auth     = |Bearer { lv_token }|.
-*
-*    -------- Other code to config http client --------
-*
-*    lo_client->request->set_header_field(
-*    EXPORTING
-*       name  = 'Authorization'
-*       value = lv_auth ).
-
-    "-------------------------------------------------
 
 
     "Creation of New IF_HTTP_Client Object
     "-------------------------------------------------
     cl_http_client=>create_by_url(
       EXPORTING
-        url                = xv_uri
+        url                = xs_token_oauth2_params-uri
         ssl_id             = 'ANONYM'
       IMPORTING
         client             = DATA(lo_client)
@@ -617,26 +540,24 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS             = 4
     ).
     IF sy-subrc <> 0.
-      yv_code   = c_http_499.
-      yv_reason = tc_exception_msg-unable_determine_http_obj.
-      RAISE http_client_error.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_token.
     ENDIF.
-
 
     lo_client->propertytype_logon_popup = lo_client->co_disabled.
     lo_client->request->set_method( if_http_entity=>co_request_method_post ).
     lo_client->request->set_content_type( if_rest_media_type=>gc_appl_www_form_url_encoded ).
 
 
-    "Set Data
+    "Set Request Data
     "-------------------------------------------------
     lv_req_params = ''.
-    lv_req_params = |{ lv_req_params }client_id={ xv_client_openid }|.
-    lv_req_params = |{ lv_req_params }&client_secret={ xv_client_secret }|.
-    lv_req_params = |{ lv_req_params }&username={ xv_user }|.
-    lv_req_params = |{ lv_req_params }&password={ xv_password }|.
+    lv_req_params = |{ lv_req_params }client_id={ xs_token_oauth2_params-client_openid }|.
+    lv_req_params = |{ lv_req_params }&client_secret={ xs_token_oauth2_params-client_secret }|.
+    lv_req_params = |{ lv_req_params }&username={ xs_token_oauth2_params-user }|.
+    lv_req_params = |{ lv_req_params }&password={ xs_token_oauth2_params-password }|.
     lv_req_params = |{ lv_req_params }&grant_type=password|.
-
 
     DATA(lv_strlen) = strlen( lv_req_params ).
     lo_client->request->set_cdata(
@@ -657,9 +578,9 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 5
     ).
     IF sy-subrc <> 0.
-      yv_code   = c_http_499.
-      yv_reason = format_syst_message( ).
-      RAISE http_client_error.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_token.
     ENDIF.
 
 
@@ -673,25 +594,25 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 4
     ).
     IF sy-subrc <> 0.
-      yv_code   = c_http_499.
-      yv_reason = format_syst_message( ).
-      RAISE http_client_error.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_token.
     ENDIF.
 
 
     "Get data from response
     "-------------------------------------------------
-    DATA(lv_json_response) = lo_client->response->get_cdata( ).
+    DATA(lv_json) = lo_client->response->get_cdata( ).
 
-    CLEAR ls_oauth2_token_resp.
+    CLEAR ls_token_oauth2_resp.
     /ui2/cl_json=>deserialize(
       EXPORTING
-        json        = lv_json_response
+        json        = lv_json
       CHANGING
-        data        = ls_oauth2_token_resp
+        data        = ls_token_oauth2_resp
     ).
 
-    yv_token = |Bearer { ls_oauth2_token_resp-access_token }|.
+    yv_token_oauth2 = |Bearer { ls_token_oauth2_resp-access_token }|.
 
 
     "Close connection
@@ -704,8 +625,8 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     lo_client->response->get_status(
       IMPORTING
-        code   = yv_code
-        reason = yv_reason
+        code   = DATA(lv_code)
+        reason = DATA(lv_reason)
     ).
 
     lo_client->close(
@@ -714,9 +635,9 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS             = 2
     ).
     IF sy-subrc <> 0.
-      yv_code   = c_http_499.
-      yv_reason = format_syst_message( ).
-      RAISE http_client_error.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_determine_token.
     ENDIF.
 
 
@@ -739,8 +660,6 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
       EXCEPTIONS
         not_found = 1
         OTHERS    = 2.
-    IF sy-subrc <> 0.
-    ENDIF.
 
   ENDMETHOD.
 
