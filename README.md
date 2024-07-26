@@ -6,7 +6,7 @@
 
 ### 3. [Classes](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/README.md)
 
-### 4. [REST-Api]()
+### 4. [REST-Api](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_REST_API/README.md)
 
 ### 5. [OData V4](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_ODATAV4/README.md)
 

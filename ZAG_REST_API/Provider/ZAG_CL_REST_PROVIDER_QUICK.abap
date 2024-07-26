@@ -1,4 +1,4 @@
-CLASS zag_cl_rest_simple_provider DEFINITION
+CLASS zag_cl_rest_provider_quick DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
@@ -37,7 +37,7 @@ ENDCLASS.
 
 
 
-CLASS zag_cl_rest_simple_provider IMPLEMENTATION.
+CLASS zag_cl_rest_provider_quick IMPLEMENTATION.
 
 
   METHOD handle_request.
