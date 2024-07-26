@@ -100,18 +100,18 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Constants
     "-------------------------------------------------
     CONSTANTS:
-      c_http_499          TYPE i      VALUE 499 ##NO_TEXT,
-      c_content_type_json TYPE string VALUE 'application/json; charset=utf-8' ##NO_TEXT,
-      c_content_type_xml  TYPE string VALUE 'application/xml; charset=utf-8' ##NO_TEXT.
+      BEGIN OF tc_content_type,
+        json TYPE string VALUE 'application/json; charset=utf-8' ##NO_TEXT,
+        xml  TYPE string VALUE 'application/xml; charset=utf-8'  ##NO_TEXT,
+      END OF tc_content_type,
 
-    CONSTANTS:
       BEGIN OF tc_exception_msg,
         unable_determine_http_obj TYPE string VALUE 'Unable to determine HTTP Client Object' ##NO_TEXT,
-        missing_auth_params       TYPE string VALUE 'Missing Authentication Params'       ##NO_TEXT,
-        unable_determine_token    TYPE string VALUE 'Unable to determine Access Token'    ##NO_TEXT,
-        unable_send_request       TYPE string VALUE 'Unable to send Request'              ##NO_TEXT,
-        unable_receive_response   TYPE string VALUE 'Unable to receive Response'          ##NO_TEXT,
-        unable_close_connection   TYPE string VALUE 'Unable to Close Connection'          ##NO_TEXT,
+        missing_auth_params       TYPE string VALUE 'Missing Authentication Params'          ##NO_TEXT,
+        unable_determine_token    TYPE string VALUE 'Unable to determine Access Token'       ##NO_TEXT,
+        unable_send_request       TYPE string VALUE 'Unable to send Request'                 ##NO_TEXT,
+        unable_receive_response   TYPE string VALUE 'Unable to receive Response'             ##NO_TEXT,
+        unable_close_connection   TYPE string VALUE 'Unable to Close Connection'             ##NO_TEXT,
       END OF tc_exception_msg.
 
 
@@ -232,7 +232,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
 
     yo_client->propertytype_logon_popup = yo_client->co_disabled.
     yo_client->request->set_method( xv_method ).
-    yo_client->request->set_content_type( c_content_type_json ).
+    yo_client->request->set_content_type( tc_content_type-json ).
 
 
   ENDMETHOD.
