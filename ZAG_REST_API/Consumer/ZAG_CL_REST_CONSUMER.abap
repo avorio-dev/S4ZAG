@@ -120,8 +120,15 @@ CLASS zag_cl_rest_consumer DEFINITION
     " Methods
     "-------------------------------------------------
     CLASS-METHODS:
-      format_syst_message
-        RETURNING VALUE(y_msg) TYPE string.
+      format_message
+        IMPORTING
+                !xv_msgid     TYPE sy-msgid OPTIONAL
+                !xv_msgno     TYPE sy-msgno OPTIONAL
+                !xv_msgv1     TYPE sy-msgv1 OPTIONAL
+                !xv_msgv2     TYPE sy-msgv2 OPTIONAL
+                !xv_msgv3     TYPE sy-msgv3 OPTIONAL
+                !xv_msgv4     TYPE sy-msgv4 OPTIONAL
+        RETURNING VALUE(yv_msg) TYPE string.
 
     METHODS:
       set_http_client
@@ -351,7 +358,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 5
     ).
     IF sy-subrc <> 0.
-      lv_cx_msg = format_syst_message( ).
+      lv_cx_msg = format_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_send_request.
@@ -366,7 +373,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS                     = 4
     ).
     IF sy-subrc <> 0.
-      lv_cx_msg = format_syst_message( ).
+      lv_cx_msg = format_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_receive_response.
@@ -405,7 +412,7 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
         OTHERS             = 2
     ).
     IF sy-subrc <> 0.
-      DATA(lv_cx_msg) = format_syst_message( ).
+      DATA(lv_cx_msg) = format_message( ).
       RAISE EXCEPTION TYPE cx_ai_system_fault
         EXPORTING
           errortext = tc_exception_msg-unable_close_connection.
@@ -647,19 +654,49 @@ CLASS zag_cl_rest_consumer IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD format_syst_message.
+  METHOD format_message.
 
+    DATA:
+      lv_msgid TYPE sy-msgid VALUE 'DB',
+      lv_msgno TYPE sy-msgno VALUE '646',
+      lv_msgv1 TYPE sy-msgv1,
+      lv_msgv2 TYPE sy-msgv2,
+      lv_msgv3 TYPE sy-msgv3,
+      lv_msgv4 TYPE sy-msgv4.
+
+
+    IF xv_msgid IS NOT INITIAL.
+
+      lv_msgid = xv_msgid.
+      lv_msgno = xv_msgno.
+      lv_msgv1 = xv_msgv1.
+      lv_msgv1 = xv_msgv2.
+      lv_msgv1 = xv_msgv3.
+      lv_msgv1 = xv_msgv4.
+
+    ELSE.
+
+      lv_msgid = sy-msgid.
+      lv_msgno = sy-msgno.
+      lv_msgv1 = sy-msgv1.
+      lv_msgv1 = sy-msgv2.
+      lv_msgv1 = sy-msgv3.
+      lv_msgv1 = sy-msgv4.
+
+    ENDIF.
+
+    CLEAR yv_msg.
     CALL FUNCTION 'FORMAT_MESSAGE'
       EXPORTING
-        id        = sy-msgid
+        id        = lv_msgid
         lang      = '-D'
-        no        = sy-msgno
-        v1        = sy-msgv1
-        v2        = sy-msgv2
-        v3        = sy-msgv3
-        v4        = sy-msgv4
+        no        = lv_msgno
+        v1        = lv_msgv1
+        v2        = lv_msgv2
+        v3        = lv_msgv3
+        v4        = lv_msgv4
       IMPORTING
-        msg       = y_msg
+        msg       = yv_msg
       EXCEPTIONS
         not_found = 1
         OTHERS    = 2.
