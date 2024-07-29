@@ -52,8 +52,11 @@ CLASS ZAG_CL_REST_HANDLER IMPLEMENTATION.
 
     DATA(lo_router) = NEW cl_rest_router( ).
 
-    "/default_host/sap/bc/ZAG_REST_PROV
-    lv_rest_uri      = '/default_host/sap/bc/ZAG_REST_PROV'.
+    " If you create your service in following directory
+    " /default_host/sap/bc/
+    " leav lv_rest_uri empty.
+    " Otherwise, fill with the path which follows the default path specified above.
+    lv_rest_uri      = ''.
     lv_handler_class = 'ZAG_CL_REST_PROVIDER'.
 
     lo_router->attach(
