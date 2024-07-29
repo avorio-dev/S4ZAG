@@ -33,4 +33,4 @@ Implement this solution if you need to provide a service which will be called fr
   > - handle_csrf_token: set up authentication if needed
   
 ### 3. Set SICF Service
-  The final step is to register your service from tcode SICF, setting your Handler Class
+  The final step is to register your service using tcode **SICF**, setting your Handler Class.
