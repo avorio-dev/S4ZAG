@@ -32,7 +32,7 @@ CLASS zag_cl_rest_handler IMPLEMENTATION.
     DATA(lo_router) = NEW cl_rest_router( ).
 
 
-    DATA(lv_rest_uri)      = '/ZAG_REST'.
+    DATA(lv_rest_uri)      = '/ZAG_REST_PROVIDER'.
     DATA(lv_handler_class) = 'ZAG_CL_REST_PROVIDER'.
 
     lo_router->attach(
