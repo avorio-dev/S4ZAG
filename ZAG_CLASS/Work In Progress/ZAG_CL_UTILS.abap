@@ -57,9 +57,9 @@ CLASS zag_cl_utils DEFINITION
 
       get_value_from_set
         IMPORTING
-          !x_setname       TYPE string
-        EXPORTING
-          !yt_range_values TYPE tt_hrrange,
+          !xv_setname   TYPE string
+        CHANGING
+          yr_set_values TYPE any,
 
       exe_unix_comm
         IMPORTING
@@ -272,7 +272,6 @@ CLASS zag_cl_utils IMPLEMENTATION.
       lt_lines     TYPE TABLE OF tline,
       lv_error_msg TYPE string.
 
-    "-------------------------------------------------
 
     CLEAR: lt_lines[].
     CALL FUNCTION 'READ_TEXT'
@@ -329,49 +328,44 @@ CLASS zag_cl_utils IMPLEMENTATION.
 
   METHOD get_value_from_set.
 
-*--> Declaration
-    "-------------------------------------------------
-*  TYPES: tt_hrrange TYPE TABLE OF hrrange.
-*  DATA: lr_my_range TYPE tt_hrrange.
-*  CONSTANTS: c_my_set_name TYPE string VALUE 'ZMY_SET_NAME'.
-    "-------------------------------------------------
+    DATA:
+      lv_setid   TYPE sethier-setid,
+      lt_values  TYPE STANDARD TABLE OF rgsbv,
+      lv_setname TYPE c LENGTH 24.
 
-    DATA: lv_setid   TYPE sethier-setid,
-          lt_values  TYPE STANDARD TABLE OF rgsbv,
-          lv_setname TYPE c LENGTH 24.
 
-    REFRESH yt_range_values[].
-
-    lv_setname = x_setname.
-    CONDENSE lv_setname NO-GAPS.
-
-    CLEAR lv_setid.
-    CALL FUNCTION 'G_SET_GET_ID_FROM_NAME'
-      EXPORTING
-        shortname = lv_setname       "Set Name
-      IMPORTING
-        new_setid = lv_setid
-      EXCEPTIONS
-        OTHERS    = 1.
-
-    IF sy-subrc EQ 0.
-
-      REFRESH lt_values.
-      CALL FUNCTION 'G_SET_FETCH'
-        EXPORTING
-          setnr           = lv_setid
-        TABLES
-          set_lines_basic = lt_values
-        EXCEPTIONS
-          OTHERS          = 1.
-
-      CHECK lt_values[] IS NOT INITIAL.
-
-      yt_range_values = VALUE #( FOR <value> IN lt_values (
-                                sign = 'I'          opti = 'EQ'
-                                low  = <value>-from high = <value>-to ) ).
-
-    ENDIF.
+*    CLEAR yt_set_values[].
+*
+*    lv_setname = xv_setname.
+*    CONDENSE lv_setname NO-GAPS.
+*
+*    CLEAR lv_setid.
+*    CALL FUNCTION 'G_SET_GET_ID_FROM_NAME'
+*      EXPORTING
+*        shortname = lv_setname       "Set Name
+*      IMPORTING
+*        new_setid = lv_setid
+*      EXCEPTIONS
+*        OTHERS    = 1.
+*
+*    IF sy-subrc EQ 0.
+*
+*      REFRESH lt_values.
+*      CALL FUNCTION 'G_SET_FETCH'
+*        EXPORTING
+*          setnr           = lv_setid
+*        TABLES
+*          set_lines_basic = lt_values
+*        EXCEPTIONS
+*          OTHERS          = 1.
+*
+*      CHECK lt_values[] IS NOT INITIAL.
+*
+*      yt_set_values = VALUE #( FOR <value> IN lt_values (
+*                                sign = 'I'          opti = 'EQ'
+*                                low  = <value>-from high = <value>-to ) ).
+*
+*    ENDIF.
 
   ENDMETHOD.
 
