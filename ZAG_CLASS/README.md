@@ -54,6 +54,7 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
   Set of Util methods
 
   - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Implementations/ZAG_CL_UTILS.abap)
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Examples/ZAG_CL_SALV_UTILS.md)
 
 <br>
 
