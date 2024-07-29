@@ -59,7 +59,7 @@ CLASS zag_cl_utils DEFINITION
         IMPORTING
           !xv_setname   TYPE string
         CHANGING
-          yr_set_values TYPE any,
+          yr_set_values TYPE table,
 
       exe_unix_comm
         IMPORTING
@@ -334,38 +334,52 @@ CLASS zag_cl_utils IMPLEMENTATION.
       lv_setname TYPE c LENGTH 24.
 
 
-*    CLEAR yt_set_values[].
-*
-*    lv_setname = xv_setname.
-*    CONDENSE lv_setname NO-GAPS.
-*
-*    CLEAR lv_setid.
-*    CALL FUNCTION 'G_SET_GET_ID_FROM_NAME'
-*      EXPORTING
-*        shortname = lv_setname       "Set Name
-*      IMPORTING
-*        new_setid = lv_setid
-*      EXCEPTIONS
-*        OTHERS    = 1.
-*
-*    IF sy-subrc EQ 0.
-*
-*      REFRESH lt_values.
-*      CALL FUNCTION 'G_SET_FETCH'
-*        EXPORTING
-*          setnr           = lv_setid
-*        TABLES
-*          set_lines_basic = lt_values
-*        EXCEPTIONS
-*          OTHERS          = 1.
-*
-*      CHECK lt_values[] IS NOT INITIAL.
-*
-*      yt_set_values = VALUE #( FOR <value> IN lt_values (
-*                                sign = 'I'          opti = 'EQ'
-*                                low  = <value>-from high = <value>-to ) ).
-*
-*    ENDIF.
+    CLEAR yr_set_values[].
+
+    lv_setname = xv_setname.
+    CONDENSE lv_setname NO-GAPS.
+
+    CLEAR lv_setid.
+    CALL FUNCTION 'G_SET_GET_ID_FROM_NAME'
+      EXPORTING
+        shortname = lv_setname
+      IMPORTING
+        new_setid = lv_setid
+      EXCEPTIONS
+        OTHERS    = 1.
+
+    IF sy-subrc EQ 0.
+
+      REFRESH lt_values.
+      CALL FUNCTION 'G_SET_FETCH'
+        EXPORTING
+          setnr           = lv_setid
+        TABLES
+          set_lines_basic = lt_values
+        EXCEPTIONS
+          OTHERS          = 1.
+
+      CHECK lt_values[] IS NOT INITIAL.
+
+
+      LOOP AT lt_values ASSIGNING FIELD-SYMBOL(<value>).
+
+        APPEND INITIAL LINE TO yr_set_values ASSIGNING FIELD-SYMBOL(<set_value>).
+
+        ASSIGN COMPONENT 'SIGN'   OF STRUCTURE <set_value> TO FIELD-SYMBOL(<sign>).
+        ASSIGN COMPONENT 'OPTION' OF STRUCTURE <set_value> TO FIELD-SYMBOL(<option>).
+        ASSIGN COMPONENT 'LOW'    OF STRUCTURE <set_value> TO FIELD-SYMBOL(<low>).
+        ASSIGN COMPONENT 'HIGH'   OF STRUCTURE <set_value> TO FIELD-SYMBOL(<high>).
+
+        <sign>   = 'I'.
+        <option> = 'EQ'.
+        <low>    = <value>-from.
+        <high>   = <value>-to.
+
+      ENDLOOP.
+
+
+    ENDIF.
 
   ENDMETHOD.
 
