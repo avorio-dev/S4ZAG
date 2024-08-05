@@ -1,6 +1,6 @@
 # S4ZAG - Repository Overview
 
-### 1. [Guides](https://github.com/avorio-dev/S4ZAG/blob/main/Guide/README.md)
+### 1. [Guides](https://github.com/avorio-dev/S4ZAG/blob/main/Manuals/README.md)
 
 ### 2. [Templates](https://github.com/avorio-dev/S4ZAG/blob/main/Template/README.md)
 
