@@ -19,8 +19,16 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
 
 <br>
 
+## 2. ZAG_CL_CONVERTER
 
-## 2. ZAG_CL_CSV_XLSX
+  Convert your SAP Table To/From String Table. It allows redefinition of some key methods to implement your custom logic
+
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Implementations/ZAG_CL_CONVERTER.abap)
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Examples/ZAG_CL_CONVERTER.md)
+
+<br>
+
+## 3. ZAG_CL_CSV_XLSX
 
   Download or Upload your *.csv / *.xlsx both in local or server. Conversion exit will be automatiacally performed with plausiblity check. Also "user-exit" will be provided to insert your custom logic.
 
@@ -29,8 +37,7 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
 
 <br>
 
-
-## 3. ZAG_CL_SEND_MAIL
+## 4. ZAG_CL_SEND_MAIL
 
   Send your emails providing the simple basic parameters. You will be able also to send attachments (*.csv, *.xlsx, *.pdf) and also set your mail body in html format providing standard text of SO10 Tcode with an optional list of &Variable& / &value& wich will be replaced automatically.
 
@@ -39,7 +46,7 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
 
 <br>
 
-## 4. ZAG_CL_SALV_IDA
+## 5. ZAG_CL_SALV_IDA
   
   Perform standard builtin selections of your CDS Views and display in an ALV. Apply filter from selopt, aggregations and sort. Also, set your event handler to catch events like double click. 
 
@@ -49,7 +56,7 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
 
 <br>
 
-## 5. ZAG_CL_UTILS
+## 6. ZAG_CL_UTILS
   
   Set of Util methods
 
