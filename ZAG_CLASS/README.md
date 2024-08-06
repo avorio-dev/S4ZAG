@@ -28,12 +28,12 @@ and paste it locally in your report, or in the code-based builder of SE24 TCode.
 
 <br>
 
-## 3. ZAG_CL_CSV_XLSX
+## 3. ZAG_CL_FILER
 
   Download or Upload your *.csv / *.xlsx both in local or server. Conversion exit will be automatiacally performed with plausiblity check. Also "user-exit" will be provided to insert your custom logic.
 
-  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Implementations/ZAG_CL_CSV_XLSX.abap)
-  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Examples/ZAG_CL_CSV_XLSX.md)
+  - Implementation: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Implementations/ZAG_CL_FILER.abap)
+  - Examples: [here](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_CLASS/Examples/ZAG_CL_FILER.md)
 
 <br>
 

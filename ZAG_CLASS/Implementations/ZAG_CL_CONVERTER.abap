@@ -13,14 +13,7 @@ CLASS zag_cl_converter DEFINITION
         field_descr TYPE string,
         value       TYPE string,
         error       TYPE string,
-      END OF ts_conversions_errors ,
-
-      BEGIN OF ts_exit_config,
-        repid                    TYPE sy-repid,
-        exit_sap_to_str          TYPE string,
-        exit_str_to_sap_preconv  TYPE string,
-        exit_str_to_sap_postconv TYPE string,
-      END OF ts_exit_config .
+      END OF ts_conversions_errors.
 
     TYPES:
       tt_conversions_errors TYPE TABLE OF ts_conversions_errors .

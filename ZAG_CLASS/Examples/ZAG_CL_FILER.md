@@ -1,4 +1,4 @@
-# ZAG_CL_CSV_XLSX <a name="zag_cl_csv_xlsx"></a>
+# ZAG_CL_FILER <a name="zag_cl_filer"></a>
  - FILE_DOWNLOAD
     - You will be able to download .csv or .xlsx both on your local system or application server
 
@@ -14,14 +14,14 @@
 
   SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
 
-  DATA(lv_filename)     = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/zag_file.csv|.
-  DATA(lo_csv_xlsx)     = NEW zag_cl_csv_xlsx( ).
+  DATA(lv_filename)     = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
+  DATA(lo_filer)     = NEW zag_cl_filer( ).
 
-  lo_csv_xlsx->file_download(
+  lo_filer->file_download(
     EXPORTING
       xv_filename               = lv_filename
       xt_sap_table              = lt_caufv
-      xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
+      xv_source                 = zag_cl_filer=>tc_file_source-local
       xv_header                 = abap_true
     EXCEPTIONS
       not_supported_file        = 1
@@ -40,13 +40,13 @@
 
   SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
 
-  DATA(lv_filename)     = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/zag_file.csv|.
-  DATA(lo_csv_xlsx)     = NEW zag_cl_csv_xlsx( ).
+  DATA(lv_filename)     = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
+  DATA(lo_filer)     = NEW zag_cl_filer( ).
 
-  lo_csv_xlsx->file_upload(
+  lo_filer->file_upload(
     EXPORTING
       xv_filename               = lv_filename
-      xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
+      xv_source                 = zag_cl_filer=>tc_file_source-local
       xv_header                 = abap_true
     IMPORTING
       yt_conversions_errors     = DATA(lt_conv_error)
@@ -126,16 +126,16 @@
   
     SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
   
-    DATA(lv_filename)     = |{ zag_cl_csv_xlsx=>get_desktop_directory( ) }/zag_file.csv|.
-    DATA(lo_csv_xlsx)     = NEW zag_cl_csv_xlsx( ).
+    DATA(lv_filename)     = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
+    DATA(lo_filer)     = NEW zag_cl_filer( ).
     DATA(lo_exit_handler) = NEW lcl_exit_handler( ).
   
   
-    lo_csv_xlsx->file_download(
+    lo_filer->file_download(
       EXPORTING
         xv_filename               = lv_filename
         xt_sap_table              = lt_caufv
-        xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
+        xv_source                 = zag_cl_filer=>tc_file_source-local
         xv_header                 = abap_true
         xo_exit_handler           = lo_exit_handler
       EXCEPTIONS
@@ -146,10 +146,10 @@
     ).
   
     CLEAR lt_caufv[].
-    lo_csv_xlsx->file_upload(
+    lo_filer->file_upload(
       EXPORTING
         xv_filename               = lv_filename
-        xv_source                 = zag_cl_csv_xlsx=>tc_file_source-local
+        xv_source                 = zag_cl_filer=>tc_file_source-local
         xv_header                 = abap_true
         xo_exit_handler           = lo_exit_handler
       IMPORTING

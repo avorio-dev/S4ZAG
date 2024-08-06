@@ -66,7 +66,7 @@
   "-------------------------------------------------
 
   DATA:
-    lt_recipients TYPE zag_cl_send_mail=>ts_mail_params-recipients,
+    lt_recipients       TYPE zag_cl_send_mail=>ts_mail_params-recipients,
     ls_mail_body_stdtxt TYPE zag_cl_send_mail=>ts_mail_params-body_stdtxt,
     lt_attch            TYPE zag_cl_send_mail=>ts_mail_params-attachments.
 
@@ -88,36 +88,12 @@
   APPEND INITIAL LINE TO lt_attch ASSIGNING FIELD-SYMBOL(<attch>).
   <attch>-subject = 'your_file_name'.
 
-  TRY.
-    zag_cl_csv_xlsx=>get_fieldcat_from_data(
-        EXPORTING
-        xt_sap_table              = lt_data
-        IMPORTING
-        yt_fcat                   = DATA(lt_fcat)
-        yo_structdescr            = DATA(lo_structdescr)
-    ).
-
-    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-  ENDTRY.
-
-
-  APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING FIELD-SYMBOL(<csv_line>).
-  <csv_line> = lo_csv_xlsx->get_header_from_data( xt_fcat = lt_fcat ).
-
-  LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<sflight>).
-
-    APPEND INITIAL LINE TO <attch>-data_csv ASSIGNING <csv_line>.
-
-    zag_cl_csv_xlsx=>conv_sap_to_string(
-      EXPORTING
-        xs_sap_data    = <sflight>
-        xt_fcat        = lt_fcat
-        xo_structdescr = lo_structdescr
-      IMPORTING
-        y_str_data     = <csv_line>
-    ).
-
-  ENDLOOP.
+  DATA(lo_converter) = NEW zag_cl_converter( ).
+  <attch>-data_csv = lo_converter->conv_tsap_to_ext(
+                       xt_tsap_int  = lt_data
+                       xv_header    = abap_true
+                       xv_separator = zag_cl_converter=>tc_separator-semicolon
+  ).
 
 
   ls_mail_body_stdtxt-std_txt_name = 'ZAG_SEND_MAIL_BCS_STDTXT'.
@@ -129,8 +105,7 @@
   ).
 
 
-  CLEAR lo_send_mail.
-  lo_send_mail = NEW zag_cl_send_mail( ).
+  DATA(lo_send_mail) = NEW zag_cl_send_mail( ).
   lo_send_mail->send_mail(
     EXPORTING
       xs_mail_params   = VALUE #(
@@ -143,8 +118,8 @@
                          )
       xv_commit        = abap_true
     IMPORTING
-      y_mail_sent      = lv_mail_sent
-      y_error_msg      = lv_error_msg
+      y_mail_sent      = DATA(lv_mail_sent)
+      y_error_msg      = DATA(lv_error_msg)
     EXCEPTIONS
       missing_param    = 1
       request_error    = 2
