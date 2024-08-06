@@ -16,14 +16,7 @@ CLASS zag_cl_filer DEFINITION
       BEGIN OF tc_filetype,
         csv  TYPE char3 VALUE 'CSV'  ##NO_TEXT,
         xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT,
-      END OF tc_filetype,
-
-      BEGIN OF tc_user_exit,
-        pre_sap_to_string  TYPE string VALUE 'PRE_SAP_TO_STRING',
-        post_sap_to_string TYPE string VALUE 'POST_SAP_TO_STRING',
-        pre_string_to_sap  TYPE string VALUE 'PRE_STRING_TO_SAP',
-        post_string_to_sap TYPE string VALUE 'POST_STRING_TO_SAP',
-      END OF tc_user_exit.
+      END OF tc_filetype.
 
 
     " Methods
@@ -51,7 +44,6 @@ CLASS zag_cl_filer DEFINITION
           !xt_sap_table    TYPE table
           !xv_source       TYPE char1         DEFAULT tc_file_source-local
           !xv_header       TYPE os_boolean    DEFAULT abap_true
-          !xo_exit_handler TYPE REF TO object OPTIONAL
         EXCEPTIONS
           not_supported_file
           unable_define_structdescr
@@ -62,7 +54,6 @@ CLASS zag_cl_filer DEFINITION
           !xv_filename           TYPE string
           !xv_source             TYPE char1         DEFAULT tc_file_source-local
           !xv_header             TYPE os_boolean    DEFAULT abap_true
-          !xo_exit_handler       TYPE REF TO object OPTIONAL
         EXPORTING
           !yt_conversions_errors TYPE tt_conversions_errors
         CHANGING
@@ -79,59 +70,19 @@ CLASS zag_cl_filer DEFINITION
 
   PRIVATE SECTION.
 
-    " Constants
-    "-------------------------------------------------
-    CONSTANTS:
-      BEGIN OF tc_symbols,
-        lect_upper   TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'   ##NO_TEXT,
-        lect_lower   TYPE string VALUE 'abcdefghijklmnopqrstuvwxyz'   ##NO_TEXT,
-        digit        TYPE string VALUE '0123456789'                   ##NO_TEXT,
-        symb         TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£'  ##NO_TEXT,
-        lect_acc     TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'             ##NO_TEXT,
-        exp_notation TYPE string VALUE '0123456789.,+-E'              ##NO_TEXT,
-      END OF tc_symbols,
-
-      BEGIN OF tc_exception_msg,
-        unable_read_file  TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
-        unable_def_struct TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
-        input_error       TYPE string VALUE 'Input error'                        ##NO_TEXT,
-        internal_error    TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
-        not_implemented   TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
-      END OF tc_exception_msg,
-
-      BEGIN OF tc_conversion_msg,
-        unmanaged_dtype TYPE string VALUE 'Unmanaged data type' ##NO_TEXT,
-        format_number   TYPE string VALUE 'Wrong number format' ##NO_TEXT,
-        format_data     TYPE string VALUE 'Wrong data format'   ##NO_TEXT,
-        format_time     TYPE string VALUE 'Wrong time format'   ##NO_TEXT,
-        implaus_number  TYPE string VALUE 'Implausible number'  ##NO_TEXT,
-        implaus_data    TYPE string VALUE 'Implausible data'    ##NO_TEXT,
-        implaus_time    TYPE string VALUE 'Implausible time'    ##NO_TEXT,
-      END OF tc_conversion_msg.
-
     CONSTANTS:
       c_mandt TYPE fieldname VALUE 'MANDT' ##NO_TEXT.
 
-
-    " Data
-    "-------------------------------------------------
-    CLASS-DATA:
-      gr_typekind_charlike TYPE RANGE OF abap_typekind,
-      gr_typekind_date     TYPE RANGE OF abap_typekind,
-      gr_typekind_numbers  TYPE RANGE OF abap_typekind,
-      gr_typekind_time     TYPE RANGE OF abap_typekind.
-
     DATA:
       gref_sap_data   TYPE REF TO data,
+      gt_str_data     TYPE string_table,
+
       gv_filename     TYPE string,
       gv_header       TYPE abap_char1,
-      go_exit_handler TYPE REF TO object,
 
       go_structdescr  TYPE REF TO cl_abap_structdescr,
       gt_fcat         TYPE lvc_t_fcat,
-      gv_separator    TYPE abap_char1,
-
-      gt_str_data     TYPE string_table.
+      gv_separator    TYPE abap_char1.
 
 
     " Methods
@@ -143,7 +94,6 @@ CLASS zag_cl_filer DEFINITION
           !xt_sap_table    TYPE table
           !xv_filename     TYPE string
           !xv_header       TYPE abap_char1    DEFAULT abap_true
-          !xo_exit_handler TYPE REF TO object OPTIONAL
         EXCEPTIONS
           unable_define_structdescr,
 
@@ -339,7 +289,6 @@ CLASS zag_cl_filer IMPLEMENTATION.
         xt_sap_table              = xt_sap_table
         xv_filename               = xv_filename
         xv_header                 = xv_header
-        xo_exit_handler           = xo_exit_handler
       EXCEPTIONS
         unable_define_structdescr = 1
         OTHERS                    = 2
@@ -429,7 +378,6 @@ CLASS zag_cl_filer IMPLEMENTATION.
         xt_sap_table              = yt_sap_data
         xv_filename               = xv_filename
         xv_header                 = xv_header
-        xo_exit_handler           = xo_exit_handler
       EXCEPTIONS
         unable_define_structdescr = 1
         OTHERS                    = 2
@@ -523,7 +471,6 @@ CLASS zag_cl_filer IMPLEMENTATION.
     CREATE DATA me->gref_sap_data LIKE xt_sap_table.
     me->gv_filename    = xv_filename.
     me->gv_header      = xv_header.
-    me->go_exit_handler = xo_exit_handler.
 
     ASSIGN me->gref_sap_data->* TO <sap_table>.
     APPEND LINES OF xt_sap_table TO <sap_table>.

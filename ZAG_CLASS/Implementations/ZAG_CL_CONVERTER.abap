@@ -123,6 +123,37 @@ CLASS zag_cl_converter DEFINITION
 
   PROTECTED SECTION.
 
+    " Constants
+    "-------------------------------------------------
+    CONSTANTS:
+      BEGIN OF tc_symbols,
+        lect_upper   TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'   ##NO_TEXT,
+        lect_lower   TYPE string VALUE 'abcdefghijklmnopqrstuvwxyz'   ##NO_TEXT,
+        digit        TYPE string VALUE '0123456789'                   ##NO_TEXT,
+        symb         TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£'  ##NO_TEXT,
+        lect_acc     TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'             ##NO_TEXT,
+        exp_notation TYPE string VALUE '0123456789.,+-E'              ##NO_TEXT,
+      END OF tc_symbols,
+
+      BEGIN OF tc_exception_msg,
+        unable_read_file  TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
+        unable_def_struct TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
+        input_error       TYPE string VALUE 'Input error'                        ##NO_TEXT,
+        internal_error    TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
+        not_implemented   TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
+      END OF tc_exception_msg,
+
+      BEGIN OF tc_conversion_msg,
+        unmanaged_dtype TYPE string VALUE 'Unmanaged data type' ##NO_TEXT,
+        format_number   TYPE string VALUE 'Wrong number format' ##NO_TEXT,
+        format_data     TYPE string VALUE 'Wrong data format'   ##NO_TEXT,
+        format_time     TYPE string VALUE 'Wrong time format'   ##NO_TEXT,
+        implaus_number  TYPE string VALUE 'Implausible number'  ##NO_TEXT,
+        implaus_data    TYPE string VALUE 'Implausible data'    ##NO_TEXT,
+        implaus_time    TYPE string VALUE 'Implausible time'    ##NO_TEXT,
+      END OF tc_conversion_msg.
+
+
     "Methods
     "-------------------------------------------------
     METHODS:
@@ -157,37 +188,6 @@ CLASS zag_cl_converter DEFINITION
 
 
   PRIVATE SECTION.
-
-    " Constants
-    "-------------------------------------------------
-    CONSTANTS:
-      BEGIN OF tc_symbols,
-        lect_upper   TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'   ##NO_TEXT,
-        lect_lower   TYPE string VALUE 'abcdefghijklmnopqrstuvwxyz'   ##NO_TEXT,
-        digit        TYPE string VALUE '0123456789'                   ##NO_TEXT,
-        symb         TYPE string VALUE '!"%/=?;,.:-_@&+*()[]{}<>€$£'  ##NO_TEXT,
-        lect_acc     TYPE string VALUE 'èéàáòóùúÉÈÁÀÓÒÚÙ'             ##NO_TEXT,
-        exp_notation TYPE string VALUE '0123456789.,+-E'              ##NO_TEXT,
-      END OF tc_symbols,
-
-      BEGIN OF tc_exception_msg,
-        unable_read_file  TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
-        unable_def_struct TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
-        input_error       TYPE string VALUE 'Input error'                        ##NO_TEXT,
-        internal_error    TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
-        not_implemented   TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
-      END OF tc_exception_msg,
-
-      BEGIN OF tc_conversion_msg,
-        unmanaged_dtype TYPE string VALUE 'Unmanaged data type' ##NO_TEXT,
-        format_number   TYPE string VALUE 'Wrong number format' ##NO_TEXT,
-        format_data     TYPE string VALUE 'Wrong data format'   ##NO_TEXT,
-        format_time     TYPE string VALUE 'Wrong time format'   ##NO_TEXT,
-        implaus_number  TYPE string VALUE 'Implausible number'  ##NO_TEXT,
-        implaus_data    TYPE string VALUE 'Implausible data'    ##NO_TEXT,
-        implaus_time    TYPE string VALUE 'Implausible time'    ##NO_TEXT,
-      END OF tc_conversion_msg.
-
     CONSTANTS:
       c_mandt TYPE fieldname VALUE 'MANDT' ##NO_TEXT.
 
@@ -868,6 +868,10 @@ CLASS zag_cl_converter IMPLEMENTATION.
     "Build SAP Table
     "-------------------------------------------------
     LOOP AT xt_tsap_ext ASSIGNING FIELD-SYMBOL(<struct_ext>).
+      IF xv_header EQ abap_true
+        AND sy-tabix EQ 1.
+        CONTINUE.
+      ENDIF.
 
       DATA(lv_struct_ext) = <struct_ext>.
 
