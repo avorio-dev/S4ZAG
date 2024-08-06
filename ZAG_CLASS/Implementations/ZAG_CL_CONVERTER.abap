@@ -34,14 +34,7 @@ CLASS zag_cl_converter DEFINITION
         semicolon      TYPE char1      VALUE ';'              ##NO_TEXT,
         cr_lf          TYPE abap_cr_lf VALUE %_cr_lf          ##NO_TEXT,
         slash          TYPE char1      VALUE '/'              ##NO_TEXT,
-      END OF tc_separator,
-
-      BEGIN OF tc_user_exit,
-        pre_sap_to_string  TYPE string VALUE 'PRE_SAP_TO_STRING',
-        post_sap_to_string TYPE string VALUE 'POST_SAP_TO_STRING',
-        pre_string_to_sap  TYPE string VALUE 'PRE_STRING_TO_SAP',
-        post_string_to_sap TYPE string VALUE 'POST_STRING_TO_SAP',
-      END OF tc_user_exit.
+      END OF tc_separator.
 
     CONSTANTS:
       c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT,
@@ -97,12 +90,14 @@ CLASS zag_cl_converter DEFINITION
       conv_tsap_to_ext
         IMPORTING
                   !xt_tsap_int       TYPE table
+                  !xv_header         TYPE abap_bool DEFAULT abap_true
                   !xv_separator      TYPE char1 DEFAULT tc_separator-semicolon
         RETURNING VALUE(yt_tsap_ext) TYPE string_table,
 
       conv_tsap_to_int
         IMPORTING
           !xt_tsap_ext           TYPE string_table
+          !xv_header             TYPE abap_bool DEFAULT abap_true
           !xv_separator          TYPE abap_char1 DEFAULT tc_separator-semicolon
         CHANGING
           !yt_tsap_int           TYPE table
@@ -210,15 +205,7 @@ CLASS zag_cl_converter DEFINITION
       gr_typekind_charlike TYPE RANGE OF abap_typekind,
       gr_typekind_date     TYPE RANGE OF abap_typekind,
       gr_typekind_numbers  TYPE RANGE OF abap_typekind,
-      gr_typekind_time     TYPE RANGE OF abap_typekind,
-
-      go_exit_handler      TYPE REF TO object,
-
-      go_structdescr       TYPE REF TO cl_abap_structdescr,
-      gt_fcat              TYPE lvc_t_fcat,
-      gv_separator         TYPE abap_char1,
-
-      gt_str_data          TYPE string_table.
+      gr_typekind_time     TYPE RANGE OF abap_typekind.
 
 
     " Methods
@@ -683,7 +670,7 @@ CLASS zag_cl_converter IMPLEMENTATION.
     <lt_tsap_int> = xt_tsap_int[].
 
 
-    "Get Fieldcat for dynamic assignment
+    "Get Fieldcat / Header for Dynamic Assignment
     "-------------------------------------------------
     TRY.
         me->get_fieldcat_from_data(
@@ -697,6 +684,14 @@ CLASS zag_cl_converter IMPLEMENTATION.
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
         lv_cx_msg = lx_ai_system_fault->get_text( ).
     ENDTRY.
+
+    IF xv_header EQ abap_true.
+      DATA(lv_str_header) = me->get_header_from_data(
+          xt_fcat       = lt_fcat
+          xv_separator  = xv_separator
+      ).
+      APPEND lv_str_header TO yt_tsap_ext.
+    ENDIF.
 
 
     "String Building
