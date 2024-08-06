@@ -413,10 +413,12 @@ CLASS zag_cl_filer IMPLEMENTATION.
     "Check if file is supported
     "-------------------------------------------------
     IF xv_filename CP '*.xlsx'.
-      lv_filetype  = tc_filetype-xlsx.
+      lv_filetype      = tc_filetype-xlsx.
+      me->gv_separator = tc_separator-horizontal_tab.
 
     ELSEIF xv_filename CP '*.csv'.
-      lv_filetype  = tc_filetype-csv.
+      lv_filetype      = tc_filetype-csv.
+      me->gv_separator = tc_separator-semicolon.
 
     ELSE.
       RAISE not_supported_file.
