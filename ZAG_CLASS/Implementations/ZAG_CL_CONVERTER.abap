@@ -16,7 +16,7 @@ CLASS zag_cl_converter DEFINITION
       END OF ts_conversions_errors.
 
     TYPES:
-      tt_conversions_errors TYPE TABLE OF ts_conversions_errors .
+      tt_conversions_errors TYPE TABLE OF ts_conversions_errors WITH DEFAULT KEY.
 
 
     " Constants
