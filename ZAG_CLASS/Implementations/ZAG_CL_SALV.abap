@@ -88,7 +88,7 @@ CLASS zag_cl_salv DEFINITION
           !xt_output        TYPE STANDARD TABLE
           !xt_col_settings  TYPE tt_col_settings OPTIONAL
           !xo_event_handler TYPE REF TO object OPTIONAL
-          !xv_popup         TYPE boolean DEFAULT abap_false
+          !xv_popup         TYPE boolean OPTIONAL
         RAISING
           cx_salv_msg
           cx_ai_system_fault,
