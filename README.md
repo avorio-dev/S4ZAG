@@ -1,5 +1,14 @@
 # S4ZAG - Repository Overview
 
+The material in this repository is the result of in-depth analysis and free time dedicated to it.
+If what was produced was useful to you and you feel like offering me a coffee (an irreplaceable source of energy that moves the sun and stars :D), please donate using the button below.
+
+[![Donate_with_paypal](donate_logo.png)](https://www.paypal.com/paypalme/AntonioGarofalo1993)
+
+<br>
+
+---
+
 ### 1. [Guides](https://github.com/avorio-dev/S4ZAG/blob/main/Manuals/README.md)
 
 ### 2. [Templates](https://github.com/avorio-dev/S4ZAG/blob/main/Template/README.md)
