@@ -52,23 +52,21 @@ CLASS zag_cl_filer DEFINITION
     METHODS:
       file_download
         IMPORTING
-          !xv_directory TYPE string
-          !xv_source    TYPE char1     DEFAULT tc_file_source-local
-          !xv_header    TYPE abap_bool DEFAULT abap_true
-*          !xv_create_zip TYPE abap_bool DEFAULT abap_false
+          !xv_directory   TYPE string
+          !xv_source      TYPE char1     DEFAULT tc_file_source-local
+          !xv_header      TYPE abap_bool DEFAULT abap_true
         CHANGING
-          !yt_files     TYPE tt_files
+          !yt_files       TYPE tt_files
         RAISING
           cx_ai_system_fault,
 
       file_upload
         IMPORTING
-          !xv_directory TYPE string
-          !xv_source    TYPE char1     DEFAULT tc_file_source-local
-          !xv_header    TYPE abap_bool DEFAULT abap_true
-*          !xv_load_zip  TYPE abap_bool DEFAULT abap_false
+          !xv_directory   TYPE string
+          !xv_source      TYPE char1     DEFAULT tc_file_source-local
+          !xv_header      TYPE abap_bool DEFAULT abap_true
         CHANGING
-          !yt_files     TYPE tt_files
+          !yt_files       TYPE tt_files
         RAISING
           cx_ai_system_fault.
 
@@ -277,7 +275,6 @@ CLASS zag_cl_filer IMPLEMENTATION.
     TRY.
         LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
 
-
           "Init Instance Attribute
           "-------------------------------------------------
           init_instance( xref_tsap   = <files>-sap_content
@@ -298,34 +295,34 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
           "Start Download on Local / Server
           "-------------------------------------------------
-          CASE me->gv_filetype.
+          CASE xv_source.
 
-            WHEN tc_filetype-csv
-              OR tc_filetype-txt.
+            WHEN tc_file_source-local.
 
-              CASE xv_source.
-                WHEN tc_file_source-local.
+              CASE me->gv_filetype.
 
+                WHEN tc_filetype-csv
+                  OR tc_filetype-txt.
                   me->download_csv_local( ).
 
-                WHEN tc_file_source-server.
-
-                  me->download_csv_server( ).
+                WHEN tc_filetype-xlsx.
+                  me->download_excel_local( ).
 
               ENDCASE.
 
-            WHEN tc_filetype-xlsx.
+            WHEN tc_file_source-server.
 
-              CASE xv_source.
-                WHEN tc_file_source-local.
+              CASE me->gv_filetype.
 
-                  me->download_excel_local( ).
+                WHEN tc_filetype-csv
+                  OR tc_filetype-txt.
+                  me->download_csv_server( ).
 
-                WHEN tc_file_source-server.
-
+                WHEN tc_filetype-xlsx.
                   me->download_excel_server( ).
 
               ENDCASE.
+
           ENDCASE.
 
         ENDLOOP.
@@ -359,37 +356,37 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
           "Start Download on Local / Server
           "-------------------------------------------------
-          CASE me->gv_filetype.
+          CASE xv_source.
 
-            WHEN tc_filetype-csv
-              OR tc_filetype-txt.
+            WHEN tc_file_source-local.
 
-              CASE xv_source.
-                WHEN tc_file_source-local.
+              CASE me->gv_filetype.
 
+                WHEN tc_filetype-csv
+                  OR tc_filetype-txt.
                   me->upload_csv_local( ).
 
-                WHEN tc_file_source-server.
-
-                  me->upload_csv_server( ).
-
-              ENDCASE.
-
-            WHEN tc_filetype-xlsx.
-
-              CASE xv_source.
-                WHEN tc_file_source-local.
-
+                WHEN tc_filetype-xlsx.
                   "Upload from XLSX with in-built conversion in SAP Format
                   me->upload_excel_local( ).
 
-                WHEN tc_file_source-server.
+              ENDCASE.
 
+            WHEN tc_file_source-server.
+
+              CASE me->gv_filetype.
+
+                WHEN tc_filetype-csv
+                  OR tc_filetype-txt.
+                  me->upload_csv_server( ).
+
+                WHEN tc_filetype-xlsx.
                   RAISE EXCEPTION TYPE cx_ai_system_fault
                     EXPORTING
                       errortext = tc_exception_msg-unable_read_file.
 
               ENDCASE.
+
           ENDCASE.
 
 
