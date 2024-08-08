@@ -94,10 +94,7 @@ CLASS zag_cl_converter DEFINITION
           !xv_separator          TYPE abap_char1 DEFAULT tc_separator-semicolon
         CHANGING
           !yt_tsap_int           TYPE table
-          !yt_conversions_errors TYPE tt_conversions_errors
-        EXCEPTIONS
-          conversion_error
-          plausibility_error,
+          !yt_conversions_errors TYPE tt_conversions_errors,
 
       remove_special_char
         CHANGING
@@ -136,11 +133,13 @@ CLASS zag_cl_converter DEFINITION
       END OF tc_symbols,
 
       BEGIN OF tc_exception_msg,
-        unable_read_file  TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
-        unable_def_struct TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
-        input_error       TYPE string VALUE 'Input error'                        ##NO_TEXT,
-        internal_error    TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
-        not_implemented   TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
+        unable_read_file   TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
+        unable_def_struct  TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
+        input_error        TYPE string VALUE 'Input error'                        ##NO_TEXT,
+        internal_error     TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
+        not_implemented    TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
+        not_supported_file TYPE string VALUE 'File not supported'                 ##NO_TEXT,
+        file_empty         TYPE string VALUE 'File empty'                         ##NO_TEXT,
       END OF tc_exception_msg,
 
       BEGIN OF tc_conversion_msg,
@@ -860,244 +859,244 @@ CLASS zag_cl_converter IMPLEMENTATION.
             yt_fcat        = DATA(lt_fcat)
         ).
 
-      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
-        lv_cx_msg = lx_ai_system_fault->get_text( ).
-    ENDTRY.
 
-
-    "Build SAP Table
-    "-------------------------------------------------
-    LOOP AT xt_tsap_ext ASSIGNING FIELD-SYMBOL(<struct_ext>).
-      IF xv_header EQ abap_true
-        AND sy-tabix EQ 1.
-        CONTINUE.
-      ENDIF.
-
-      DATA(lv_struct_ext) = <struct_ext>.
-
-      CLEAR <struct_int>.
-
-      LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
-        CHECK <fcat>-fieldname NE c_mandt.
-
-        CLEAR ls_conversion_errors.
-
-        ASSIGN lo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
-
-        ASSIGN COMPONENT <component>-name OF STRUCTURE <struct_int> TO FIELD-SYMBOL(<value_int>).
-        ls_conversion_errors-field       = <fcat>-fieldname.
-        ls_conversion_errors-field_descr = <fcat>-reptext.
-
-        IF <component>-type_kind NOT IN me->gr_typekind_numbers[]
-          AND <component>-type_kind NOT IN me->gr_typekind_date[]
-          AND <component>-type_kind NOT IN me->gr_typekind_time[]
-          AND <component>-type_kind NOT IN me->gr_typekind_charlike[].
-
-          APPEND VALUE #( BASE ls_conversion_errors
-              error = tc_conversion_msg-unmanaged_dtype
-            ) TO yt_conversions_errors.
-          CONTINUE.
-
-        ENDIF.
-
-
-        SPLIT lv_struct_ext AT xv_separator
-          INTO DATA(lv_current_value)
-               lv_struct_ext.
-
-        DATA(lv_preconv_value) = lv_current_value.
-
-
-        "User Exit
-        "---------------------------------------------------------------
-        me->pre_struct_to_int(
-          EXPORTING
-            xs_fcat           = <fcat>
-          CHANGING
-            yv_value_pre_conv = lv_current_value
-        ).
-
-
-        "Deletion special chars
+        "Build SAP Table
         "-------------------------------------------------
-        IF 1 = 2.
-          remove_special_char(
-            CHANGING
-              yv_text = lv_current_value
-          ).
-        ENDIF.
+        LOOP AT xt_tsap_ext ASSIGNING FIELD-SYMBOL(<struct_ext>).
+          IF xv_header EQ abap_true
+            AND sy-tabix EQ 1.
+            CONTINUE.
+          ENDIF.
 
+          DATA(lv_struct_ext) = <struct_ext>.
 
-        "Conversion Exit
-        "---------------------------------------------------------------
-        IF <fcat>-edit_mask IS NOT INITIAL.
+          CLEAR <struct_int>.
 
-          DATA(lv_conv_name) = <fcat>-edit_mask+2.
+          LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
+            CHECK <fcat>-fieldname NE c_mandt.
 
-          conv_standard_exit_input(
-            EXPORTING
-              xv_conv_name = CONV #( lv_conv_name )
-            CHANGING
-              yv_tmp_data  = lv_current_value
-          ).
+            CLEAR ls_conversion_errors.
 
-        ENDIF.
+            ASSIGN lo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
 
+            ASSIGN COMPONENT <component>-name OF STRUCTURE <struct_int> TO FIELD-SYMBOL(<value_int>).
+            ls_conversion_errors-field       = <fcat>-fieldname.
+            ls_conversion_errors-field_descr = <fcat>-reptext.
 
-        "Numbers
-        "---------------------------------------------------------------
-        IF <component>-type_kind IN gr_typekind_numbers[].
+            IF <component>-type_kind NOT IN me->gr_typekind_numbers[]
+              AND <component>-type_kind NOT IN me->gr_typekind_date[]
+              AND <component>-type_kind NOT IN me->gr_typekind_time[]
+              AND <component>-type_kind NOT IN me->gr_typekind_charlike[].
 
-          conv_numb_to_int(
-            EXPORTING
-              xv_numb_ext         = lv_current_value
-            RECEIVING
-              yv_numb_int         = DATA(lv_tmp_num)
-            EXCEPTIONS
-              format_error       = 1
-              plausibility_error = 2
-              OTHERS             = 3
-          ).
-          CASE sy-subrc.
-            WHEN 0.
-              lv_current_value = lv_tmp_num.
-
-            WHEN 1.
               APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-format_number
-                  value = lv_current_value
+                  error = tc_conversion_msg-unmanaged_dtype
                 ) TO yt_conversions_errors.
-              RAISE conversion_error.
-
-            WHEN 2.
-              APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-implaus_number
-                  value = lv_current_value
-                ) TO yt_conversions_errors.
-              RAISE plausibility_error.
-
-          ENDCASE.
-
-
-          IF <fcat>-edit_mask CS 'EXCRT'
-           OR <fcat>-edit_mask CS 'EXCRX'.
-
-            IF lv_tmp_num NE 0.
-
-              CALL FUNCTION 'CONVERSION_EXIT_EXCRT_INPUT'
-                EXPORTING
-                  input  = lv_tmp_num
-                IMPORTING
-                  output = lv_tmp_num.
+              CONTINUE.
 
             ENDIF.
 
-          ENDIF.
 
-        ENDIF.
+            SPLIT lv_struct_ext AT xv_separator
+              INTO DATA(lv_current_value)
+                   lv_struct_ext.
 
-
-        "Date
-        "---------------------------------------------------------------
-        IF <component>-type_kind IN gr_typekind_date[].
-
-          conv_data_to_int(
-            EXPORTING
-              xv_data_ext         = lv_current_value
-            RECEIVING
-              yv_data_int         = DATA(lv_tmp_dats)
-            EXCEPTIONS
-              format_error       = 1
-              plausibility_error = 2
-              OTHERS             = 3
-          ).
-          CASE sy-subrc.
-            WHEN 0.
-              lv_current_value = lv_tmp_dats.
-
-            WHEN 1.
-              APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-format_data
-                  value = lv_current_value
-                ) TO yt_conversions_errors.
-              RAISE conversion_error.
-
-            WHEN 2.
-              APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-implaus_data
-                  value = lv_current_value
-                ) TO yt_conversions_errors.
-              RAISE plausibility_error.
-
-          ENDCASE.
-
-        ENDIF.
+            DATA(lv_preconv_value) = lv_current_value.
 
 
-        "Time
-        "---------------------------------------------------------------
-        IF <component>-type_kind IN gr_typekind_time[].
-
-          conv_time_to_int(
-            EXPORTING
-              xv_time_ext         = lv_current_value
-            RECEIVING
-              yv_time_int         = DATA(lv_tmp_time)
-            EXCEPTIONS
-              format_error       = 1
-              plausibility_error = 2
-              OTHERS             = 3
-          ).
-          CASE sy-subrc.
-            WHEN 0.
-              lv_current_value = lv_tmp_time.
-
-            WHEN 1.
-              APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-format_time
-                  value = lv_current_value
-                ) TO yt_conversions_errors.
-              RAISE conversion_error.
-
-            WHEN 2.
-              APPEND VALUE #( BASE ls_conversion_errors
-                  error = tc_conversion_msg-implaus_time
-                  value = lv_current_value
-                ) TO yt_conversions_errors.
-              RAISE plausibility_error.
-
-          ENDCASE.
-        ENDIF.
+            "User Exit
+            "---------------------------------------------------------------
+            me->pre_struct_to_int(
+              EXPORTING
+                xs_fcat           = <fcat>
+              CHANGING
+                yv_value_pre_conv = lv_current_value
+            ).
 
 
-        "Charlike
-        "---------------------------------------------------------------
-        IF <component>-type_kind IN gr_typekind_charlike[].
-
-          "Normal Data -> Nothing To Do
-
-        ENDIF.
-
-
-        "User Exit
-        "---------------------------------------------------------------
-        me->post_struct_to_int(
-          EXPORTING
-            xs_fcat            = <fcat>
-            xv_value_pre_conv  = lv_preconv_value
-          CHANGING
-            yv_value_post_conv = lv_current_value
-        ).
+            "Deletion special chars
+            "-------------------------------------------------
+            IF 1 = 2.
+              remove_special_char(
+                CHANGING
+                  yv_text = lv_current_value
+              ).
+            ENDIF.
 
 
-        <value_int>   = lv_current_value.
+            "Conversion Exit
+            "---------------------------------------------------------------
+            IF <fcat>-edit_mask IS NOT INITIAL.
 
-      ENDLOOP.
+              DATA(lv_conv_name) = <fcat>-edit_mask+2.
 
-      APPEND <struct_int> TO yt_tsap_int.
+              conv_standard_exit_input(
+                EXPORTING
+                  xv_conv_name = CONV #( lv_conv_name )
+                CHANGING
+                  yv_tmp_data  = lv_current_value
+              ).
 
-    ENDLOOP.
+            ENDIF.
 
+
+            "Numbers
+            "---------------------------------------------------------------
+            IF <component>-type_kind IN gr_typekind_numbers[].
+
+              conv_numb_to_int(
+                EXPORTING
+                  xv_numb_ext         = lv_current_value
+                RECEIVING
+                  yv_numb_int         = DATA(lv_tmp_num)
+                EXCEPTIONS
+                  format_error       = 1
+                  plausibility_error = 2
+                  OTHERS             = 3
+              ).
+              CASE sy-subrc.
+                WHEN 0.
+                  lv_current_value = lv_tmp_num.
+
+                WHEN 1.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-format_number
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+                WHEN 2.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-implaus_number
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+              ENDCASE.
+
+
+              IF <fcat>-edit_mask CS 'EXCRT'
+               OR <fcat>-edit_mask CS 'EXCRX'.
+
+                IF lv_tmp_num NE 0.
+
+                  CALL FUNCTION 'CONVERSION_EXIT_EXCRT_INPUT'
+                    EXPORTING
+                      input  = lv_tmp_num
+                    IMPORTING
+                      output = lv_tmp_num.
+
+                ENDIF.
+
+              ENDIF.
+
+            ENDIF.
+
+
+            "Date
+            "---------------------------------------------------------------
+            IF <component>-type_kind IN gr_typekind_date[].
+
+              conv_data_to_int(
+                EXPORTING
+                  xv_data_ext         = lv_current_value
+                RECEIVING
+                  yv_data_int         = DATA(lv_tmp_dats)
+                EXCEPTIONS
+                  format_error       = 1
+                  plausibility_error = 2
+                  OTHERS             = 3
+              ).
+              CASE sy-subrc.
+                WHEN 0.
+                  lv_current_value = lv_tmp_dats.
+
+                WHEN 1.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-format_data
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+                WHEN 2.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-implaus_data
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+              ENDCASE.
+
+            ENDIF.
+
+
+            "Time
+            "---------------------------------------------------------------
+            IF <component>-type_kind IN gr_typekind_time[].
+
+              conv_time_to_int(
+                EXPORTING
+                  xv_time_ext         = lv_current_value
+                RECEIVING
+                  yv_time_int         = DATA(lv_tmp_time)
+                EXCEPTIONS
+                  format_error       = 1
+                  plausibility_error = 2
+                  OTHERS             = 3
+              ).
+              CASE sy-subrc.
+                WHEN 0.
+                  lv_current_value = lv_tmp_time.
+
+                WHEN 1.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-format_time
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+                WHEN 2.
+                  APPEND VALUE #( BASE ls_conversion_errors
+                      error = tc_conversion_msg-implaus_time
+                      value = lv_current_value
+                    ) TO yt_conversions_errors.
+                  EXIT.
+
+              ENDCASE.
+            ENDIF.
+
+
+            "Charlike
+            "---------------------------------------------------------------
+            IF <component>-type_kind IN gr_typekind_charlike[].
+
+              "Normal Data -> Nothing To Do
+
+            ENDIF.
+
+
+            "User Exit
+            "---------------------------------------------------------------
+            me->post_struct_to_int(
+              EXPORTING
+                xs_fcat            = <fcat>
+                xv_value_pre_conv  = lv_preconv_value
+              CHANGING
+                yv_value_post_conv = lv_current_value
+            ).
+
+
+            <value_int>   = lv_current_value.
+
+          ENDLOOP.
+
+          APPEND <struct_int> TO yt_tsap_int.
+
+        ENDLOOP.
+
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+        lv_cx_msg = lx_ai_system_fault->get_text( ).
+    ENDTRY.
 
   ENDMETHOD.
 

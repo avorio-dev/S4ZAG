@@ -46,10 +46,6 @@ lo_conv->conv_tsap_to_int(
   CHANGING
     yt_tsap_int           = lt_caufv[]
     yt_conversions_errors = lt_conv_err[]
-  EXCEPTIONS
-    conversion_error      = 1
-    plausibility_error    = 2
-    OTHERS                = 3
 ).
 
 DATA(lo_salv) = NEW zag_cl_salv( ).

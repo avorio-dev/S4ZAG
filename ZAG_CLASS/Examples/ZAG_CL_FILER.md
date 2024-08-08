@@ -13,22 +13,33 @@
   "-------------------------------------------------
 
   SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
+  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
 
-  DATA(lv_filename) = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
   DATA(lo_filer)    = NEW zag_cl_filer( ).
 
-  lo_filer->file_download(
-    EXPORTING
-      xv_filename               = lv_filename
-      xt_sap_table              = lt_caufv
-      xv_source                 = zag_cl_filer=>tc_file_source-local
-      xv_header                 = abap_true
-    EXCEPTIONS
-      not_supported_file        = 1
-      unable_define_structdescr = 2
-      unable_open_path          = 3
-      OTHERS                    = 4
-  ).
+  TRY.
+
+      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
+        ( filename = 'caufv.csv'
+          sap_content = REF #( lt_caufv )
+        )
+
+        ( filename = 'bseg.csv'
+          sap_content = REF #( lt_bseg )
+        )
+      ).
+
+      lo_filer->file_download(
+        EXPORTING
+          xv_directory = zag_cl_filer=>get_desktop_directory( )
+          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_header    = abap_true
+        CHANGING
+          yt_files     = lt_files[]
+      ).
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+      WRITE lx_ai_system_fault->get_text( ).
+  ENDTRY.
 
 ```
 
@@ -38,28 +49,35 @@
   "Example 2 -> Upload .CSV
   "-------------------------------------------------
 
-  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
+  DATA: lt_caufv TYPE TABLE OF caufv,
+        lt_bseg  TYPE TABLE OF bseg.
 
-  DATA(lv_filename)     = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
-  DATA(lo_filer)     = NEW zag_cl_filer( ).
+  DATA(lo_filer) = NEW zag_cl_filer( ).
 
-  lo_filer->file_upload(
-    EXPORTING
-      xv_filename               = lv_filename
-      xv_source                 = zag_cl_filer=>tc_file_source-local
-      xv_header                 = abap_true
-    IMPORTING
-      yt_conversions_errors     = DATA(lt_conv_error)
-    CHANGING
-      yt_sap_data               = lt_caufv
-    EXCEPTIONS
-      not_supported_file        = 1
-      unable_define_structdescr = 2
-      input_error               = 3
-      unable_open_path          = 4
-      empty_file                = 5
-      OTHERS                    = 6
-  ).
+  TRY.
+
+      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
+        ( filename = 'caufv.csv'
+          sap_content = REF #( lt_caufv )
+        )
+
+        ( filename = 'bseg.csv'
+          sap_content = REF #( lt_bseg )
+        )
+      ).
+
+      lo_filer->file_upload(
+        EXPORTING
+          xv_directory = zag_cl_filer=>get_desktop_directory( )
+          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_header    = abap_true
+        CHANGING
+          yt_files     = lt_files[]
+      ).
+
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+      WRITE lx_ai_system_fault->get_text( ).
+  ENDTRY.
 
 ```
 
@@ -132,41 +150,41 @@ ENDCLASS.
 START-OF-SELECTION.
 
   SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
+  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
 
-  DATA(lv_filename) = |{ zag_cl_filer=>get_desktop_directory( ) }/zag_file.csv|.
-  DATA(lo_filer)    = NEW lcl_custom_filer( ).
+  DATA(lo_filer) = NEW zag_cl_filer( ).
 
+  TRY.
 
-  lo_filer->file_download(
-    EXPORTING
-      xv_filename               = lv_filename
-      xt_sap_table              = lt_caufv
-      xv_source                 = zag_cl_filer=>tc_file_source-local
-      xv_header                 = abap_true
-    EXCEPTIONS
-      not_supported_file        = 1
-      unable_define_structdescr = 2
-      unable_open_path          = 3
-      OTHERS                    = 4
-  ).
+      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
+        ( filename = 'caufv.csv'
+          sap_content = REF #( lt_caufv )
+        )
 
+        ( filename = 'bseg.csv'
+          sap_content = REF #( lt_bseg )
+        )
+      ).
 
-  CLEAR lt_caufv[].
-  lo_filer->file_upload(
-    EXPORTING
-      xv_filename               = lv_filename
-      xv_source                 = zag_cl_filer=>tc_file_source-local
-      xv_header                 = abap_true
-    IMPORTING
-      yt_conversions_errors     = DATA(lt_conv_error)
-    CHANGING
-      yt_sap_data               = lt_caufv
-    EXCEPTIONS
-      not_supported_file        = 1
-      unable_define_structdescr = 2
-      input_error               = 3
-      unable_open_path          = 4
-      empty_file                = 5
-      OTHERS                    = 6
-  ).
+      lo_filer->file_download(
+        EXPORTING
+          xv_directory = zag_cl_filer=>get_desktop_directory( )
+          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_header    = abap_true
+        CHANGING
+          yt_files     = lt_files[]
+      ).
+
+      lo_filer->file_upload(
+        EXPORTING
+          xv_directory = zag_cl_filer=>get_desktop_directory( )
+          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_header    = abap_true
+        CHANGING
+          yt_files     = lt_files[]
+      ).
+
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+      WRITE lx_ai_system_fault->get_text( ).
+  ENDTRY.
 ```

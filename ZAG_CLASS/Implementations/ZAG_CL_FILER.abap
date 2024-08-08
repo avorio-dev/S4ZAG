@@ -16,7 +16,6 @@ CLASS zag_cl_filer DEFINITION
       tt_files TYPE TABLE OF ts_files WITH DEFAULT KEY.
 
 
-
     " Constants
     "-------------------------------------------------
     CONSTANTS:
@@ -56,28 +55,22 @@ CLASS zag_cl_filer DEFINITION
           !xv_directory  TYPE string
           !xv_source     TYPE char1     DEFAULT tc_file_source-local
           !xv_header     TYPE abap_bool DEFAULT abap_true
-          !xv_create_zip TYPE abap_bool DEFAULT abap_false
+*          !xv_create_zip TYPE abap_bool DEFAULT abap_false
         CHANGING
           !yt_files      TYPE tt_files
-        EXCEPTIONS
-          not_supported_file
-          unable_define_structdescr
-          unable_open_path,
+        RAISING
+          cx_ai_system_fault,
 
       file_upload
         IMPORTING
           !xv_directory TYPE string
-          !xv_source    TYPE char1         DEFAULT tc_file_source-local
-          !xv_header    TYPE abap_bool     DEFAULT abap_true
-          !xv_load_zip  TYPE abap_bool DEFAULT abap_false
+          !xv_source    TYPE char1     DEFAULT tc_file_source-local
+          !xv_header    TYPE abap_bool DEFAULT abap_true
+*          !xv_load_zip  TYPE abap_bool DEFAULT abap_false
         CHANGING
-          !yt_files      TYPE tt_files
-        EXCEPTIONS
-          not_supported_file
-          unable_define_structdescr
-          input_error
-          unable_open_path
-          empty_file.
+          !yt_files     TYPE tt_files
+        RAISING
+          cx_ai_system_fault.
 
   PROTECTED SECTION.
 
@@ -91,6 +84,7 @@ CLASS zag_cl_filer DEFINITION
       gref_sap_data  TYPE REF TO data,
       gt_str_data    TYPE string_table,
 
+      gv_filetype    TYPE string,
       gv_filename    TYPE string,
       gv_header      TYPE abap_char1,
 
@@ -101,15 +95,14 @@ CLASS zag_cl_filer DEFINITION
 
     " Methods
     "-------------------------------------------------
-
     METHODS:
       init_instance
         IMPORTING
           !xref_tsap   TYPE REF TO data
           !xv_filename TYPE string
           !xv_header   TYPE abap_char1    DEFAULT abap_true
-        EXCEPTIONS
-          unable_define_structdescr,
+        RAISING
+          cx_ai_system_fault,
 
       download_csv_local
         RAISING
@@ -275,61 +268,36 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
   METHOD file_download.
 
-    DATA:
-      lv_filetype TYPE char10 VALUE IS INITIAL.
-
     FIELD-SYMBOLS:
-      <gt_sap_data> TYPE STANDARD TABLE.
-
-    "-------------------------------------------------
-
-    LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
-
-      "Check if file is supported
-      "-------------------------------------------------
-      IF <files>-filename CP '*.xlsx'.
-        lv_filetype      = tc_filetype-xlsx.
-        me->gv_separator = tc_separator-horizontal_tab.
-
-      ELSEIF <files>-filename CP '*.csv'.
-        lv_filetype      = tc_filetype-csv.
-        me->gv_separator = tc_separator-semicolon.
-
-      ELSE.
-        RAISE not_supported_file.
-
-      ENDIF.
-
-      init_instance(
-        EXPORTING
-          xref_tsap                 = <files>-sap_content
-          xv_filename               = <files>-filename
-          xv_header                 = xv_header
-        EXCEPTIONS
-          unable_define_structdescr = 1
-          OTHERS                    = 2
-      ).
-      IF sy-subrc <> 0.
-        RAISE unable_define_structdescr.
-      ENDIF.
+      <lt_sap_data> TYPE STANDARD TABLE.
 
 
-      "Convert SAP Table data into String table Data
-      "-------------------------------------------------
-      ASSIGN me->gref_sap_data->* TO <gt_sap_data>.
 
-      me->gt_str_data = me->conv_tsap_to_ext(
-        xt_tsap_int  = <gt_sap_data>
-        xv_header    = me->gv_header
-        xv_separator = me->gv_separator
-      ).
+    TRY.
+        LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
 
 
-      "-------------------------------------------------
-      "Start Download on Local / Server
-      "-------------------------------------------------
-      TRY.
-          CASE lv_filetype.
+          "Init Instance Attribute
+          "-------------------------------------------------
+          init_instance( xref_tsap   = <files>-sap_content
+                         xv_filename = <files>-filename
+                         xv_header   = xv_header
+          ).
+
+
+          "Convert SAP Table data into String table Data
+          "-------------------------------------------------
+          ASSIGN me->gref_sap_data->* TO <lt_sap_data>.
+
+          me->gt_str_data = me->conv_tsap_to_ext( xt_tsap_int  = <lt_sap_data>
+                                                  xv_header    = me->gv_header
+                                                  xv_separator = me->gv_separator
+          ).
+
+
+          "Start Download on Local / Server
+          "-------------------------------------------------
+          CASE me->gv_filetype.
 
             WHEN tc_filetype-csv.
 
@@ -358,59 +326,36 @@ CLASS zag_cl_filer IMPLEMENTATION.
               ENDCASE.
           ENDCASE.
 
-        CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-          DATA(lv_except_msg) = lx_ai_system_fault->get_text( ).
-          RAISE unable_open_path.
-      ENDTRY.
+        ENDLOOP.
 
-    ENDLOOP.
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_except_msg) = lx_ai_system_fault->get_text( ).
+        RAISE EXCEPTION lx_ai_system_fault.
+    ENDTRY.
 
   ENDMETHOD.
 
 
   METHOD file_upload.
 
-    DATA:
-      lv_filetype TYPE char10 VALUE IS INITIAL.
-
     FIELD-SYMBOLS:
-    <lt_sap_data> TYPE STANDARD TABLE.
-
-    LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
-
-      "Check if file is supported
-      "-------------------------------------------------
-      IF <files>-filename CP '*.xlsx'.
-        lv_filetype      = tc_filetype-xlsx.
-        me->gv_separator = tc_separator-horizontal_tab.
-
-      ELSEIF <files>-filename CP '*.csv'.
-        lv_filetype      = tc_filetype-csv.
-        me->gv_separator = tc_separator-semicolon.
-
-      ELSE.
-        RAISE not_supported_file.
-      ENDIF.
-
-      init_instance(
-        EXPORTING
-          xref_tsap                 = <files>-sap_content
-          xv_filename               = <files>-filename
-          xv_header                 = xv_header
-        EXCEPTIONS
-          unable_define_structdescr = 1
-          OTHERS                    = 2
-      ).
-      IF sy-subrc <> 0.
-        RAISE unable_define_structdescr.
-      ENDIF.
+      <lt_sap_data> TYPE STANDARD TABLE.
 
 
-      "-------------------------------------------------
-      "Start Download on Local / Serveer
-      "-------------------------------------------------
-      TRY.
-          CASE lv_filetype.
+    TRY.
+        LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
+
+          "Init Instance Attribute
+          "-------------------------------------------------
+          init_instance( xref_tsap   = <files>-sap_content
+                         xv_filename = <files>-filename
+                         xv_header   = xv_header
+          ).
+
+
+          "Start Download on Local / Server
+          "-------------------------------------------------
+          CASE me->gv_filetype.
 
             WHEN tc_filetype-csv.
 
@@ -431,54 +376,38 @@ CLASS zag_cl_filer IMPLEMENTATION.
                 WHEN tc_file_source-local.
 
                   "Upload from XLSX with in-built conversion in SAP Format
-                  "-------------------------------------------------
                   me->upload_excel_local( ).
 
                 WHEN tc_file_source-server.
 
-                  RAISE input_error.
+                  RAISE EXCEPTION TYPE cx_ai_system_fault
+                    EXPORTING
+                      errortext = tc_exception_msg-unable_read_file.
 
               ENDCASE.
-
-            WHEN OTHERS.
-              RAISE not_supported_file.
-
           ENDCASE.
 
-        CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-          DATA(lv_excp_msg) = lx_ai_system_fault->get_text( ).
-          RAISE unable_open_path.
-      ENDTRY.
 
+          "Conversion in SAP Format for CSV
+          "-------------------------------------------------
+          ASSIGN <files>-sap_content->* TO <lt_sap_data>.
 
+          me->conv_tsap_to_int(
+            EXPORTING
+              xt_tsap_ext           = me->gt_str_data[]
+              xv_header             = me->gv_header
+              xv_separator          = me->gv_separator
+            CHANGING
+              yt_tsap_int           = <lt_sap_data>
+              yt_conversions_errors = <files>-conv_errors
+          ).
 
-      "Conversion in SAP Format for CSV
-      "-------------------------------------------------
-      ASSIGN <files>-sap_content->* TO <lt_sap_data>.
+        ENDLOOP.
 
-      me->conv_tsap_to_int(
-        EXPORTING
-          xt_tsap_ext           = me->gt_str_data[]
-          xv_header             = me->gv_header
-          xv_separator          = me->gv_separator
-        CHANGING
-          yt_tsap_int           = <lt_sap_data>
-          yt_conversions_errors = <files>-conv_errors
-        EXCEPTIONS
-          conversion_error      = 1
-          plausibility_error    = 2
-          OTHERS                = 3
-      ).
-      IF sy-subrc <> 0.
-*     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-*       WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-      ENDIF.
-
-      IF lines( <lt_sap_data> ) EQ 0.
-        RAISE empty_file.
-      ENDIF.
-
-    ENDLOOP.
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        DATA(lv_except_msg) = lx_ai_system_fault->get_text( ).
+        RAISE EXCEPTION lx_ai_system_fault.
+    ENDTRY.
 
   ENDMETHOD.
 
@@ -489,9 +418,28 @@ CLASS zag_cl_filer IMPLEMENTATION.
      <sap_table> TYPE STANDARD TABLE.
 
 
+    "Check if file is supported
+    "-------------------------------------------------
+    me->gv_filetype = ''.
+    IF xv_filename CP '*.xlsx'.
+      me->gv_filetype      = tc_filetype-xlsx.
+      me->gv_separator = tc_separator-horizontal_tab.
+
+    ELSEIF xv_filename CP '*.csv'.
+      me->gv_filetype      = tc_filetype-csv.
+      me->gv_separator = tc_separator-semicolon.
+
+    ELSE.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-not_supported_file.
+
+    ENDIF.
+
+
     "Set Data Table
     "---------------------------------------------------------------
-    CREATE DATA me->gref_sap_data LIKE xref_tsap.
+    me->gref_sap_data  = xref_tsap.
     me->gv_filename    = xv_filename.
     me->gv_header      = xv_header.
 
@@ -514,8 +462,7 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
 
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        DATA(lv_excp_msg) = lx_ai_system_fault->get_text( ).
-        RAISE unable_define_structdescr.
+        RAISE EXCEPTION lx_ai_system_fault.
     ENDTRY.
 
   ENDMETHOD.

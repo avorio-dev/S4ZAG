@@ -31,24 +31,24 @@
 ---
 
 ```abap
-  "Example 2 -> Set colors for cells and / or rows
+"Example 2 -> Set colors for cells and / or rows
   "          -> Set Labels / Hide fields
   "-------------------------------------------------
 
-  TYPES: 
+  TYPES:
     BEGIN OF ty_alv,
-        icon  TYPE icon_d,
-        matnr TYPE mara-matnr,
-        ersda TYPE mara-ersda,
-        ernam TYPE mara-ernam,
-        laeda TYPE mara-laeda,
-        aenam TYPE mara-aenam,
-        zeinr TYPE mara-zeinr,
+      icon  TYPE icon_d,
+      matnr TYPE mara-matnr,
+      ersda TYPE mara-ersda,
+      ernam TYPE mara-ernam,
+      laeda TYPE mara-laeda,
+      aenam TYPE mara-aenam,
+      zeinr TYPE mara-zeinr,
 
-        t_col TYPE lvc_t_scol, "Use this if you want colors in output
+      t_col TYPE lvc_t_scol, "Use this if you want colors in output
     END OF ty_alv.
 
-  DATA: 
+  DATA:
     gt_alv       TYPE TABLE OF ty_alv.
 
   SELECT * FROM mara UP TO 10 ROWS INTO TABLE @DATA(lt_mara).
@@ -61,47 +61,45 @@
 
     "Set Icon
     DATA(lv_diff) = sy-datum - <mara>-ersda.
-    <alv>-icon = COND #(
-      WHEN lv_diff MOD 2 EQ 0 THEN zag_cl_salv=>tc_icon-green
-      ELSE zag_cl_salv=>tc_icon-red
-    ).
+
+    <alv>-icon = zag_cl_salv=>tc_icon-red.
+    IF lv_diff MOD 2 EQ 0.
+      <alv>-icon = zag_cl_salv=>tc_icon-green.
+    ENDIF.
 
 
     lv_diff = sy-datum - <mara>-ersda.
-    IF lv_diff MOD 2 EQ 0.
+    TRY.
+        IF lv_diff MOD 2 EQ 0.
 
-      "Set Single Cell Color
-      zag_cl_salv=>set_color_cell(
-        EXPORTING
-          xs_color            = VALUE #( col = zag_cl_salv=>tc_cell_col-green
-                                         int = 1
-                                         inv = 1 )
-          xt_fieldname        = VALUE #( ( 'MATNR' ) )
-        CHANGING
-          y_row               = <alv>
-        EXCEPTIONS
-          col_tab_not_found   = 1
-          fieldname_not_found = 2
-          OTHERS              = 3
-      ).
+          "Set Single Cell Color
+          zag_cl_salv=>set_color_cell(
+            EXPORTING
+              xs_color            = VALUE #( col = zag_cl_salv=>tc_cell_col-green
+                                             int = 1
+                                             inv = 1 )
+              xt_fieldname        = VALUE #( ( 'MATNR' ) )
+            CHANGING
+              y_row               = <alv>
+          ).
 
-    ELSE.
+        ELSE.
 
-      "Set Row Color
-      zag_cl_salv=>set_color_row(
-        EXPORTING
-          xs_color          = VALUE #( col = zag_cl_salv=>tc_cell_col-red
-                                       int = 0
-                                       inv = 0 )
-        CHANGING
-          ys_row            = <alv>
-        EXCEPTIONS
-          col_tab_not_found = 1
-          fcat_not_found    = 2
-          OTHERS            = 3
-      ).
+          "Set Row Color
+          zag_cl_salv=>set_color_row(
+            EXPORTING
+              xs_color          = VALUE #( col = zag_cl_salv=>tc_cell_col-red
+                                           int = 0
+                                           inv = 0 )
+            CHANGING
+              ys_row            = <alv>
+          ).
 
-    ENDIF.
+        ENDIF.
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        WRITE lx_ai_system_fault->get_text( ).
+    ENDTRY.
+
   ENDLOOP.
 
 
@@ -120,11 +118,9 @@
    ).
 
   DATA(lo_salv) = NEW zag_cl_salv( ).
-  lo_salv->display_generic_alv(
-    EXPORTING
-      xv_popup            = abap_true
-      xt_col_settings     = lt_col_settings
-      xt_output           = gt_alv[]
+  lo_salv->display_generic_alv( xv_popup        = abap_true
+                                xt_col_settings = lt_col_settings
+                                xt_output       = gt_alv[]
   ).
 ```
 
@@ -175,11 +171,9 @@
   DATA(lo_salv)          = NEW zag_cl_salv( ).
   DATA(lo_event_handler) = NEW lcl_event_handler( ). 
 
-  lo_salv->display_generic_alv(
-    EXPORTING
-      xt_output        = lt_mara[]
-      xt_col_settings  = lt_col_settings[]
-      xo_event_handler = lo_event_handler 
-      xv_popup         = abap_true
+  lo_salv->display_generic_alv( xt_output        = lt_mara[]
+                                xt_col_settings  = lt_col_settings[]
+                                xo_event_handler = lo_event_handler 
+                                xv_popup         = abap_true
   ).
 ```

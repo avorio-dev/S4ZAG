@@ -1,6 +1,5 @@
 CLASS zag_cl_salv DEFINITION
   PUBLIC
-  FINAL
   CREATE PUBLIC .
 
   PUBLIC SECTION.
@@ -62,18 +61,16 @@ CLASS zag_cl_salv DEFINITION
           !xt_fieldname TYPE tt_fieldname
         CHANGING
           !y_row        TYPE any
-        EXCEPTIONS
-          col_tab_not_found
-          fieldname_not_found,
+        RAISING
+          cx_ai_system_fault,
 
       set_color_row
         IMPORTING
           !xs_color TYPE lvc_s_colo
         CHANGING
           !ys_row   TYPE any
-        EXCEPTIONS
-          col_tab_not_found
-          unable_define_structdescr,
+        RAISING
+          cx_ai_system_fault,
 
       get_fieldcat_from_data
         IMPORTING
@@ -82,8 +79,8 @@ CLASS zag_cl_salv DEFINITION
         EXPORTING
           !yo_structdescr TYPE REF TO cl_abap_structdescr
           !yt_fcat        TYPE lvc_t_fcat
-        EXCEPTIONS
-          unable_define_structdescr .
+        RAISING
+          cx_ai_system_fault.
 
     METHODS:
       display_generic_alv
@@ -93,7 +90,8 @@ CLASS zag_cl_salv DEFINITION
           !xo_event_handler TYPE REF TO object OPTIONAL
           !xv_popup         TYPE boolean DEFAULT abap_false
         RAISING
-          cx_salv_msg,
+          cx_salv_msg
+          cx_ai_system_fault,
 
       display_transposed_row
         IMPORTING
@@ -102,7 +100,8 @@ CLASS zag_cl_salv DEFINITION
         EXPORTING
           !yt_transposed TYPE STANDARD TABLE
         RAISING
-          cx_salv_msg,
+          cx_salv_msg
+          cx_ai_system_fault,
 
       on_link_click FOR EVENT link_click OF cl_salv_events_table
         IMPORTING
@@ -121,6 +120,21 @@ CLASS zag_cl_salv DEFINITION
     "---------------------------------------------------------------
     TYPES:
       tt_sorted_col_settings TYPE SORTED TABLE OF ts_col_settings WITH NON-UNIQUE KEY fieldname.
+
+    "Constants
+    "-------------------------------------------------
+    CONSTANTS:
+      BEGIN OF tc_exception_msg,
+        unable_read_file    TYPE string VALUE 'Unable read file'                   ##NO_TEXT,
+        unable_def_struct   TYPE string VALUE 'Unable define Structure Descriptor' ##NO_TEXT,
+        input_error         TYPE string VALUE 'Input error'                        ##NO_TEXT,
+        internal_error      TYPE string VALUE 'Internal error occurred'            ##NO_TEXT,
+        not_implemented     TYPE string VALUE 'Exit method not implemented'        ##NO_TEXT,
+        not_supported_file  TYPE string VALUE 'File not supported'                 ##NO_TEXT,
+        file_empty          TYPE string VALUE 'File empty'                         ##NO_TEXT,
+        col_tab_not_found   TYPE string VALUE 'Color Column T_COL not found'       ##NO_TEXT,
+        fieldname_not_found TYPE string VALUE 'Fieldname not found'                ##NO_TEXT,
+      END OF tc_exception_msg.
 
 
     " Data
@@ -182,12 +196,7 @@ CLASS zag_cl_salv IMPLEMENTATION.
           IMPORTING
             yo_structdescr            = me->go_structdescr
             yt_fcat                   = me->gt_fcat[]
-          EXCEPTIONS
-            unable_define_structdescr = 1
-            OTHERS                    = 2
         ).
-        IF sy-subrc <> 0.
-        ENDIF.
 
 
         "Set Display settings
@@ -233,6 +242,9 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
       CATCH cx_salv_msg INTO DATA(lx_salv_msg).
         RAISE EXCEPTION lx_salv_msg.
+
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        RAISE EXCEPTION lx_ai_system_fault.
 
     ENDTRY.
 
@@ -334,6 +346,9 @@ CLASS zag_cl_salv IMPLEMENTATION.
         DATA(lv_cx_msg) = lx_salv_msg->get_text( ).
         RAISE EXCEPTION lx_salv_msg.
 
+      CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
+        RAISE EXCEPTION lx_ai_system_fault.
+
     ENDTRY.
 
   ENDMETHOD.
@@ -342,13 +357,14 @@ CLASS zag_cl_salv IMPLEMENTATION.
   METHOD get_fieldcat_from_data.
 
     DATA:
-      lv_cx_msg      TYPE string,
-      lref_sap_data  TYPE REF TO data,
-      lref_sap_table TYPE REF TO data.
+      lref_sap_struct TYPE REF TO data,
+      lref_sap_table  TYPE REF TO data,
+
+      lv_except_msg   TYPE string.
 
     FIELD-SYMBOLS:
-      <sap_line>  TYPE any,
-      <sap_table> TYPE STANDARD TABLE.
+      <sap_struct> TYPE any,
+      <sap_table>  TYPE STANDARD TABLE.
 
     "-------------------------------------------------
 
@@ -356,52 +372,58 @@ CLASS zag_cl_salv IMPLEMENTATION.
     CLEAR yt_fcat[].
 
     IF xs_sap_line IS SUPPLIED.
-      CREATE DATA lref_sap_data LIKE xs_sap_line.
-      ASSIGN lref_sap_data->* TO <sap_line>.
+      CREATE DATA lref_sap_struct LIKE xs_sap_line.
+      ASSIGN lref_sap_struct->* TO <sap_struct>.
 
       CREATE DATA lref_sap_table LIKE TABLE OF xs_sap_line.
       ASSIGN lref_sap_table->* TO <sap_table>.
 
     ELSEIF xt_sap_table IS SUPPLIED.
-      CREATE DATA lref_sap_data LIKE LINE OF xt_sap_table.
-      ASSIGN lref_sap_data->* TO <sap_line>.
+      CREATE DATA lref_sap_struct LIKE LINE OF xt_sap_table.
+      ASSIGN lref_sap_struct->* TO <sap_struct>.
 
       CREATE DATA lref_sap_table LIKE xt_sap_table.
       ASSIGN lref_sap_table->* TO <sap_table>.
 
     ELSE.
-      RAISE unable_define_structdescr.
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-input_error.
 
     ENDIF.
 
     "-------------------------------------------------
 
-    yo_structdescr ?= cl_abap_typedescr=>describe_by_data( <sap_line> ).
+    yo_structdescr ?= cl_abap_typedescr=>describe_by_data( <sap_struct> ).
 
 
     TRY.
         cl_salv_table=>factory(
-            IMPORTING
-              r_salv_table   = DATA(lt_salv_table)
-            CHANGING
-              t_table        = <sap_table>
+          IMPORTING
+            r_salv_table = DATA(lt_salv_table)
+          CHANGING
+            t_table      = <sap_table>
         ).
 
         yt_fcat = cl_salv_controller_metadata=>get_lvc_fieldcatalog(
-            r_columns      = lt_salv_table->get_columns( ) " ALV Filter
-            r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
-        ) .
-
+          r_columns      = lt_salv_table->get_columns( ) " ALV Filter
+          r_aggregations = lt_salv_table->get_aggregations( ) " ALV Aggregations
+        ).
 
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
-        lv_cx_msg = lx_ai_system_fault->get_text( ).
-        RAISE unable_define_structdescr.
+        lv_except_msg = lx_ai_system_fault->get_text( ).
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = tc_exception_msg-unable_def_struct.
 
       CATCH cx_salv_msg  INTO DATA(lx_salv_msg).
-        lv_cx_msg = lx_salv_msg->get_text( ).
-        RAISE unable_define_structdescr.
+        lv_except_msg = lx_salv_msg->get_text( ).
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = tc_exception_msg-unable_def_struct.
 
     ENDTRY.
+
 
   ENDMETHOD.
 
@@ -418,13 +440,21 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
     ASSIGN COMPONENT c_col_fieldname OF STRUCTURE y_row TO <t_col>.
     IF sy-subrc <> 0.
-      RAISE col_tab_not_found.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-col_tab_not_found.
+
     ENDIF.
 
     LOOP AT xt_fieldname ASSIGNING FIELD-SYMBOL(<fieldname>).
       ASSIGN COMPONENT <fieldname> OF STRUCTURE y_row TO FIELD-SYMBOL(<field_check>).
       IF sy-subrc <> 0.
-        RAISE fieldname_not_found.
+
+        RAISE EXCEPTION TYPE cx_ai_system_fault
+          EXPORTING
+            errortext = tc_exception_msg-fieldname_not_found.
+
       ENDIF.
 
       DELETE <t_col> WHERE fname EQ <fieldname>.
@@ -453,7 +483,11 @@ CLASS zag_cl_salv IMPLEMENTATION.
 
     ASSIGN COMPONENT c_col_fieldname OF STRUCTURE ys_row TO <t_col>.
     IF sy-subrc <> 0.
-      RAISE col_tab_not_found.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-col_tab_not_found.
+
     ENDIF.
 
     get_fieldcat_from_data(
@@ -461,13 +495,8 @@ CLASS zag_cl_salv IMPLEMENTATION.
         xs_sap_line = ys_row
       IMPORTING
         yt_fcat     = DATA(lt_fcat)
-      EXCEPTIONS
-        unable_define_structdescr = 1
-        OTHERS                    = 2
     ).
-    IF sy-subrc <> 0.
-      RAISE unable_define_structdescr.
-    ENDIF.
+
 
     LOOP AT lt_fcat ASSIGNING FIELD-SYMBOL(<fcat>).
 
