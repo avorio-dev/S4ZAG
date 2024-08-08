@@ -27,7 +27,7 @@ CLASS zag_cl_filer DEFINITION
       BEGIN OF tc_filetype,
         csv  TYPE char3 VALUE 'CSV'  ##NO_TEXT,
         xlsx TYPE char4 VALUE 'XLSX' ##NO_TEXT,
-        zip  TYPE char3 VALUE 'ZIP'  ##NO_TEXT,
+        txt  TYPE char3 VALUE 'TXT'  ##NO_TEXT,
       END OF tc_filetype.
 
 
@@ -52,12 +52,12 @@ CLASS zag_cl_filer DEFINITION
     METHODS:
       file_download
         IMPORTING
-          !xv_directory  TYPE string
-          !xv_source     TYPE char1     DEFAULT tc_file_source-local
-          !xv_header     TYPE abap_bool DEFAULT abap_true
+          !xv_directory TYPE string
+          !xv_source    TYPE char1     DEFAULT tc_file_source-local
+          !xv_header    TYPE abap_bool DEFAULT abap_true
 *          !xv_create_zip TYPE abap_bool DEFAULT abap_false
         CHANGING
-          !yt_files      TYPE tt_files
+          !yt_files     TYPE tt_files
         RAISING
           cx_ai_system_fault,
 
@@ -84,6 +84,7 @@ CLASS zag_cl_filer DEFINITION
       gref_sap_data  TYPE REF TO data,
       gt_str_data    TYPE string_table,
 
+      gv_directory   TYPE string,
       gv_filetype    TYPE string,
       gv_filename    TYPE string,
       gv_header      TYPE abap_char1,
@@ -271,7 +272,7 @@ CLASS zag_cl_filer IMPLEMENTATION.
     FIELD-SYMBOLS:
       <lt_sap_data> TYPE STANDARD TABLE.
 
-
+    me->gv_directory = |{ xv_directory }/|.
 
     TRY.
         LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
@@ -299,7 +300,8 @@ CLASS zag_cl_filer IMPLEMENTATION.
           "-------------------------------------------------
           CASE me->gv_filetype.
 
-            WHEN tc_filetype-csv.
+            WHEN tc_filetype-csv
+              OR tc_filetype-txt.
 
               CASE xv_source.
                 WHEN tc_file_source-local.
@@ -342,6 +344,8 @@ CLASS zag_cl_filer IMPLEMENTATION.
       <lt_sap_data> TYPE STANDARD TABLE.
 
 
+    me->gv_directory = |{ xv_directory }/|.
+
     TRY.
         LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
 
@@ -357,7 +361,8 @@ CLASS zag_cl_filer IMPLEMENTATION.
           "-------------------------------------------------
           CASE me->gv_filetype.
 
-            WHEN tc_filetype-csv.
+            WHEN tc_filetype-csv
+              OR tc_filetype-txt.
 
               CASE xv_source.
                 WHEN tc_file_source-local.
@@ -422,11 +427,15 @@ CLASS zag_cl_filer IMPLEMENTATION.
     "-------------------------------------------------
     me->gv_filetype = ''.
     IF xv_filename CP '*.xlsx'.
-      me->gv_filetype      = tc_filetype-xlsx.
+      me->gv_filetype  = tc_filetype-xlsx.
       me->gv_separator = tc_separator-horizontal_tab.
 
     ELSEIF xv_filename CP '*.csv'.
-      me->gv_filetype      = tc_filetype-csv.
+      me->gv_filetype  = tc_filetype-csv.
+      me->gv_separator = tc_separator-semicolon.
+
+    ELSEIF xv_filename CP '*.txt'.
+      me->gv_filetype  = tc_filetype-txt.
       me->gv_separator = tc_separator-semicolon.
 
     ELSE.
@@ -440,7 +449,7 @@ CLASS zag_cl_filer IMPLEMENTATION.
     "Set Data Table
     "---------------------------------------------------------------
     me->gref_sap_data  = xref_tsap.
-    me->gv_filename    = xv_filename.
+    me->gv_filename    = |{ me->gv_directory }{ xv_filename }|.
     me->gv_header      = xv_header.
 
     ASSIGN me->gref_sap_data->* TO <sap_table>.
