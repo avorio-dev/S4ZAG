@@ -55,6 +55,7 @@ CLASS zag_cl_filer DEFINITION
           !xv_directory  TYPE string
           !xv_source     TYPE char1     DEFAULT tc_file_source-local
           !xv_create_zip TYPE abap_bool DEFAULT abap_false
+          !xv_zip_name   TYPE string    DEFAULT ''
         CHANGING
           !yt_files      TYPE tt_files
         RAISING
@@ -64,6 +65,8 @@ CLASS zag_cl_filer DEFINITION
         IMPORTING
           !xv_directory TYPE string
           !xv_source    TYPE char1     DEFAULT tc_file_source-local
+          !xv_load_zip  TYPE abap_bool DEFAULT abap_false
+          !xv_zip_name  TYPE string    DEFAULT ''
         CHANGING
           !yt_files     TYPE tt_files
         RAISING
@@ -89,7 +92,8 @@ CLASS zag_cl_filer DEFINITION
 
       go_structdescr TYPE REF TO cl_abap_structdescr,
       gt_fcat        TYPE lvc_t_fcat,
-      go_zip         TYPE REF TO cl_abap_zip.
+      go_zip         TYPE REF TO cl_abap_zip,
+      gv_zip_name    TYPE string.
 
 
     " Methods
@@ -136,6 +140,14 @@ CLASS zag_cl_filer DEFINITION
           cx_ai_system_fault,
 
       upload_excel_local
+        RAISING
+          cx_ai_system_fault,
+
+      upload_zip_local
+        RAISING
+          cx_ai_system_fault,
+
+      upload_zip_server
         RAISING
           cx_ai_system_fault.
 
@@ -280,6 +292,7 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
     me->gv_directory = |{ xv_directory }/|.
     me->go_zip       = NEW cl_abap_zip( ).
+    me->gv_zip_name  = xv_zip_name.
 
     TRY.
 
@@ -377,13 +390,31 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
   METHOD file_upload.
 
+    DATA:
+      lv_xcontent TYPE xstring.
+
     FIELD-SYMBOLS:
       <lt_sap_data> TYPE STANDARD TABLE.
 
 
     me->gv_directory = |{ xv_directory }/|.
+    me->go_zip       = NEW cl_abap_zip( ).
+    me->gv_zip_name  = xv_zip_name.
 
     TRY.
+        IF xv_load_zip EQ 'X'.
+
+          CASE xv_source.
+            WHEN tc_file_source-local.
+              me->upload_zip_local( ).
+
+            WHEN tc_file_source-server.
+              me->upload_zip_server( ).
+
+          ENDCASE.
+
+        ENDIF.
+
         LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
 
           "Init Instance Attribute
@@ -394,40 +425,73 @@ CLASS zag_cl_filer IMPLEMENTATION.
           ).
 
 
-          "Start Download on Local / Server
-          "-------------------------------------------------
-          CASE xv_source.
+          IF xv_load_zip EQ abap_true.
 
-            WHEN tc_file_source-local.
+            "Load from ZIP
+            "-------------------------------------------------
+            CLEAR lv_xcontent.
+            me->go_zip->get(
+              EXPORTING
+                name                    = <files>-filename
+              IMPORTING
+                content                 = lv_xcontent
+              EXCEPTIONS
+                zip_index_error         = 1
+                zip_decompression_error = 2
+                OTHERS                  = 3
+            ).
+            IF sy-subrc <> 0.
+*             MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+*               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+            ENDIF.
 
-              CASE me->gv_filetype.
+            DATA(lv_flat_str) = cl_bcs_convert=>xstring_to_string(
+                                     iv_xstr = lv_xcontent
+                                     iv_cp   = '4110'
+            ).
 
-                WHEN tc_filetype-csv
-                  OR tc_filetype-txt.
-                  me->upload_csv_local( ).
+            me->gt_str_data = conv_string_to_tstring( lv_flat_str ).
 
-                WHEN tc_filetype-xlsx.
-                  "Upload from XLSX with in-built conversion in SAP Format
-                  me->upload_excel_local( ).
 
-              ENDCASE.
+          ELSE.
 
-            WHEN tc_file_source-server.
 
-              CASE me->gv_filetype.
+            "Start Download on Local / Server
+            "-------------------------------------------------
+            CASE xv_source.
 
-                WHEN tc_filetype-csv
-                  OR tc_filetype-txt.
-                  me->upload_csv_server( ).
+              WHEN tc_file_source-local.
 
-                WHEN tc_filetype-xlsx.
-                  RAISE EXCEPTION TYPE cx_ai_system_fault
-                    EXPORTING
-                      errortext = tc_exception_msg-unable_read_file.
+                CASE me->gv_filetype.
 
-              ENDCASE.
+                  WHEN tc_filetype-csv
+                    OR tc_filetype-txt.
+                    me->upload_csv_local( ).
 
-          ENDCASE.
+                  WHEN tc_filetype-xlsx.
+                    "Upload from XLSX with in-built conversion in SAP Format
+                    me->upload_excel_local( ).
+
+                ENDCASE.
+
+              WHEN tc_file_source-server.
+
+                CASE me->gv_filetype.
+
+                  WHEN tc_filetype-csv
+                    OR tc_filetype-txt.
+                    me->upload_csv_server( ).
+
+                  WHEN tc_filetype-xlsx.
+                    RAISE EXCEPTION TYPE cx_ai_system_fault
+                      EXPORTING
+                        errortext = tc_exception_msg-unable_read_file.
+
+                ENDCASE.
+
+            ENDCASE.
+
+          ENDIF.
 
 
           "Conversion in SAP Format for CSV
@@ -718,12 +782,11 @@ CLASS zag_cl_filer IMPLEMENTATION.
     DATA(lv_xzip)     = me->go_zip->save( ).
     DATA(lt_bin_zip)  = cl_bcs_convert=>xstring_to_solix( lv_xzip ).
     DATA(lv_filesize) = xstrlen( lv_xzip ).
-    DATA(lv_filename) = |{ sy-datum }_{ sy-uzeit }.zip|.
 
 
     CALL METHOD cl_gui_frontend_services=>gui_download
       EXPORTING
-        filename                = |{ me->gv_directory }{ lv_filename }|
+        filename                = |{ me->gv_directory }{ me->gv_zip_name }|
         filetype                = 'BIN'
         bin_filesize            = lv_filesize
       CHANGING
@@ -765,6 +828,22 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
 
   METHOD download_zip_server.
+
+    DATA(lv_zipname) = |{ me->gv_directory }{ me->gv_zip_name }|.
+    OPEN DATASET lv_zipname FOR OUTPUT IN BINARY MODE.
+    IF sy-subrc <> 0.
+      CLOSE DATASET lv_zipname.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_read_file.
+
+    ENDIF.
+
+    DATA(lv_xzip) = me->go_zip->save( ).
+
+    TRANSFER lv_xzip TO lv_zipname.
+    CLOSE DATASET lv_zipname.
 
   ENDMETHOD.
 
@@ -933,6 +1012,84 @@ CLASS zag_cl_filer IMPLEMENTATION.
       ENDLOOP.
 
     ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD upload_zip_local.
+
+    DATA: lt_bin_zip  TYPE solix_tab.
+
+    cl_gui_frontend_services=>gui_upload(
+      EXPORTING
+        filename                = |{ me->gv_directory }{ me->gv_zip_name }|
+        filetype                = 'BIN'
+*        has_field_separator     = space
+      IMPORTING
+        filelength              = DATA(lv_filesize)
+*        header                  =
+      CHANGING
+        data_tab                = lt_bin_zip[]
+      EXCEPTIONS
+        file_open_error         = 1
+        file_read_error         = 2
+        no_batch                = 3
+        gui_refuse_filetransfer = 4
+        invalid_type            = 5
+        no_authority            = 6
+        unknown_error           = 7
+        bad_data_format         = 8
+        header_not_allowed      = 9
+        separator_not_allowed   = 10
+        header_too_long         = 11
+        unknown_dp_error        = 12
+        access_denied           = 13
+        dp_out_of_memory        = 14
+        disk_full               = 15
+        dp_timeout              = 16
+        not_supported_by_gui    = 17
+        error_no_gui            = 18
+        OTHERS                  = 19
+    ).
+    IF sy-subrc <> 0.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_read_file.
+
+    ENDIF.
+
+    DATA(lv_xstr_zip) = cl_bcs_convert=>solix_to_xstring(
+                          it_solix = lt_bin_zip
+                          iv_size  = lv_filesize
+                        ).
+    me->go_zip->load( lv_xstr_zip ).
+
+
+  ENDMETHOD.
+
+
+  METHOD upload_zip_server.
+
+    DATA: lv_xstr_zip TYPE xstring.
+
+    DATA(lv_zipname) = |{ me->gv_directory }{ me->gv_zip_name }|.
+    OPEN DATASET lv_zipname IN BINARY MODE FOR INPUT.
+    IF sy-subrc <> 0.
+      CLOSE DATASET lv_zipname.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_read_file.
+
+    ENDIF.
+
+    READ DATASET lv_zipname INTO lv_xstr_zip.
+
+    me->go_zip->load( lv_xstr_zip ).
+
+    CLOSE DATASET lv_zipname.
+
 
   ENDMETHOD.
 

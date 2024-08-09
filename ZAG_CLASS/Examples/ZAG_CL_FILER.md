@@ -125,10 +125,10 @@
   "Example 4 -> Upload .CSV from a ZIP File
   "-------------------------------------------------
 
-  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
-  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
+  DATA: lt_caufv TYPE TABLE OF caufv,
+        lt_bseg  TYPE TABLE OF bseg.
 
-  DATA(lo_filer)    = NEW zag_cl_filer( ).
+  DATA(lo_filer) = NEW zag_cl_filer( ).
 
   TRY.
 
@@ -142,15 +142,16 @@
         )
       ).
 
-      lo_filer->file_download(
+      lo_filer->file_upload(
         EXPORTING
-          xv_directory  = zag_cl_filer=>get_desktop_directory( )
-          xv_source     = zag_cl_filer=>tc_file_source-local
-          xv_create_zip = abap_true
-          xv_zip_name   = 'MyZAGZIP.zip'
+          xv_directory = zag_cl_filer=>get_desktop_directory( )
+          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_load_zip  = 'X'
+          xv_zip_name  = 'MyZAGZIP.zip'
         CHANGING
-          yt_files      = lt_files[]
+          yt_files     = lt_files[]
       ).
+
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
       WRITE lx_ai_system_fault->get_text( ).
   ENDTRY.
