@@ -292,7 +292,10 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
     me->gv_directory = |{ xv_directory }/|.
     me->go_zip       = NEW cl_abap_zip( ).
-    me->gv_zip_name  = xv_zip_name.
+
+    me->gv_zip_name  = COND #( WHEN xv_zip_name NE '' THEN xv_zip_name
+                               ELSE |{ sy-datum }_{ sy-uzeit }.zip|
+    ).
 
     TRY.
 
@@ -399,7 +402,10 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
     me->gv_directory = |{ xv_directory }/|.
     me->go_zip       = NEW cl_abap_zip( ).
-    me->gv_zip_name  = xv_zip_name.
+
+    me->gv_zip_name  = COND #( WHEN xv_zip_name NE '' THEN xv_zip_name
+                               ELSE |{ sy-datum }_{ sy-uzeit }.zip|
+    ).
 
     TRY.
         IF xv_load_zip EQ 'X'.
