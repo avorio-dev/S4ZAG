@@ -1,6 +1,7 @@
 # ZAG_CL_FILER <a name="zag_cl_filer"></a>
  - FILE_DOWNLOAD
-    - You will be able to download .csv or .xlsx both on your local system or application server
+    - You will be able to download .csv, .txt or .xlsx both on your local system or application server
+    - You will be able to download your files into a zip archive
 
  - FILE_UPLOAD
     - You will be able to upload .csv from your local system or application server
@@ -33,7 +34,6 @@
         EXPORTING
           xv_directory = zag_cl_filer=>get_desktop_directory( )
           xv_source    = zag_cl_filer=>tc_file_source-local
-          xv_header    = abap_true
         CHANGING
           yt_files     = lt_files[]
       ).
@@ -70,7 +70,6 @@
         EXPORTING
           xv_directory = zag_cl_filer=>get_desktop_directory( )
           xv_source    = zag_cl_filer=>tc_file_source-local
-          xv_header    = abap_true
         CHANGING
           yt_files     = lt_files[]
       ).
@@ -84,7 +83,84 @@
 ---
 
 ```abap
-"Example 3 -> Download / Upload .CSV
+
+  "Example 3 -> Download .CSV into a ZIP File
+  "-------------------------------------------------
+
+  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
+  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
+
+  DATA(lo_filer)    = NEW zag_cl_filer( ).
+
+  TRY.
+
+      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
+        ( filename = 'caufv.csv'
+          sap_content = REF #( lt_caufv )
+        )
+
+        ( filename = 'bseg.csv'
+          sap_content = REF #( lt_bseg )
+        )
+      ).
+
+      lo_filer->file_download(
+        EXPORTING
+          xv_directory  = zag_cl_filer=>get_desktop_directory( )
+          xv_source     = zag_cl_filer=>tc_file_source-local
+          xv_create_zip = abap_true
+          xv_zip_name   = 'MyZAGZIP.zip'
+        CHANGING
+          yt_files      = lt_files[]
+      ).
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+      WRITE lx_ai_system_fault->get_text( ).
+  ENDTRY.
+```
+
+---
+
+```abap
+
+  "Example 4 -> Upload .CSV from a ZIP File
+  "-------------------------------------------------
+
+  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
+  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
+
+  DATA(lo_filer)    = NEW zag_cl_filer( ).
+
+  TRY.
+
+      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
+        ( filename = 'caufv.csv'
+          sap_content = REF #( lt_caufv )
+        )
+
+        ( filename = 'bseg.csv'
+          sap_content = REF #( lt_bseg )
+        )
+      ).
+
+      lo_filer->file_download(
+        EXPORTING
+          xv_directory  = zag_cl_filer=>get_desktop_directory( )
+          xv_source     = zag_cl_filer=>tc_file_source-local
+          xv_create_zip = abap_true
+          xv_zip_name   = 'MyZAGZIP.zip'
+        CHANGING
+          yt_files      = lt_files[]
+      ).
+    CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
+      WRITE lx_ai_system_fault->get_text( ).
+  ENDTRY.
+```
+
+---
+
+
+```abap
+"Example 5 -> Download / Upload .CSV
 "             with User exit conversion methods
 "-------------------------------------------------
 
@@ -170,7 +246,6 @@ START-OF-SELECTION.
         EXPORTING
           xv_directory = zag_cl_filer=>get_desktop_directory( )
           xv_source    = zag_cl_filer=>tc_file_source-local
-          xv_header    = abap_true
         CHANGING
           yt_files     = lt_files[]
       ).
@@ -179,7 +254,6 @@ START-OF-SELECTION.
         EXPORTING
           xv_directory = zag_cl_filer=>get_desktop_directory( )
           xv_source    = zag_cl_filer=>tc_file_source-local
-          xv_header    = abap_true
         CHANGING
           yt_files     = lt_files[]
       ).

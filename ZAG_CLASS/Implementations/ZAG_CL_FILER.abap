@@ -52,21 +52,20 @@ CLASS zag_cl_filer DEFINITION
     METHODS:
       file_download
         IMPORTING
-          !xv_directory   TYPE string
-          !xv_source      TYPE char1     DEFAULT tc_file_source-local
-          !xv_header      TYPE abap_bool DEFAULT abap_true
+          !xv_directory  TYPE string
+          !xv_source     TYPE char1     DEFAULT tc_file_source-local
+          !xv_create_zip TYPE abap_bool DEFAULT abap_false
         CHANGING
-          !yt_files       TYPE tt_files
+          !yt_files      TYPE tt_files
         RAISING
           cx_ai_system_fault,
 
       file_upload
         IMPORTING
-          !xv_directory   TYPE string
-          !xv_source      TYPE char1     DEFAULT tc_file_source-local
-          !xv_header      TYPE abap_bool DEFAULT abap_true
+          !xv_directory TYPE string
+          !xv_source    TYPE char1     DEFAULT tc_file_source-local
         CHANGING
-          !yt_files       TYPE tt_files
+          !yt_files     TYPE tt_files
         RAISING
           cx_ai_system_fault.
 
@@ -86,10 +85,11 @@ CLASS zag_cl_filer DEFINITION
       gv_filetype    TYPE string,
       gv_filename    TYPE string,
       gv_header      TYPE abap_char1,
+      gv_separator   TYPE abap_char1,
 
       go_structdescr TYPE REF TO cl_abap_structdescr,
       gt_fcat        TYPE lvc_t_fcat,
-      gv_separator   TYPE abap_char1.
+      go_zip         TYPE REF TO cl_abap_zip.
 
 
     " Methods
@@ -116,6 +116,14 @@ CLASS zag_cl_filer DEFINITION
           cx_ai_system_fault,
 
       download_excel_server
+        RAISING
+          cx_ai_system_fault,
+
+      download_zip_local
+        RAISING
+          cx_ai_system_fault,
+
+      download_zip_server
         RAISING
           cx_ai_system_fault,
 
@@ -271,15 +279,17 @@ CLASS zag_cl_filer IMPLEMENTATION.
       <lt_sap_data> TYPE STANDARD TABLE.
 
     me->gv_directory = |{ xv_directory }/|.
+    me->go_zip       = NEW cl_abap_zip( ).
 
     TRY.
+
         LOOP AT yt_files ASSIGNING FIELD-SYMBOL(<files>).
 
           "Init Instance Attribute
           "-------------------------------------------------
           init_instance( xref_tsap   = <files>-sap_content
                          xv_filename = <files>-filename
-                         xv_header   = xv_header
+                         xv_header   = abap_true
           ).
 
 
@@ -291,6 +301,22 @@ CLASS zag_cl_filer IMPLEMENTATION.
                                                   xv_header    = me->gv_header
                                                   xv_separator = me->gv_separator
           ).
+
+          IF xv_create_zip EQ abap_true.
+            TRY.
+                DATA(lv_flat_str) = me->conv_tstring_to_string( me->gt_str_data ).
+                DATA(lv_xstr) = cl_bcs_convert=>string_to_xstring( lv_flat_str ).
+
+                me->go_zip->add( name    = <files>-filename
+                                 content = lv_xstr
+                ).
+                me->go_zip->save( ).
+
+              CATCH cx_bcs INTO DATA(lx_bcs).
+            ENDTRY.
+
+            CONTINUE.
+          ENDIF.
 
 
           "Start Download on Local / Server
@@ -327,6 +353,20 @@ CLASS zag_cl_filer IMPLEMENTATION.
 
         ENDLOOP.
 
+
+        IF xv_create_zip EQ abap_true.
+          CASE xv_source.
+
+            WHEN tc_file_source-local.
+              me->download_zip_local( ).
+
+            WHEN tc_file_source-server.
+              me->download_zip_server( ).
+
+          ENDCASE.
+
+        ENDIF.
+
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault).
         DATA(lv_except_msg) = lx_ai_system_fault->get_text( ).
         RAISE EXCEPTION lx_ai_system_fault.
@@ -350,7 +390,7 @@ CLASS zag_cl_filer IMPLEMENTATION.
           "-------------------------------------------------
           init_instance( xref_tsap   = <files>-sap_content
                          xv_filename = <files>-filename
-                         xv_header   = xv_header
+                         xv_header   = abap_true
           ).
 
 
@@ -669,6 +709,62 @@ CLASS zag_cl_filer IMPLEMENTATION.
     TRANSFER lv_xdata TO me->gv_filename.
 
     CLOSE DATASET me->gv_filename.
+
+  ENDMETHOD.
+
+
+  METHOD download_zip_local.
+
+    DATA(lv_xzip)     = me->go_zip->save( ).
+    DATA(lt_bin_zip)  = cl_bcs_convert=>xstring_to_solix( lv_xzip ).
+    DATA(lv_filesize) = xstrlen( lv_xzip ).
+    DATA(lv_filename) = |{ sy-datum }_{ sy-uzeit }.zip|.
+
+
+    CALL METHOD cl_gui_frontend_services=>gui_download
+      EXPORTING
+        filename                = |{ me->gv_directory }{ lv_filename }|
+        filetype                = 'BIN'
+        bin_filesize            = lv_filesize
+      CHANGING
+        data_tab                = lt_bin_zip[]
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21
+        not_supported_by_gui    = 22
+        error_no_gui            = 23
+        OTHERS                  = 24.
+    IF sy-subrc <> 0.
+
+      RAISE EXCEPTION TYPE cx_ai_system_fault
+        EXPORTING
+          errortext = tc_exception_msg-unable_read_file.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD download_zip_server.
 
   ENDMETHOD.
 
