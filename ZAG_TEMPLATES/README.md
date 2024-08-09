@@ -19,3 +19,14 @@ The following are the macro components of an object report:
 - [Definition Include](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_TEMPLATES/OO_REPORT/ZAG_OO_REPORT_DEF.abap)
 
 - [Implementation Include](https://github.com/avorio-dev/S4ZAG/blob/main/ZAG_TEMPLATES/OO_REPORT/ZAG_OO_REPORT_IMP.abap)
+
+---
+
+## ALV LVC Template - ALV Dynpro-Based
+
+Dynpro based ALV is an ALV type which basically offers user-side functions and information enclosed into dynpros. THe logic of your report will be based on a stack which each step is a dynpro.
+
+**NB To use this template you will need to follow mandatory activities, otherwise it will not works.**
+
+
+
