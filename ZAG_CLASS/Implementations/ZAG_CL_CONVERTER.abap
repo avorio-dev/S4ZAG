@@ -96,6 +96,16 @@ CLASS zag_cl_converter DEFINITION
           !yt_tsap_int           TYPE table
           !yt_conversions_errors TYPE tt_conversions_errors,
 
+      conv_tstring_to_string
+        IMPORTING
+                  !xt_string_table TYPE string_table
+        RETURNING VALUE(yv_string) TYPE string,
+
+      conv_string_to_tstring
+        IMPORTING
+                  !xv_string             TYPE string
+        RETURNING VALUE(yt_string_table) TYPE string_table,
+
       remove_special_char
         CHANGING
           !yv_text TYPE string.
@@ -1097,6 +1107,42 @@ CLASS zag_cl_converter IMPLEMENTATION.
       CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
         lv_cx_msg = lx_ai_system_fault->get_text( ).
     ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD conv_tstring_to_string.
+
+    yv_string = REDUCE #(
+      INIT lv_str TYPE string
+
+      FOR <str> IN xt_string_table
+        NEXT lv_str = COND #( WHEN lv_str EQ '' THEN <str>
+                              WHEN lv_str NE '' THEN |{ lv_str }{ tc_separator-horizontal_tab }{ <str> }| )
+    ).
+
+  ENDMETHOD.
+
+
+  METHOD conv_string_to_tstring.
+
+    DATA:
+      lv_current TYPE string,
+      lv_next    TYPE string.
+
+
+    CLEAR yt_string_table[].
+
+    lv_next = xv_string.
+    WHILE lv_next IS NOT INITIAL.
+
+      SPLIT lv_next AT tc_separator-horizontal_tab
+        INTO lv_current
+             lv_next.
+
+      APPEND lv_current TO yt_string_table.
+
+    ENDWHILE.
 
   ENDMETHOD.
 
