@@ -28,5 +28,5 @@ Dynpro based ALV is an ALV type which basically offers user-side functions and i
 
 **NB To use this template you will need to follow mandatory activities, otherwise it will not works.**
 
-
-
+Each activity is listed at the beginning of the template code.
+If you wish, you can customize your ALV following also the optional activities.
