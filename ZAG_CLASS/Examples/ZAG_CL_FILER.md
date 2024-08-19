@@ -1,42 +1,42 @@
 # ZAG_CL_FILER <a name="zag_cl_filer"></a>
  - FILE_DOWNLOAD
     - You will be able to download .csv, .txt or .xlsx both on your local system or application server
+ 
+ - ZIP_DOWNLOAD
     - You will be able to download your files into a zip archive
 
  - FILE_UPLOAD
     - You will be able to upload .csv from your local system or application server
     - You will be able to upload .xlsx from your local system
     - The system will provide you a table with conversion errors
+
+ - ZIP_UPLOAD
+    - You will be able to upload your files from a zip archive
+
 ---
 
 ```abap
   "Example 1 -> Download .CSV
   "-------------------------------------------------
 
-  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
-  SELECT * UP TO 10 ROWS FROM bseg  INTO TABLE @DATA(lt_bseg).
+  DATA: lref_caufv TYPE REF TO data.
 
+  SELECT * UP TO 10 ROWS FROM caufv INTO TABLE @DATA(lt_caufv).
   DATA(lo_filer)    = NEW zag_cl_filer( ).
 
   TRY.
 
-      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
-        ( filename = 'caufv.csv'
-          sap_content = REF #( lt_caufv )
-        )
-
-        ( filename = 'bseg.csv'
-          sap_content = REF #( lt_bseg )
-        )
-      ).
+      CREATE DATA lref_caufv LIKE lt_caufv.
+      lref_caufv = REF #( lt_caufv[] ).
 
       lo_filer->file_download(
         EXPORTING
-          xv_directory = zag_cl_filer=>get_desktop_directory( )
-          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_filename = |{ zag_cl_filer=>get_desktop_directory( ) }/caufv.csv|
+          xv_source   = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files     = lt_files[]
+          yref_tsap   = lref_caufv
       ).
+
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
       WRITE lx_ai_system_fault->get_text( ).
   ENDTRY.
@@ -49,30 +49,28 @@
   "Example 2 -> Upload .CSV
   "-------------------------------------------------
 
-  DATA: lt_caufv TYPE TABLE OF caufv,
-        lt_bseg  TYPE TABLE OF bseg.
+  DATA: lref_caufv     TYPE REF TO data,
+        lt_conv_errors TYPE zag_cl_filer=>tt_conversions_errors.
+
+  FIELD-SYMBOLS: <lt_caufv> TYPE STANDARD TABLE.
 
   DATA(lo_filer) = NEW zag_cl_filer( ).
 
   TRY.
 
-      DATA(lt_files) = VALUE zag_cl_filer=>tt_files(
-        ( filename = 'caufv.csv'
-          sap_content = REF #( lt_caufv )
-        )
-
-        ( filename = 'bseg.csv'
-          sap_content = REF #( lt_bseg )
-        )
-      ).
+      CREATE DATA lref_caufv TYPE TABLE OF caufv.
 
       lo_filer->file_upload(
         EXPORTING
-          xv_directory = zag_cl_filer=>get_desktop_directory( )
-          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_filename    = |{ zag_cl_filer=>get_desktop_directory( ) }/caufv.csv|
+          xv_source      = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files     = lt_files[]
+          yref_tsap      = lref_caufv
+          yt_conv_errors = lt_conv_errors
       ).
+
+      ASSIGN lref_caufv->* TO <lt_caufv>.
+
 
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
       WRITE lx_ai_system_fault->get_text( ).
@@ -104,15 +102,14 @@
         )
       ).
 
-      lo_filer->file_download(
+      lo_filer->zip_download(
         EXPORTING
-          xv_directory  = zag_cl_filer=>get_desktop_directory( )
-          xv_source     = zag_cl_filer=>tc_file_source-local
-          xv_create_zip = abap_true
-          xv_zip_name   = 'MyZAGZIP.zip'
+          xv_zip_name = |{ zag_cl_filer=>get_desktop_directory( ) }MyZAGZIP.zip|
+          xv_source   = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files      = lt_files[]
+          yt_files    = lt_files
       ).
+
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
       WRITE lx_ai_system_fault->get_text( ).
   ENDTRY.
@@ -124,6 +121,7 @@
 
   "Example 4 -> Upload .CSV from a ZIP File
   "-------------------------------------------------
+
 
   DATA: lt_caufv TYPE TABLE OF caufv,
         lt_bseg  TYPE TABLE OF bseg.
@@ -142,14 +140,12 @@
         )
       ).
 
-      lo_filer->file_upload(
+      lo_filer->zip_upload(
         EXPORTING
-          xv_directory = zag_cl_filer=>get_desktop_directory( )
-          xv_source    = zag_cl_filer=>tc_file_source-local
-          xv_load_zip  = 'X'
-          xv_zip_name  = 'MyZAGZIP.zip'
+          xv_zip_name = |{ zag_cl_filer=>get_desktop_directory( ) }MyZAGZIP.zip|
+          xv_source   = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files     = lt_files[]
+          yt_files    = lt_files[]
       ).
 
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error
@@ -243,20 +239,20 @@ START-OF-SELECTION.
         )
       ).
 
-      lo_filer->file_download(
+      lo_filer->zip_download(
         EXPORTING
-          xv_directory = zag_cl_filer=>get_desktop_directory( )
-          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_zip_name = |{ zag_cl_filer=>get_desktop_directory( ) }MyZAGZIP.zip|
+          xv_source   = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files     = lt_files[]
+          yt_files    = lt_files
       ).
 
-      lo_filer->file_upload(
+      lo_filer->zip_upload(
         EXPORTING
-          xv_directory = zag_cl_filer=>get_desktop_directory( )
-          xv_source    = zag_cl_filer=>tc_file_source-local
+          xv_zip_name = |{ zag_cl_filer=>get_desktop_directory( ) }MyZAGZIP.zip|
+          xv_source   = zag_cl_filer=>tc_file_source-local
         CHANGING
-          yt_files     = lt_files[]
+          yt_files    = lt_files[]
       ).
 
     CATCH cx_ai_system_fault INTO DATA(lx_ai_system_fault). " Application Integration: Technical Error

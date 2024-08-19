@@ -42,50 +42,57 @@ CLASS zag_cl_converter DEFINITION
 
       conv_data_to_ext
         IMPORTING
-                  !xv_data_int       TYPE string
-                  !xv_separator      TYPE abap_char1 DEFAULT tc_separator-slash
-        RETURNING VALUE(yv_data_ext) TYPE string,
+          !xv_data_int       TYPE string
+          !xv_separator      TYPE abap_char1 DEFAULT tc_separator-slash
+        RETURNING
+          VALUE(yv_data_ext) TYPE string,
 
       conv_data_to_int
         IMPORTING
-                   !xv_data_ext       TYPE string
-        RETURNING  VALUE(yv_data_int) TYPE dats
+          !xv_data_ext       TYPE string
+        RETURNING
+          VALUE(yv_data_int) TYPE dats
         EXCEPTIONS
-                   format_error
-                   plausibility_error,
+          format_error
+          plausibility_error,
 
       conv_numb_to_ext
         IMPORTING
-                  !xv_numb_int       TYPE string
-        RETURNING VALUE(yv_numb_ext) TYPE string,
+          !xv_numb_int       TYPE string
+        RETURNING
+          VALUE(yv_numb_ext) TYPE string,
 
       conv_numb_to_int
         IMPORTING
-                   !xv_numb_ext       TYPE string
-        RETURNING  VALUE(yv_numb_int) TYPE string
+          !xv_numb_ext       TYPE string
+        RETURNING
+          VALUE(yv_numb_int) TYPE string
         EXCEPTIONS
-                   format_error
-                   plausibility_error,
+          format_error
+          plausibility_error,
 
       conv_time_to_ext
         IMPORTING
-                  !xv_time_int       TYPE string
-        RETURNING VALUE(yv_time_ext) TYPE string,
+          !xv_time_int       TYPE string
+        RETURNING
+          VALUE(yv_time_ext) TYPE string,
 
       conv_time_to_int
         IMPORTING
-                   !xv_time_ext       TYPE string
-        RETURNING  VALUE(yv_time_int) TYPE uzeit
+          !xv_time_ext       TYPE string
+        RETURNING
+          VALUE(yv_time_int) TYPE uzeit
         EXCEPTIONS
-                   format_error
-                   plausibility_error,
+          format_error
+          plausibility_error,
 
       conv_tsap_to_ext
         IMPORTING
-                  !xt_tsap_int       TYPE table
-                  !xv_header         TYPE abap_bool DEFAULT abap_true
-                  !xv_separator      TYPE char1 DEFAULT tc_separator-semicolon
-        RETURNING VALUE(yt_tsap_ext) TYPE string_table,
+          !xt_tsap_int       TYPE table
+          !xv_header         TYPE abap_bool DEFAULT abap_true
+          !xv_separator      TYPE char1 DEFAULT tc_separator-semicolon
+        RETURNING
+          VALUE(yt_tsap_ext) TYPE string_table,
 
       conv_tsap_to_int
         IMPORTING
@@ -98,13 +105,15 @@ CLASS zag_cl_converter DEFINITION
 
       conv_tstring_to_string
         IMPORTING
-                  !xt_string_table TYPE string_table
-        RETURNING VALUE(yv_string) TYPE string,
+          !xt_string_table TYPE string_table
+        RETURNING
+          VALUE(yv_string) TYPE string,
 
       conv_string_to_tstring
         IMPORTING
-                  !xv_string             TYPE string
-        RETURNING VALUE(yt_string_table) TYPE string_table,
+          !xv_string             TYPE string
+        RETURNING
+          VALUE(yt_string_table) TYPE string_table,
 
       remove_special_char
         CHANGING
@@ -123,9 +132,10 @@ CLASS zag_cl_converter DEFINITION
 
       get_header_from_data
         IMPORTING
-                  !xt_fcat             TYPE lvc_t_fcat
-                  !xv_separator        TYPE abap_char1 DEFAULT tc_separator-semicolon
-        RETURNING VALUE(yv_str_header) TYPE string.
+          !xt_fcat             TYPE lvc_t_fcat
+          !xv_separator        TYPE abap_char1 DEFAULT tc_separator-semicolon
+        RETURNING
+          VALUE(yv_str_header) TYPE string.
 
 
   PROTECTED SECTION.
