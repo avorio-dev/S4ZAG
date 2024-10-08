@@ -345,6 +345,8 @@ FORM print_alv USING    xv_cont_name     TYPE scrfname
 
   yo_alv_ref->set_table_for_first_display(
     EXPORTING
+      i_buffer_active               = 'X'
+      i_bypassing_buffer            = 'X'
       i_save                        = 'A'
       is_layout                     = ls_layout
       is_variant                    = ls_variant
