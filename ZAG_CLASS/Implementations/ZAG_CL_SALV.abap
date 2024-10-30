@@ -18,6 +18,11 @@ CLASS zag_cl_salv DEFINITION
       tt_col_settings TYPE TABLE OF ts_col_settings WITH DEFAULT KEY,
       tt_fieldname    TYPE TABLE OF lvc_s_fcat-fieldname WITH DEFAULT KEY.
 
+    " Data
+    "---------------------------------------------------------------
+    DATA:
+      gref_output      TYPE REF TO data.
+
 
     " Constants
     "---------------------------------------------------------------
@@ -141,7 +146,6 @@ CLASS zag_cl_salv DEFINITION
     "---------------------------------------------------------------
     DATA:
       go_salv          TYPE REF TO cl_salv_table,
-      gref_output      TYPE REF TO data,
       gt_fcat          TYPE lvc_t_fcat,
       go_structdescr   TYPE REF TO cl_abap_structdescr,
       gt_col_settings  TYPE tt_sorted_col_settings,
