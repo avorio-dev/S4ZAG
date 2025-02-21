@@ -883,8 +883,10 @@ CLASS zag_cl_converter IMPLEMENTATION.
         "Build SAP Table
         "-------------------------------------------------
         LOOP AT xt_tsap_ext ASSIGNING FIELD-SYMBOL(<struct_ext>).
+          DATA(lv_row_num) = sy-tabix.
+
           IF xv_header EQ abap_true
-            AND sy-tabix EQ 1.
+            AND lv_row_num EQ 1.
             CONTINUE.
           ENDIF.
 
@@ -896,6 +898,7 @@ CLASS zag_cl_converter IMPLEMENTATION.
             CHECK <fcat>-fieldname NE c_mandt.
 
             CLEAR ls_conversion_errors.
+            ls_conversion_errors-row_num = lv_row_num.
 
             ASSIGN lo_structdescr->components[ name = <fcat>-fieldname ] TO FIELD-SYMBOL(<component>).
 
