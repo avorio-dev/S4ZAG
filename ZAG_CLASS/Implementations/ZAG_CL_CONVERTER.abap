@@ -275,67 +275,81 @@ CLASS zag_cl_converter IMPLEMENTATION.
 
   METHOD conv_data_to_int.
 
-*    Data conversion exit from External to SAP
-*    From
-*        -> 25/12/2024
-*        -> 2024/12/31
-*        -> 20241231
-*    To
-*        -> 20241231
-
-    yv_data_int = c_initial_data.
-
-    CHECK xv_data_ext IS NOT INITIAL.
-
-    DATA(lv_data_int) = xv_data_ext.
-    CONDENSE lv_data_int NO-GAPS.
-
-
-    CASE strlen( lv_data_int ).
-      WHEN 8.
-        "Format like 20231225
-
-        "Already in SAP Format
-        "Nothing to do
-
-      WHEN 10.
-
-        "Data format managed
-        "25-12-2023
-        "2023-12-25
-
-        IF lv_data_int+2(1) CA tc_symbols-digit.
-          "Format like 2023-12-25
-          lv_data_int = |{ lv_data_int(4) }{ lv_data_int+5(2) }{ lv_data_int+8(2) }|.
-
-        ELSEIF lv_data_int+2(1) NA tc_symbols-digit.
-          "Format like 25-12-2023
-          lv_data_int = |{ lv_data_int+6(4) }{ lv_data_int+3(2) }{ lv_data_int(2) }|.
-
-        ELSE.
-          RAISE format_error.
-
-        ENDIF.
-
-      WHEN OTHERS.
-        RAISE format_error.
-
-    ENDCASE.
-
-
-    CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
-      EXPORTING
-        date                      = CONV sy-datum( lv_data_int )
-      EXCEPTIONS
-        plausibility_check_failed = 1
-        OTHERS                    = 2.
-    IF sy-subrc <> 0.
-      RAISE plausibility_error.
-    ENDIF.
-
-    CONDENSE lv_data_int NO-GAPS.
-    yv_data_int = lv_data_int.
-
+  *    Data conversion exit from External to SAP
+  *    From
+  *        -> 25/12/2024
+  *        -> 2024/12/31
+  *        -> 20241231
+  *        -> 45710  (Excel serial date)
+  *    To
+  *        -> 20241231
+  
+      CONSTANTS: c_initial_system_data TYPE dats VALUE '18991231'.
+  
+      yv_data_int = c_initial_data.
+  
+      CHECK xv_data_ext IS NOT INITIAL.
+  
+      DATA(lv_data_int) = xv_data_ext.
+      CONDENSE lv_data_int NO-GAPS.
+  
+  
+      CASE strlen( lv_data_int ).
+        WHEN 8.
+          "Format like 20231225
+  
+          "Already in SAP Format
+          "Nothing to do
+  
+        WHEN 10.
+  
+          "Data format managed
+          "25-12-2023
+          "2023-12-25
+  
+          IF lv_data_int+2(1) CA tc_symbols-digit.
+            "Format like 2023-12-25
+            lv_data_int = |{ lv_data_int(4) }{ lv_data_int+5(2) }{ lv_data_int+8(2) }|.
+  
+          ELSEIF lv_data_int+2(1) NA tc_symbols-digit.
+            "Format like 25-12-2023
+            lv_data_int = |{ lv_data_int+6(4) }{ lv_data_int+3(2) }{ lv_data_int(2) }|.
+  
+          ELSE.
+            RAISE format_error.
+  
+          ENDIF.
+  
+        WHEN OTHERS.
+  
+          "Data format managed
+          " 45658 -> 01/01/2025 ( Serial Excel )
+          IF lv_data_int CO tc_symbols-digit.
+            DATA: lv_tmp_dats TYPE sy-datum.
+            lv_tmp_dats = c_initial_system_data + lv_data_int.
+            lv_data_int = lv_tmp_dats.
+  
+          ELSE.
+            RAISE format_error.
+  
+          ENDIF.
+  
+      ENDCASE.
+  
+  
+      CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+        EXPORTING
+          date                      = CONV sy-datum( lv_data_int )
+        EXCEPTIONS
+          plausibility_check_failed = 1
+          OTHERS                    = 2.
+      IF sy-subrc <> 0.
+        RAISE plausibility_error.
+      ENDIF.
+  
+      CONDENSE lv_data_int NO-GAPS.
+      yv_data_int = lv_data_int.
+  
   ENDMETHOD.
 
 
