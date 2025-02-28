@@ -30,9 +30,10 @@ CLASS zag_cl_converter DEFINITION
       END OF tc_separator.
 
     CONSTANTS:
-      c_initial_data TYPE datum VALUE '00000000' ##NO_TEXT,
-      c_initial_time TYPE time  VALUE 000000     ##NO_TEXT,
-      c_max_data     TYPE datum VALUE '99991231' ##NO_TEXT.
+      c_initial_data    TYPE datum VALUE '00000000' ##NO_TEXT,
+      c_initial_time    TYPE time  VALUE 000000     ##NO_TEXT,
+      c_max_data        TYPE datum VALUE '99991231' ##NO_TEXT,
+      c_max_date_number TYPE int4 VALUE 2958465.
 
 
     " Methods
@@ -326,7 +327,12 @@ CLASS zag_cl_converter IMPLEMENTATION.
           " 45658 -> 01/01/2025 ( Serial Excel )
           IF lv_data_int CO tc_symbols-digit.
             DATA: lv_tmp_dats TYPE sy-datum.
-            lv_tmp_dats = c_initial_system_data + lv_data_int.
+            
+            IF lv_data_int EQ c_max_data_number.
+              lv_tmp_dats = c_max_data.
+            ELSE.
+              lv_tmp_dats = c_initial_system_data + lv_data_int.
+            ENDIF.
             lv_data_int = lv_tmp_dats.
   
           ELSE.
