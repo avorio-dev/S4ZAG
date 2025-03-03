@@ -331,7 +331,8 @@ CLASS zag_cl_converter IMPLEMENTATION.
             IF lv_data_int EQ c_max_data_number.
               lv_tmp_dats = c_max_data.
             ELSE.
-              lv_tmp_dats = c_initial_system_data + lv_data_int.
+              "For Excel 01/01/1900 is a leap year but is a bug, so, -1 is required
+              lv_tmp_dats = c_initial_system_data + ( lv_data_int - 1 ).
             ENDIF.
             lv_data_int = lv_tmp_dats.
   
