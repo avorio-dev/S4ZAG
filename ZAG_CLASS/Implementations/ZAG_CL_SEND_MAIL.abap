@@ -82,7 +82,7 @@ CLASS zag_cl_send_mail DEFINITION
     CONSTANTS:
       BEGIN OF tc_exception_msg,
         missing_recipients TYPE string VALUE 'Recipient list must be filled'                   ##NO_TEXT,
-        missing_mail_obj   TYPE string VALUE 'Mail object must be empty filled'                ##NO_TEXT,
+        missing_mail_obj   TYPE string VALUE 'Mail object must be filled'                ##NO_TEXT,
       END OF tc_exception_msg.
 
 
