@@ -7,7 +7,7 @@ To use them, it will be enough to copy the code of the whole class
 and paste it locally in your report, or in the code-based builder of SE24 TCode.
 >NB If you are in a report, you will need to comment the following line code at the beginning of the class declaration.\
   FINAL\
-  CREATE PUBLIC.
+  CREATE PUBLIC. 
 
 ---
 
