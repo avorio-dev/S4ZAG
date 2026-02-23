@@ -660,6 +660,10 @@ FORM init_handlers  CHANGING yo_alv_ref TYPE tref_alv_grid.
           OTHERS     = 2
       ).
 
+      yo_alv_ref->set_ready_for_input(
+        i_ready_for_input = 1
+      ).
+
       yo_alv_ref->check_changed_data( ).
 
       CREATE OBJECT go_event_handler.
@@ -1035,32 +1039,26 @@ FORM fill_cell_style  USING    xv_fieldname TYPE tabname
 
   DATA: ls_styl TYPE lvc_s_styl.
 
-  FIELD-SYMBOLS: <alv_0100> LIKE LINE OF gt_alv_0100,
-                 <alv_0200> LIKE LINE OF gt_alv_0200,
-                 <alv_0300> LIKE LINE OF gt_alv_0300.
+  FIELD-SYMBOLS: <value>   TYPE any,
+                 <t_style> TYPE lvc_t_styl.
 
-  FIELD-SYMBOLS: <value> TYPE any.
-
-  UNASSIGN: <value>,
-            <alv_0100>, <alv_0200>, <alv_0300>.
+  UNASSIGN: <value>.
 
   CASE xv_struct.
     WHEN c_alv_st_0100.
 
-      ASSIGN yv_struct TO <alv_0100>.
+      ASSIGN COMPONENT 'C_STY' OF STRUCTURE yv_struct TO <t_style>.
       CHECK sy-subrc EQ 0.
 
-      DELETE <alv_0100>-c_sty[] WHERE fieldname EQ xv_fieldname.
+      DELETE <t_style> WHERE fieldname EQ xv_fieldname.
 
       ASSIGN COMPONENT xv_fieldname OF STRUCTURE yv_struct TO <value>.
       CHECK sy-subrc EQ 0.
 
       CLEAR ls_styl.
       ls_styl-fieldname = xv_fieldname.
-*      ls_styl-style     = '00000121'.
-*      ls_styl-style     = cl_gui_alv_grid=>mc_style_hotspot.
-      ls_styl-style     = alv_style_button.
-      INSERT ls_styl INTO TABLE <alv_0100>-c_sty[].
+      ls_styl-style     = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT ls_styl INTO TABLE <t_style>[].
 
     WHEN c_dynnr_0200.
 
