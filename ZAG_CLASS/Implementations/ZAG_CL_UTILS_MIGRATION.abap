@@ -15,7 +15,7 @@ CLASS zag_cl_utils_migration DEFINITION
         fm_program     TYPE wbcrossi-include,
         cust_incl_name TYPE wbcrossi-name,
         funcname       TYPE modsap-member,
-        implemented    TYPE flag,
+        activ          TYPE tsdir-activ,
       END OF ts_fm_userexit,
 
       BEGIN OF ts_buffer,
@@ -281,7 +281,7 @@ CLASS ZAG_CL_UTILS_MIGRATION IMPLEMENTATION.
 
     LOOP AT yt_userexit ASSIGNING FIELD-SYMBOL(<userexit>).
 
-      <userexit>-implemented = abap_false.
+      <userexit>-activ = abap_false.
 
       DATA(lv_incl) = CONV rs38l-include( <userexit>-fm_program ).
       DATA(lv_fm) = CONV rs38l-name( <userexit>-funcname ).
@@ -303,7 +303,7 @@ CLASS ZAG_CL_UTILS_MIGRATION IMPLEMENTATION.
       CHECK <userexit>-funcname EQ lv_fm.
 
 
-      <userexit>-implemented = abap_true.
+      <userexit>-activ = abap_true.
 
 
     ENDLOOP.
