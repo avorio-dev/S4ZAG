@@ -18,6 +18,18 @@ CLASS zag_cl_utils_migration DEFINITION
         activ          TYPE tsdir-activ,
       END OF ts_fm_userexit,
 
+      BEGIN OF ts_screen_exit,
+        cmod_name     TYPE modact-name,
+        smod_name     TYPE modact-member,
+        id_concat     TYPE modsap-member,
+        calling_prog  TYPE tsdir-progname,
+        calling_dynnr TYPE tsdir-dynnr,
+        bername       TYPE tsdir-bername,
+        called_prog   TYPE tsdir-progname,
+        called_dynnr  TYPE tsdir-dynnr,
+        activ         TYPE tsdir-activ,
+      END OF ts_screen_exit,
+
       BEGIN OF ts_buffer,
         data(1024) TYPE x,
       END OF ts_buffer.
@@ -28,6 +40,7 @@ CLASS zag_cl_utils_migration DEFINITION
       tt_tadir       TYPE TABLE OF tadir WITH DEFAULT KEY,
       tt_e071        TYPE TABLE OF e071 WITH DEFAULT KEY,
       tt_fm_userexit TYPE TABLE OF ts_fm_userexit WITH DEFAULT KEY,
+      tt_screen_exit TYPE TABLE OF ts_screen_exit WITH DEFAULT KEY,
       tt_buffer      TYPE TABLE OF ts_buffer WITH DEFAULT KEY.
 
    " Types Range
@@ -50,7 +63,7 @@ CLASS zag_cl_utils_migration DEFINITION
         RETURNING
           VALUE(yt_tadir) TYPE tt_tadir
         EXCEPTIONS
-          object_not_found ,
+          object_not_found,
 
       fetch_fm_userexit
         IMPORTING
@@ -58,7 +71,14 @@ CLASS zag_cl_utils_migration DEFINITION
           !xr_smod_name      TYPE tr_smod_name OPTIONAL
           !xr_funcname       TYPE tr_funcname OPTIONAL
         RETURNING
-          VALUE(yt_userexit) TYPE tt_fm_userexit ,
+          VALUE(yt_userexit) TYPE tt_fm_userexit,
+
+      fetch_screen_exit
+        IMPORTING
+          !xr_cmod_name         TYPE tr_cmod_name OPTIONAL
+          !xr_smod_name         TYPE tr_smod_name OPTIONAL
+        RETURNING
+          VALUE(yt_screen_exit) TYPE tt_screen_exit,
 
       upload_tr
         IMPORTING
@@ -73,11 +93,11 @@ CLASS zag_cl_utils_migration DEFINITION
           !xv_frontend_dir TYPE string OPTIONAL
         EXCEPTIONS
           tr_not_found
-          download_failed ,
+          download_failed,
 
       get_tr_path
-        RETURNING
-          VALUE(yv_path) TYPE string ,
+        RETURNING 
+          VALUE(yv_path) TYPE string,
 
       insert_obj_into_tr
         IMPORTING
@@ -90,7 +110,7 @@ CLASS zag_cl_utils_migration DEFINITION
         EXCEPTIONS
           object_not_found
           input_error
-          generic_error .
+          generic_error.
 
   PROTECTED SECTION.
 
@@ -309,6 +329,59 @@ CLASS ZAG_CL_UTILS_MIGRATION IMPLEMENTATION.
     ENDLOOP.
 
     DELETE yt_userexit WHERE funcname IS INITIAL.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZAG_CL_UTILS_MIGRATION->FETCH_SCREEN_EXIT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] XR_CMOD_NAME                   TYPE        TR_CMOD_NAME(optional)
+* | [--->] XR_SMOD_NAME                   TYPE        TR_SMOD_NAME(optional)
+* | [<-()] YT_SCREEN_EXIT                 TYPE        TT_SCREEN_EXIT
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD fetch_screen_exit.
+
+    CLEAR yt_screen_exit.
+
+    SELECT DISTINCT
+       modact~name,
+       modact~member,
+       modsap~member AS id_concat,
+       substring( modsap~member, 1,  8 ) AS calling_prog,
+       substring( modsap~member, 9,  4 ) AS calling_dynnr,
+       substring( modsap~member, 14, 8 ) AS bername,
+       substring( modsap~member, 23, 8 ) AS called_prog,
+       substring( modsap~member, 31, 4 ) AS called_dynnr
+    FROM modact AS modact
+    INNER JOIN modsap AS modsap
+            ON modsap~name EQ modact~member
+    WHERE modsap~typ    EQ 'S'
+      AND modact~name   IN @xr_cmod_name
+      AND modact~member IN @xr_smod_name
+    INTO TABLE @yt_screen_exit.
+
+    CHECK sy-subrc EQ 0.
+
+
+    SELECT *
+    FROM d020s
+    FOR ALL ENTRIES IN @yt_screen_exit
+    WHERE prog EQ @yt_screen_exit-called_prog
+      AND dnum EQ @yt_screen_exit-called_dynnr
+      ORDER BY PRIMARY KEY
+    INTO TABLE @DATA(lt_d020s).
+
+    CHECK sy-subrc EQ 0.
+
+    LOOP AT yt_screen_exit ASSIGNING FIELD-SYMBOL(<screen_exit>).
+      CHECK line_exists( lt_d020s[ prog = <screen_exit>-called_prog
+                                   dnum = <screen_exit>-called_dynnr
+       ] ).
+
+      <screen_exit>-activ = 'X'.
+    ENDLOOP.
+
 
   ENDMETHOD.
 

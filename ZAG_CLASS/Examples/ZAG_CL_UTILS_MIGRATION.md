@@ -6,7 +6,11 @@
 
 - FETCH_FM_USEREXIT
   - Retrieves implemented Function Module User Exits, filterable by CMOD name, SMOD name, or FM name.
-  - The field `implemented` in the returned structure indicates whether the user exit is actually implemented in the system.
+  - The field `activ` in the returned structure indicates whether the user exit is actually implemented in the system.
+
+- FETCH_SCREEN_EXIT
+  - Retrieves implemented Screen User Exits, filterable by CMOD name, SMOD name.
+  - The field `activ` in the returned structure indicates whether the user exit is actually implemented in the system.
 
 - UPLOAD_TR
   - Uploads a Transport Request (both `cofiles` and `data` files) from the frontend to the SAP server.
@@ -44,7 +48,7 @@ DATA(lt_tadir) = lo_mig->fetch_tadir(
 ---
 
 ```abap
-"Example 2 -> Fetch implemented User Exits for a given CMOD
+"Example 2.1 -> Fetch implemented User Exits for a given CMOD
 "-------------------------------------------------
 
 DATA(lo_mig) = NEW zag_cl_utils_migration( ).
@@ -56,6 +60,23 @@ DATA(lt_userexit) = lo_mig->fetch_fm_userexit(
 LOOP AT lt_userexit ASSIGNING FIELD-SYMBOL(<ue>).
   IF <ue>-implemented EQ abap_true.
     WRITE: / 'Implemented:', <ue>-funcname.
+  ENDIF.
+ENDLOOP.
+```
+
+```abap
+"Example 2.2 -> Fetch implemented User Exits for a given CMOD
+"-------------------------------------------------
+
+DATA(lo_mig) = NEW zag_cl_utils_migration( ).
+
+DATA(lt_screenexit) = lo_mig->fetch_screen_exit(
+  xr_cmod_name = VALUE #( ( sign = 'I' option = 'EQ' low = 'ZMYCMOD' ) )
+).
+
+LOOP AT lt_screenexit ASSIGNING FIELD-SYMBOL(<se>).
+  IF <se>-implemented EQ abap_true.
+    WRITE: / 'Implemented:', <se>-called_prog, <se>-called_dynnr.
   ENDIF.
 ENDLOOP.
 ```
